@@ -6,21 +6,20 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "^4.3.4",
     "axios": "^1.7.9",
-    "vite": "^6.0.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.1.1",
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
   }
 }

@@ -1,9 +1,10 @@
+import { ReactNode } from "react";
 import styles from "./Table.module.css";
 
 export interface TableColumn<T> {
   key: keyof T | string;
   header: string;
-  render?: (row: T) => React.ReactNode;
+  render?: (row: T) => ReactNode;
 }
 
 export interface TableProps<T> {
