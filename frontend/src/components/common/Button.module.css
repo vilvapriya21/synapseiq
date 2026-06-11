@@ -1,0 +1,39 @@
+.button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0 16px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.primary {
+  background: #176b87;
+  color: #ffffff;
+}
+
+.secondary {
+  background: #ffffff;
+  border-color: #c7d1da;
+  color: #243341;
+}
+
+.ghost {
+  background: transparent;
+  color: #176b87;
+}
+
+.danger {
+  background: #b42318;
+  color: #ffffff;
+}

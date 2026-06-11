@@ -1,0 +1,29 @@
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.label {
+  color: #344554;
+  font-weight: 700;
+}
+
+.input {
+  min-height: 42px;
+  width: 100%;
+  border: 1px solid #c7d1da;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #17212b;
+  font: inherit;
+}
+
+.input:focus {
+  border-color: #176b87;
+  outline: 3px solid #d9edf2;
+}
+
+.error {
+  color: #b42318;
+  font-size: 14px;
+}
