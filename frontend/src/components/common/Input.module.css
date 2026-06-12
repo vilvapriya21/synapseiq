@@ -1,6 +1,6 @@
 .field {
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 .label {
@@ -9,13 +9,18 @@
 }
 
 .input {
-  min-height: 42px;
+  min-height: 56px;
   width: 100%;
   border: 1px solid #c7d1da;
   border-radius: 8px;
-  padding: 0 12px;
+  padding: 0 16px;
   color: #17212b;
   font: inherit;
+}
+
+.input::-ms-reveal,
+.input::-ms-clear {
+  display: none;
 }
 
 .input:focus {

@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     app_name: str = "SynapseIQ"
     app_env: str = "development"
     api_v1_prefix: str = "/api/v1"
-    database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/synapseiq"
+    database_url: str = "sqlite:///./synapseiq.db"
     jwt_secret_key: str = Field(default="change-me", min_length=8)
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60

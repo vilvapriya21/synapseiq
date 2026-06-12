@@ -1,0 +1,213 @@
+.page {
+  width: min(100%, 472px);
+  display: grid;
+  gap: 22px;
+  justify-self: center;
+}
+
+.brand {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.brandMark {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #2454d6;
+  color: #ffffff;
+  font-size: 20px;
+}
+
+.brandMark img {
+  width: 28px;
+  height: 28px;
+}
+
+.brand h1 {
+  margin: 0;
+  color: #07142f;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.brand p {
+  margin: 0;
+  color: #526178;
+}
+
+.card {
+  width: 100%;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 30px;
+  box-shadow: 0 18px 45px rgb(7 20 47 / 8%);
+}
+
+.title {
+  margin: 0 0 6px;
+  color: #07142f;
+  font-size: 22px;
+}
+
+.subtitle {
+  margin: 0 0 24px;
+  color: #526178;
+}
+
+.form {
+  display: grid;
+  gap: 16px;
+}
+
+.passwordGroup {
+  display: grid;
+  gap: 8px;
+}
+
+.passwordLabel {
+  color: #344554;
+  font-weight: 700;
+}
+
+.passwordShell {
+  position: relative;
+}
+
+.passwordInput {
+  min-height: 56px;
+  width: 100%;
+  border: 1px solid #c7d1da;
+  border-radius: 8px;
+  padding: 0 52px 0 16px;
+  color: #17212b;
+  font: inherit;
+}
+
+.passwordInput:focus {
+  border-color: #176b87;
+  outline: 3px solid #d9edf2;
+}
+
+.passwordInput::-ms-reveal,
+.passwordInput::-ms-clear {
+  display: none;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.passwordToggle:hover,
+.passwordToggle:focus-visible {
+  color: #2454d6;
+  background: #eef3ff;
+}
+
+.passwordHint {
+  margin: 0;
+  color: #526178;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #526178;
+  font-size: 14px;
+}
+
+.link {
+  border: 0;
+  background: transparent;
+  color: #2454d6;
+  padding: 0;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.roleGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.roleButton {
+  min-height: 60px;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #384760;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.roleButtonActive {
+  border-color: #2454d6;
+  background: #2454d6;
+  color: #ffffff;
+}
+
+.message,
+.error {
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 14px;
+}
+
+.message {
+  background: #eaf8f0;
+  color: #0c6b3f;
+}
+
+.error {
+  background: #fff0f0;
+  color: #a4161a;
+}
+
+.footer {
+  color: #526178;
+  text-align: center;
+  font-size: 13px;
+}
+
+@media (max-width: 560px) {
+  .card {
+    padding: 22px;
+  }
+
+  .roleGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { ROUTES } from "../routes/routePaths";
 import { useAuthStore } from "../store/authStore";
 import styles from "./DashboardLayout.module.css";
@@ -10,11 +10,26 @@ const navigation = [
 
 function DashboardLayout() {
   const logout = useAuthStore((state) => state.logout);
+  const user = useAuthStore((state) => state.user);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate(ROUTES.login, { replace: true });
+  };
 
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
-        <div className={styles.brand}>SynapseIQ</div>
+        <div className={styles.brand}>
+          <span className={styles.logo}>
+            <img alt="" src="/synapse-logo.svg" />
+          </span>
+          <div>
+            <strong>SynapseIQ</strong>
+            <span>Knowledge Platform</span>
+          </div>
+        </div>
         <nav className={styles.nav}>
           {navigation.map((item) => (
             <NavLink
@@ -30,9 +45,12 @@ function DashboardLayout() {
       <div className={styles.content}>
         <header className={styles.header}>
           <span>Production Workspace</span>
-          <button type="button" className={styles.logout} onClick={logout}>
+          <div className={styles.profile}>
+            <span>{user?.name || "Workspace User"}</span>
+            <button type="button" className={styles.logout} onClick={handleLogout}>
             Sign out
-          </button>
+            </button>
+          </div>
         </header>
         <main className={styles.main}>
           <Outlet />
