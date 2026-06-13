@@ -7,19 +7,22 @@ from sqlalchemy.orm import Session as DbSession
 
 from app.core.security import get_current_user
 from app.db.session import get_db
+from app.models.knowledge_base import KnowledgeBase
 from app.models.repository import Repository
 from app.models.user import User
+from app.modules.git_provider import detect_provider, extract_repo_name, is_valid_git_url
 from app.modules.repository_analysis import analyze_repository
-from app.schemas.repository import RepositoryConnectRequest, RepositoryListResponse, RepositoryResponse
+from app.schemas.repository import (
+    KnowledgeBaseResponse,
+    RepositoryConnectRequest,
+    RepositoryListResponse,
+    RepositoryResponse,
+)
 
 router = APIRouter()
 
 MAX_UPLOAD_SIZE_BYTES = 2_000_000_000
 UPLOAD_DIR = Path("uploaded_repos")
-
-
-def get_repository_name_from_url(url: str) -> str:
-    return url.rstrip("/").split("/")[-1]
 
 
 def get_repository_name_from_filename(filename: str) -> str:
@@ -55,8 +58,12 @@ def connect_repository(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Repository:
-    if not payload.url.startswith("https://github.com/"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only GitHub repository URLs are supported")
+    if not is_valid_git_url(payload.url):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please enter a valid git repository URL starting with https://",
+        )
+    provider = detect_provider(payload.url)
 
     existing_repository = db.scalar(
         select(Repository).where(
@@ -68,8 +75,9 @@ def connect_repository(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Repository already exists for this user")
 
     repository = Repository(
-        name=get_repository_name_from_url(payload.url),
-        source_type="github",
+        name=extract_repo_name(payload.url),
+        source_type="git",
+        provider=provider,
         url=payload.url,
         branch=payload.branch,
         status="pending",
@@ -147,6 +155,29 @@ def refresh_repository(
     db.refresh(repository)
     background_tasks.add_task(analyze_repository, repository.id, db)
     return repository
+
+
+@router.get("/{repo_id}/knowledge-base", response_model=KnowledgeBaseResponse)
+def get_knowledge_base(
+    repo_id: str,
+    entry_type: str | None = None,
+    db: DbSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> KnowledgeBaseResponse:
+    repository = get_owned_repository(db, repo_id, current_user.id)
+
+    query = select(KnowledgeBase).where(KnowledgeBase.repository_id == repo_id)
+    if entry_type:
+        query = query.where(KnowledgeBase.entry_type == entry_type)
+    query = query.order_by(KnowledgeBase.created_at)
+
+    entries = db.scalars(query).all()
+    return KnowledgeBaseResponse(
+        repository_id=repo_id,
+        status=repository.knowledge_base_status,
+        entries=entries,
+        total=len(entries),
+    )
 
 
 @router.get("/{repo_id}", response_model=RepositoryResponse)

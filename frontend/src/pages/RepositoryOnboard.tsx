@@ -82,8 +82,8 @@ function RepositoryOnboardPage() {
     event.preventDefault();
     setConnectError("");
 
-    if (!url.startsWith("https://github.com/")) {
-      setConnectError("Repository URL must start with https://github.com/.");
+    if (!url.startsWith("https://")) {
+      setConnectError("Repository URL must start with https://");
       return;
     }
 

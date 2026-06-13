@@ -3,6 +3,7 @@ import AuthLayout from "../layouts/AuthLayout";
 import DashboardLayout from "../layouts/DashboardLayout";
 import LoginPage from "../pages/Login";
 import DashboardPage from "../pages/Dashboard";
+import RepositoryPage from "../pages/Repository";
 import RepositoryOnboardPage from "../pages/RepositoryOnboard";
 import ProjectPage from "../pages/Project";
 import AssessmentPage from "../pages/Assessment";
@@ -21,7 +22,9 @@ function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path={ROUTES.dashboard} element={<DashboardPage />} />
+          <Route path={ROUTES.repositories} element={<RepositoryOnboardPage />} />
           <Route path={ROUTES.repositoryOnboard} element={<RepositoryOnboardPage />} />
+          <Route path={ROUTES.repository} element={<RepositoryPage />} />
           <Route path={ROUTES.project} element={<ProjectPage />} />
           <Route path={ROUTES.projectAssessment} element={<AssessmentPage />} />
           <Route path={ROUTES.projectResults} element={<ResultsPage />} />

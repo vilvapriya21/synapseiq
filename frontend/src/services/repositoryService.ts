@@ -3,18 +3,36 @@ import apiClient from "./api";
 export interface Repository {
   id: string;
   name: string;
-  source_type: "github" | "upload";
+  source_type: "github" | "git" | "upload";
+  provider: string;
   url?: string;
   branch?: string;
   language?: string;
   module_count: number;
+  file_count: number;
   status: "pending" | "indexing" | "indexed" | "error";
+  knowledge_base_status: "none" | "building" | "ready" | "error";
   error_message?: string;
   created_at: string;
 }
 
 export interface RepositoryListResponse {
   repositories: Repository[];
+  total: number;
+}
+
+export interface KnowledgeBaseEntry {
+  id: string;
+  entry_type: "file_tree" | "readme" | "dependencies" | "module_summary" | "function_index";
+  file_path?: string;
+  content: string;
+  language?: string;
+}
+
+export interface KnowledgeBaseResponse {
+  repository_id: string;
+  status: string;
+  entries: KnowledgeBaseEntry[];
   total: number;
 }
 
@@ -49,3 +67,14 @@ export const getRepository = async (repoId: string): Promise<Repository> => {
   const { data } = await apiClient.get<Repository>(`/repositories/${repoId}`);
   return data;
 };
+
+export async function getKnowledgeBase(
+  repoId: string,
+  entryType?: string
+): Promise<KnowledgeBaseResponse> {
+  const params = entryType ? `?entry_type=${entryType}` : "";
+  const response = await apiClient.get<KnowledgeBaseResponse>(
+    `/repositories/${repoId}/knowledge-base${params}`
+  );
+  return response.data;
+}
