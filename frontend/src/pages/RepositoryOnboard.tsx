@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { CloudUpload, SquareCode } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   connectRepository,
   listRepositories,
@@ -25,6 +26,7 @@ function getStatusClass(status: Repository["status"]) {
 
 function RepositoryOnboardPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const navigate = useNavigate();
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [url, setUrl] = useState("");
   const [branch, setBranch] = useState("main");
@@ -49,6 +51,22 @@ function RepositoryOnboardPage() {
       setConnectError("Unable to load repositories.");
     });
   }, []);
+
+  useEffect(() => {
+    const hasTransientRepository = repositories.some((repository) =>
+      ["pending", "indexing"].includes(repository.status)
+    );
+
+    if (!hasTransientRepository) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      fetchRepositories();
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [repositories]);
 
   const handleConnect = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -236,14 +254,49 @@ function RepositoryOnboardPage() {
                     <td>{repository.module_count}</td>
                     <td>
                       <span className={`${styles.badge} ${getStatusClass(repository.status)}`}>
+                        {repository.status === "indexing" ? (
+                          <svg
+                            aria-hidden="true"
+                            viewBox="0 0 24 24"
+                            width="12"
+                            height="12"
+                            style={{ marginRight: 6 }}
+                          >
+                            <path
+                              d="M21 12a9 9 0 1 1-2.64-6.36"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeWidth="2"
+                            />
+                            <animateTransform
+                              attributeName="transform"
+                              dur="0.8s"
+                              from="0 12 12"
+                              repeatCount="indefinite"
+                              to="360 12 12"
+                              type="rotate"
+                            />
+                          </svg>
+                        ) : null}
                         {repository.status}
                       </span>
+                      {repository.status === "error" && repository.error_message ? (
+                        <span title={repository.error_message}> &#9888;</span>
+                      ) : null}
                     </td>
                     <td>
                       <button
                         className={styles.viewButton}
                         type="button"
-                        onClick={() => console.log(repository.id)}
+                        onClick={() => {
+                          if (repository.status === "indexed") {
+                            navigate(`/repositories/${repository.id}`);
+                            return;
+                          }
+
+                          console.log(repository.id);
+                        }}
                       >
                         View
                       </button>

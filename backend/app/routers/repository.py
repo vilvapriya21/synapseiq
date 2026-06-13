@@ -1,14 +1,15 @@
 from pathlib import Path
 import shutil
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session as DbSession
 
 from app.core.security import get_current_user
 from app.db.session import get_db
 from app.models.repository import Repository
 from app.models.user import User
+from app.modules.repository_analysis import analyze_repository
 from app.schemas.repository import RepositoryConnectRequest, RepositoryListResponse, RepositoryResponse
 
 router = APIRouter()
@@ -35,7 +36,7 @@ def get_upload_size(file: UploadFile) -> int:
     return size
 
 
-def get_owned_repository(db: Session, repo_id: str, owner_id: str) -> Repository:
+def get_owned_repository(db: DbSession, repo_id: str, owner_id: str) -> Repository:
     repository = db.scalar(
         select(Repository).where(
             Repository.id == repo_id,
@@ -50,7 +51,8 @@ def get_owned_repository(db: Session, repo_id: str, owner_id: str) -> Repository
 @router.post("/connect", response_model=RepositoryResponse, status_code=status.HTTP_201_CREATED)
 def connect_repository(
     payload: RepositoryConnectRequest,
-    db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks,
+    db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Repository:
     if not payload.url.startswith("https://github.com/"):
@@ -76,13 +78,15 @@ def connect_repository(
     db.add(repository)
     db.commit()
     db.refresh(repository)
+    background_tasks.add_task(analyze_repository, repository.id, db)
     return repository
 
 
 @router.post("/upload", response_model=RepositoryResponse, status_code=status.HTTP_201_CREATED)
 def upload_repository(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    db: Session = Depends(get_db),
+    db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Repository:
     filename = file.filename or ""
@@ -110,12 +114,13 @@ def upload_repository(
 
     db.commit()
     db.refresh(repository)
+    background_tasks.add_task(analyze_repository, repository.id, db)
     return repository
 
 
 @router.get("", response_model=RepositoryListResponse)
 def list_repositories(
-    db: Session = Depends(get_db),
+    db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> RepositoryListResponse:
     repositories = db.scalars(
@@ -130,24 +135,24 @@ def list_repositories(
 @router.post("/{repo_id}/refresh", response_model=RepositoryResponse)
 def refresh_repository(
     repo_id: str,
-    db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks,
+    db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Repository:
     repository = get_owned_repository(db, repo_id, current_user.id)
 
-    if repository.status in {"error", "pending"}:
-        repository.status = "pending"
-        repository.error_message = None
-
+    repository.status = "pending"
+    repository.error_message = None
     db.commit()
     db.refresh(repository)
+    background_tasks.add_task(analyze_repository, repository.id, db)
     return repository
 
 
 @router.get("/{repo_id}", response_model=RepositoryResponse)
 def get_repository(
     repo_id: str,
-    db: Session = Depends(get_db),
+    db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Repository:
     return get_owned_repository(db, repo_id, current_user.id)
