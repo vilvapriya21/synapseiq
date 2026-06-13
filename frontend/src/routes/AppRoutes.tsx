@@ -24,7 +24,7 @@ function AppRoutes() {
           <Route path={ROUTES.dashboard} element={<DashboardPage />} />
           <Route path={ROUTES.repositories} element={<RepositoryOnboardPage />} />
           <Route path={ROUTES.repositoryOnboard} element={<RepositoryOnboardPage />} />
-          <Route path={ROUTES.repository} element={<RepositoryPage />} />
+          <Route path={ROUTES.repositoryDetail} element={<RepositoryPage />} />
           <Route path={ROUTES.project} element={<ProjectPage />} />
           <Route path={ROUTES.projectAssessment} element={<AssessmentPage />} />
           <Route path={ROUTES.projectResults} element={<ResultsPage />} />

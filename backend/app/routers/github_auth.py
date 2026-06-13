@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
+from jose import JWTError, jwt as jose_jwt
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -14,12 +15,22 @@ router = APIRouter()
 
 
 @router.get("/auth/github")
-def github_auth(current_user: User = Depends(get_current_user)) -> RedirectResponse:
+def github_auth(token: str, db: Session = Depends(get_db)) -> RedirectResponse:
+    try:
+        payload = jose_jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
     query_params = urlencode(
         {
             "client_id": settings.github_client_id,
             "scope": "repo,read:user",
-            "state": current_user.id,
+            "state": user.id,
         }
     )
     return RedirectResponse(f"https://github.com/login/oauth/authorize?{query_params}")
@@ -49,3 +60,21 @@ def github_callback(code: str, state: str, db: Session = Depends(get_db)) -> Red
     user.github_access_token = token_response["access_token"]
     db.commit()
     return RedirectResponse("http://localhost:5173/repositories?github=connected")
+
+
+@router.get("/auth/github/status")
+def github_status(current_user: User = Depends(get_current_user)) -> dict:
+    return {
+        "connected": current_user.github_access_token is not None,
+        "github_username": None,
+    }
+
+
+@router.delete("/auth/github")
+def github_disconnect(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    current_user.github_access_token = None
+    db.commit()
+    return {"message": "GitHub account disconnected"}

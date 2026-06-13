@@ -4,6 +4,7 @@ export const ROUTES = {
   repositories: "/repositories",
   repositoryOnboard: "/repositories/onboard",
   repository: "/repositories/:repoId",
+  repositoryDetail: "/repositories/:repoId",
   project: "/project/:projectId",
   projectAssessment: "/project/:projectId/assessment",
   projectResults: "/project/:projectId/results",

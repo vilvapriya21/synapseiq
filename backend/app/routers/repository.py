@@ -180,6 +180,27 @@ def get_knowledge_base(
     )
 
 
+@router.delete("/{repo_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_repository(
+    repo_id: str,
+    db: DbSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    repository = get_owned_repository(db, repo_id, current_user.id)
+
+    upload_path = UPLOAD_DIR / f"{repo_id}.zip"
+    if upload_path.exists():
+        upload_path.unlink()
+
+    from sqlalchemy import delete as sql_delete
+    from app.models.knowledge_base import KnowledgeBase
+
+    db.execute(sql_delete(KnowledgeBase).where(KnowledgeBase.repository_id == repo_id))
+
+    db.delete(repository)
+    db.commit()
+
+
 @router.get("/{repo_id}", response_model=RepositoryResponse)
 def get_repository(
     repo_id: str,

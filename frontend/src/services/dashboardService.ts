@@ -1,19 +1,24 @@
 import apiClient from "./api";
 
 export interface DashboardStats {
-  totalProjects: number;
-  activeKtPlans: number;
-  pendingAssessments: number;
-  completedAssessments: number;
+  totalRepositories: number;
+  indexedRepositories: number;
+  pendingRepositories: number;
+  knowledgeBasesReady: number;
 }
 
 export interface DashboardProject {
   id: string;
   name: string;
   repository: string;
-  status: "Active" | "Review" | "Pending" | "Completed";
-  ktProgress: number;
-  assessmentScore: number;
+  provider: string;
+  status: string;
+  language: string;
+  module_count: number;
+  file_count: number;
+  knowledge_base_status: string;
+  branch: string;
+  created_at: string;
 }
 
 export interface DashboardResponse {

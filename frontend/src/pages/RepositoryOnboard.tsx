@@ -1,12 +1,15 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { CloudUpload, SquareCode } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { ENV } from "../constants/env";
 import {
   connectRepository,
+  deleteRepository,
   listRepositories,
   refreshRepository,
   uploadRepository,
 } from "../services/repositoryService";
+import apiClient from "../services/api";
 import type { Repository } from "../services/repositoryService";
 import styles from "./RepositoryOnboard.module.css";
 
@@ -24,6 +27,19 @@ function getStatusClass(status: Repository["status"]) {
   }
 }
 
+function getStatusReason(repository: Repository) {
+  if (repository.status === "error") {
+    return repository.error_message || "Analysis failed. Check backend logs for details.";
+  }
+  if (repository.status === "pending") {
+    return "Waiting for background analysis to start.";
+  }
+  if (repository.status === "indexing") {
+    return "Cloning and analyzing repository.";
+  }
+  return "";
+}
+
 function RepositoryOnboardPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
@@ -36,7 +52,8 @@ function RepositoryOnboardPage() {
   const [connectError, setConnectError] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [githubConnected, setGithubConnected] = useState(false);
+  const [githubStatus, setGithubStatus] = useState<"unknown" | "connected" | "disconnected">("unknown");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchRepositories = async () => {
     setLoading(true);
@@ -52,12 +69,18 @@ function RepositoryOnboardPage() {
     fetchRepositories().catch(() => {
       setConnectError("Unable to load repositories.");
     });
+
+    apiClient.get("/auth/github/status")
+      .then((res) => {
+        setGithubStatus(res.data.connected ? "connected" : "disconnected");
+      })
+      .catch(() => setGithubStatus("disconnected"));
   }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("github") === "connected") {
-      setGithubConnected(true);
+      setGithubStatus("connected");
       window.history.replaceState({}, "", location.pathname);
     }
   }, []);
@@ -66,6 +89,24 @@ function RepositoryOnboardPage() {
     const hasTransientRepository = repositories.some((repository) =>
       ["pending", "indexing"].includes(repository.status)
     );
+
+    repositories.forEach((repository) => {
+      if (repository.status === "error") {
+        console.error("[RepositoryOnboard] Repository analysis failed", {
+          id: repository.id,
+          name: repository.name,
+          reason: repository.error_message || "No error message returned by backend.",
+        });
+      }
+      if (repository.status === "pending" || repository.status === "indexing") {
+        console.info("[RepositoryOnboard] Repository analysis pending", {
+          id: repository.id,
+          name: repository.name,
+          status: repository.status,
+          reason: getStatusReason(repository),
+        });
+      }
+    });
 
     if (!hasTransientRepository) {
       return;
@@ -94,6 +135,7 @@ function RepositoryOnboardPage() {
       setBranch("main");
       await fetchRepositories();
     } catch (err: unknown) {
+      console.error("[RepositoryOnboard] Connect repository failed", err);
       const axiosError = err as { response?: { data?: { detail?: string } } };
       const detail = axiosError?.response?.data?.detail ?? "";
       if (detail.toLowerCase().includes("not found") || detail.toLowerCase().includes("403")) {
@@ -143,6 +185,7 @@ function RepositoryOnboardPage() {
       await Promise.all(refreshableRepositories.map((repository) => refreshRepository(repository.id)));
       await fetchRepositories();
     } catch (err: unknown) {
+      console.error("[RepositoryOnboard] Refresh repositories failed", err);
       const axiosError = err as { response?: { data?: { detail?: string } } };
       const detail = axiosError?.response?.data?.detail ?? "";
       if (detail.toLowerCase().includes("not found") || detail.toLowerCase().includes("403")) {
@@ -154,6 +197,19 @@ function RepositoryOnboardPage() {
       }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (repoId: string) => {
+    if (!window.confirm("Remove this repository? This cannot be undone.")) return;
+    setDeletingId(repoId);
+    try {
+      await deleteRepository(repoId);
+      await fetchRepositories();
+    } catch {
+      setConnectError("Failed to remove repository.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -182,23 +238,46 @@ function RepositoryOnboardPage() {
             className={styles.secondaryButton}
             type="button"
             onClick={() => {
-              window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/github`;
+              const stored = localStorage.getItem("synapseiq.auth");
+              const token = stored ? (JSON.parse(stored)?.state?.tokens?.accessToken ?? "") : "";
+              window.location.href = `${ENV.apiBaseUrl}/auth/github?token=${encodeURIComponent(token)}`;
             }}
           >
             Connect GitHub Account
           </button>
+
+          {githubStatus === "connected" ? (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+                          background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 6,
+                          padding: "8px 12px", marginBottom: 8 }}>
+              <span style={{ color: "#15803D", fontSize: 13, fontWeight: 500 }}>
+                &#10003; GitHub connected &mdash; private repositories enabled
+              </span>
+              <button
+                type="button"
+                style={{ background: "none", border: "none", color: "#6B7280",
+                         fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
+                onClick={() => {
+                  apiClient.delete("/auth/github")
+                    .then(() => setGithubStatus("disconnected"))
+                    .catch(() => {});
+                }}
+              >
+                Disconnect
+              </button>
+            </div>
+          ) : githubStatus === "disconnected" ? (
+            <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 6,
+                          padding: "8px 12px", marginBottom: 8, fontSize: 13, color: "#92400E" }}>
+              &#9888; GitHub not connected &mdash; only public repositories will work
+            </div>
+          ) : null}
 
           <div style={{ alignItems: "center", color: "#6b7280", display: "flex", gap: 10, fontSize: 12 }}>
             <span style={{ background: "#e5e7eb", flex: 1, height: 1 }} />
             <span>or enter a repository URL directly</span>
             <span style={{ background: "#e5e7eb", flex: 1, height: 1 }} />
           </div>
-
-          {githubConnected ? (
-            <p style={{ color: "#059669", fontSize: 12, margin: "0 0 8px" }}>
-              &#10003; GitHub account connected &mdash; you can now access private repositories
-            </p>
-          ) : null}
 
           <div className={styles.formGrid}>
             <input
@@ -332,6 +411,9 @@ function RepositoryOnboardPage() {
                       {repository.status === "error" && repository.error_message ? (
                         <span title={repository.error_message}> &#9888;</span>
                       ) : null}
+                      {getStatusReason(repository) ? (
+                        <div className={styles.statusReason}>{getStatusReason(repository)}</div>
+                      ) : null}
                     </td>
                     <td>
                       <button
@@ -347,6 +429,15 @@ function RepositoryOnboardPage() {
                         }}
                       >
                         View
+                      </button>
+                      <button
+                        className={styles.deleteButton}
+                        type="button"
+                        onClick={() => handleDelete(repository.id)}
+                        disabled={deletingId === repository.id}
+                        title="Remove repository"
+                      >
+                        {deletingId === repository.id ? "…" : "Remove"}
                       </button>
                     </td>
                   </tr>

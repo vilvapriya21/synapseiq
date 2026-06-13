@@ -7,16 +7,21 @@ import { useAuthStore } from "../store/authStore";
 import styles from "./Dashboard.module.css";
 
 const statLabels = [
-  ["totalProjects", "Total Projects", "Across connected repositories"],
-  ["activeKtPlans", "Active KT Plans", "Currently in progress"],
-  ["pendingAssessments", "Pending Assessments", "Awaiting completion"],
-  ["completedAssessments", "Completed Assessments", "Validated knowledge checks"],
+  ["totalRepositories", "Total Repositories", "Connected and analysed"],
+  ["indexedRepositories", "Indexed", "Ready for knowledge extraction"],
+  ["pendingRepositories", "Pending / Indexing", "Analysis in progress"],
+  ["knowledgeBasesReady", "Knowledge Bases", "Ready to query"],
 ] as const;
 
-function badgeClass(status: DashboardProject["status"]) {
-  if (status === "Review") return `${styles.badge} ${styles.badgeReview}`;
-  if (status === "Pending") return `${styles.badge} ${styles.badgePending}`;
-  return styles.badge;
+function badgeClass(status: string) {
+  if (status === "indexed") return `${styles.badge} ${styles.badgeActive}`;
+  if (status === "indexing") return `${styles.badge} ${styles.badgeReview}`;
+  if (status === "error") return `${styles.badge} ${styles.badgeError}`;
+  return `${styles.badge} ${styles.badgePending}`;
+}
+
+function truncateSource(value: string) {
+  return value.length > 40 ? `${value.slice(0, 40)}...` : value;
 }
 
 function DashboardPage() {
@@ -54,7 +59,7 @@ function DashboardPage() {
       (project) =>
         project.name.toLowerCase().includes(query) ||
         project.repository.toLowerCase().includes(query) ||
-        project.status.toLowerCase().includes(query),
+        project.language.toLowerCase().includes(query),
     );
   }, [dashboard?.projects, search]);
 
@@ -106,11 +111,12 @@ function DashboardPage() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Project Name</th>
-                <th>Repository</th>
+                <th>Repository Name</th>
+                <th>URL/Source</th>
+                <th>Language</th>
+                <th>Modules</th>
                 <th>Status</th>
-                <th>KT Progress</th>
-                <th>Assessment Score</th>
+                <th>KB Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -118,26 +124,26 @@ function DashboardPage() {
               {filteredProjects.map((project) => (
                 <tr key={project.id}>
                   <td>
-                    <div className={styles.projectName}>{project.name}</div>
+                      <div className={styles.projectName}>{project.name}</div>
+                    </td>
+                  <td className={styles.repository} title={project.repository}>
+                    {truncateSource(project.repository)}
                   </td>
-                  <td className={styles.repository}>{project.repository}</td>
+                  <td>{project.language}</td>
+                  <td>{project.module_count}</td>
                   <td>
                     <span className={badgeClass(project.status)}>{project.status}</span>
                   </td>
-                  <td>
-                    <div className={styles.progressTrack}>
-                      <div className={styles.progressFill} style={{ width: `${project.ktProgress}%` }} />
-                    </div>
-                    <div className={styles.progressText}>{project.ktProgress}% complete</div>
+                  <td className={project.knowledge_base_status === "none" ? styles.repository : undefined}>
+                    {project.knowledge_base_status}
                   </td>
-                  <td>{project.assessmentScore ? `${project.assessmentScore}%` : "Not started"}</td>
                   <td>
                     <button
                       className={styles.action}
-                      onClick={() => navigate(ROUTES.project.replace(":projectId", project.id))}
+                      onClick={() => navigate(`/repositories/${project.id}`)}
                       type="button"
                     >
-                      Open Workspace
+                      Open
                     </button>
                   </td>
                 </tr>

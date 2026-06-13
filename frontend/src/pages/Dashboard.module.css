@@ -143,9 +143,19 @@
   color: #0b8f61;
 }
 
+.badgeActive {
+  background: #dcfce7;
+  color: #15803d;
+}
+
 .badgePending {
   background: #fff5e7;
   color: #a55b00;
+}
+
+.badgeError {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 .progressTrack {

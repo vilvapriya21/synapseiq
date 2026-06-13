@@ -132,6 +132,27 @@
   padding: 7px 12px;
 }
 
+.deleteButton {
+  background: transparent;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: 6px;
+  padding: 4px 10px;
+}
+
+.deleteButton:hover {
+  background: #fee2e2;
+}
+
+.deleteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .primaryButton:disabled,
 .secondaryButton:disabled,
 .outlineButton:disabled,
@@ -267,6 +288,14 @@
 .badgeError {
   background: #fee2e2;
   color: #b91c1c;
+}
+
+.statusReason {
+  margin-top: 6px;
+  max-width: 260px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 @media (max-width: 900px) {

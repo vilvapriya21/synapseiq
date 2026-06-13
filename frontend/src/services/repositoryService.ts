@@ -3,15 +3,15 @@ import apiClient from "./api";
 export interface Repository {
   id: string;
   name: string;
-  source_type: "github" | "git" | "upload";
-  provider: string;
+  source_type: "git" | "upload";
+  provider?: string;
   url?: string;
   branch?: string;
   language?: string;
   module_count: number;
-  file_count: number;
+  file_count?: number;
   status: "pending" | "indexing" | "indexed" | "error";
-  knowledge_base_status: "none" | "building" | "ready" | "error";
+  knowledge_base_status?: "none" | "building" | "ready" | "error";
   error_message?: string;
   created_at: string;
 }
@@ -66,6 +66,10 @@ export const refreshRepository = async (repoId: string): Promise<Repository> => 
 export const getRepository = async (repoId: string): Promise<Repository> => {
   const { data } = await apiClient.get<Repository>(`/repositories/${repoId}`);
   return data;
+};
+
+export const deleteRepository = async (repoId: string): Promise<void> => {
+  await apiClient.delete(`/repositories/${repoId}`);
 };
 
 export async function getKnowledgeBase(
