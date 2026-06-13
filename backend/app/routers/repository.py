@@ -78,7 +78,7 @@ def connect_repository(
     db.add(repository)
     db.commit()
     db.refresh(repository)
-    background_tasks.add_task(analyze_repository, repository.id, db)
+    background_tasks.add_task(analyze_repository, repository.id, db, current_user.github_access_token)
     return repository
 
 
@@ -114,7 +114,7 @@ def upload_repository(
 
     db.commit()
     db.refresh(repository)
-    background_tasks.add_task(analyze_repository, repository.id, db)
+    background_tasks.add_task(analyze_repository, repository.id, db, current_user.github_access_token)
     return repository
 
 

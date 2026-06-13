@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { CloudUpload, SquareCode } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   connectRepository,
   listRepositories,
@@ -27,6 +27,7 @@ function getStatusClass(status: Repository["status"]) {
 function RepositoryOnboardPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [url, setUrl] = useState("");
   const [branch, setBranch] = useState("main");
@@ -35,6 +36,7 @@ function RepositoryOnboardPage() {
   const [connectError, setConnectError] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [githubConnected, setGithubConnected] = useState(false);
 
   const fetchRepositories = async () => {
     setLoading(true);
@@ -50,6 +52,14 @@ function RepositoryOnboardPage() {
     fetchRepositories().catch(() => {
       setConnectError("Unable to load repositories.");
     });
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("github") === "connected") {
+      setGithubConnected(true);
+      window.history.replaceState({}, "", location.pathname);
+    }
   }, []);
 
   useEffect(() => {
@@ -83,8 +93,16 @@ function RepositoryOnboardPage() {
       setUrl("");
       setBranch("main");
       await fetchRepositories();
-    } catch {
-      setConnectError("Unable to connect repository.");
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string } } };
+      const detail = axiosError?.response?.data?.detail ?? "";
+      if (detail.toLowerCase().includes("not found") || detail.toLowerCase().includes("403")) {
+        setConnectError(
+          "Repository not found or access denied. Connect your GitHub account above to access private repositories."
+        );
+      } else {
+        setConnectError(detail || "Unable to connect repository.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -124,8 +142,16 @@ function RepositoryOnboardPage() {
     try {
       await Promise.all(refreshableRepositories.map((repository) => refreshRepository(repository.id)));
       await fetchRepositories();
-    } catch {
-      setConnectError("Unable to refresh repositories.");
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string } } };
+      const detail = axiosError?.response?.data?.detail ?? "";
+      if (detail.toLowerCase().includes("not found") || detail.toLowerCase().includes("403")) {
+        setConnectError(
+          "Repository not found or access denied. Connect your GitHub account above to access private repositories."
+        );
+      } else {
+        setConnectError(detail || "Unable to refresh repositories.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -148,9 +174,31 @@ function RepositoryOnboardPage() {
             </div>
             <div>
               <h2>GitHub</h2>
-              <p>Connect via OAuth or PAT</p>
+              <p>Connect your GitHub account to access private repos</p>
             </div>
           </div>
+
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            onClick={() => {
+              window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/github`;
+            }}
+          >
+            Connect GitHub Account
+          </button>
+
+          <div style={{ alignItems: "center", color: "#6b7280", display: "flex", gap: 10, fontSize: 12 }}>
+            <span style={{ background: "#e5e7eb", flex: 1, height: 1 }} />
+            <span>or enter a repository URL directly</span>
+            <span style={{ background: "#e5e7eb", flex: 1, height: 1 }} />
+          </div>
+
+          {githubConnected ? (
+            <p style={{ color: "#059669", fontSize: 12, margin: "0 0 8px" }}>
+              &#10003; GitHub account connected &mdash; you can now access private repositories
+            </p>
+          ) : null}
 
           <div className={styles.formGrid}>
             <input

@@ -11,7 +11,6 @@ import git
 from github import Github
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.models.repository import Repository
 
 
@@ -91,8 +90,8 @@ def collect_uploaded_paths(extract_dir: Path) -> list[str]:
     return file_paths
 
 
-def analyze_github_repository(repository: Repository) -> tuple[str | None, int]:
-    gh = Github(settings.github_token) if settings.github_token else Github()
+def analyze_github_repository(repository: Repository, github_token: str | None) -> tuple[str | None, int]:
+    gh = Github(github_token) if github_token else Github()
     repo_path = parse_github_repo_path(repository.url or "")
     gh_repo = gh.get_repo(repo_path)
     tree = gh_repo.get_git_tree(repository.branch or "main", recursive=True)
@@ -119,7 +118,7 @@ def analyze_uploaded_repository(repo_id: str) -> tuple[str | None, int]:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
-def analyze_repository(repo_id: str, db: Session) -> None:
+def analyze_repository(repo_id: str, db: Session, github_token: str | None = None) -> None:
     _ = chardet, git
     repository = db.get(Repository, repo_id)
     if repository is None:
@@ -131,7 +130,7 @@ def analyze_repository(repo_id: str, db: Session) -> None:
 
     try:
         if repository.source_type == "github":
-            language, module_count = analyze_github_repository(repository)
+            language, module_count = analyze_github_repository(repository, github_token)
         elif repository.source_type == "upload":
             language, module_count = analyze_uploaded_repository(repo_id)
         else:
