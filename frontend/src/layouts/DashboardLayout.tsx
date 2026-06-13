@@ -1,17 +1,21 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { ROUTES } from "../routes/routePaths";
 import { useAuthStore } from "../store/authStore";
+import { UserRole } from "../types";
+import { normalizeRole } from "../utils/roles";
 import styles from "./DashboardLayout.module.css";
 
-const navigation = [
-  { label: "Dashboard", to: ROUTES.dashboard },
-  { label: "Repository Onboard", to: ROUTES.repositoryOnboard },
+const navigation: Array<{ label: string; roles: UserRole[]; to: string }> = [
+  { label: "Dashboard", roles: ["ADMIN", "LEARNER"], to: ROUTES.dashboard },
+  { label: "Repository Onboard", roles: ["ADMIN"], to: ROUTES.repositoryOnboard },
 ];
 
 function DashboardLayout() {
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
+  const role = normalizeRole(user?.roles[0]);
+  const visibleNavigation = navigation.filter((item) => item.roles.includes(role));
 
   const handleLogout = () => {
     logout();
@@ -31,7 +35,7 @@ function DashboardLayout() {
           </div>
         </div>
         <nav className={styles.nav}>
-          {navigation.map((item) => (
+          {visibleNavigation.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -46,7 +50,7 @@ function DashboardLayout() {
         <header className={styles.header}>
           <span>Production Workspace</span>
           <div className={styles.profile}>
-            <span>{user?.name || "Workspace User"}</span>
+            <span>{user?.name || "Workspace User"} - {role}</span>
             <button type="button" className={styles.logout} onClick={handleLogout}>
             Sign out
             </button>

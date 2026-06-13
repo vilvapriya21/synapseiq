@@ -2,18 +2,27 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
-import { dashboardService, DashboardProject, DashboardResponse } from "../services/dashboardService";
+import { dashboardService, DashboardResponse } from "../services/dashboardService";
 import { useAuthStore } from "../store/authStore";
+import { ProjectSummary } from "../types";
+import { normalizeRole } from "../utils/roles";
 import styles from "./Dashboard.module.css";
 
-const statLabels = [
+const adminStatLabels = [
   ["totalProjects", "Total Projects", "Across connected repositories"],
-  ["activeKtPlans", "Active KT Plans", "Currently in progress"],
+  ["activeProjects", "Active Projects", "Currently in progress"],
   ["pendingAssessments", "Pending Assessments", "Awaiting completion"],
   ["completedAssessments", "Completed Assessments", "Validated knowledge checks"],
 ] as const;
 
-function badgeClass(status: DashboardProject["status"]) {
+const learnerStatLabels = [
+  ["assignedProjects", "Assigned Projects", "Knowledge paths assigned to you"],
+  ["pendingAssessments", "Pending Assessments", "Awaiting completion"],
+  ["completedAssessments", "Completed Assessments", "Validated knowledge checks"],
+  ["averageScore", "Average Score", "Across completed assessments"],
+] as const;
+
+function badgeClass(status: ProjectSummary["status"]) {
   if (status === "Review") return `${styles.badge} ${styles.badgeReview}`;
   if (status === "Pending") return `${styles.badge} ${styles.badgePending}`;
   return styles.badge;
@@ -22,6 +31,7 @@ function badgeClass(status: DashboardProject["status"]) {
 function DashboardPage() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const role = normalizeRole(user?.roles[0]);
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -30,7 +40,7 @@ function DashboardPage() {
   useEffect(() => {
     let isMounted = true;
     dashboardService
-      .getDashboard()
+      .getDashboard(role)
       .then((data) => {
         if (isMounted) setDashboard(data);
       })
@@ -44,7 +54,7 @@ function DashboardPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [role]);
 
   const filteredProjects = useMemo(() => {
     const projects = dashboard?.projects || [];
@@ -66,12 +76,14 @@ function DashboardPage() {
     return <div className={styles.state}>{error || "No dashboard data available."}</div>;
   }
 
+  const statLabels = role === "ADMIN" ? adminStatLabels : learnerStatLabels;
+
   return (
     <div className={styles.page}>
       <section className={styles.hero}>
         <div>
           <p className={styles.eyebrow}>Welcome {user?.name || "User"}</p>
-          <h1 className={styles.heading}>Dashboard</h1>
+          <h1 className={styles.heading}>{role === "ADMIN" ? "Admin Dashboard" : "Learner Dashboard"}</h1>
         </div>
         <input
           className={styles.search}
@@ -86,7 +98,7 @@ function DashboardPage() {
         {statLabels.map(([key, label, hint]) => (
           <article className={styles.statCard} key={key}>
             <span className={styles.statLabel}>{label}</span>
-            <span className={styles.statValue}>{dashboard.stats[key]}</span>
+            <span className={styles.statValue}>{dashboard.stats[key] ?? 0}{key === "averageScore" ? "%" : ""}</span>
             <span className={styles.statHint}>{hint}</span>
           </article>
         ))}
@@ -98,48 +110,89 @@ function DashboardPage() {
             <h2>Projects</h2>
             <p>{filteredProjects.length} repositories matched</p>
           </div>
-          <Button onClick={() => navigate(ROUTES.repositoryOnboard)} type="button">
-            Add Repository
-          </Button>
+          {role === "ADMIN" && (
+            <Button onClick={() => navigate(ROUTES.repositoryOnboard)} type="button">
+              Add Repository
+            </Button>
+          )}
         </div>
         <div className={styles.tableWrap}>
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Project Name</th>
-                <th>Repository</th>
-                <th>Status</th>
-                <th>KT Progress</th>
-                <th>Assessment Score</th>
-                <th>Actions</th>
+                {role === "ADMIN" ? (
+                  <>
+                    <th>Project Name</th>
+                    <th>Repository</th>
+                    <th>Status</th>
+                    <th>KT Progress</th>
+                    <th>Assessment Completion</th>
+                    <th>Actions</th>
+                  </>
+                ) : (
+                  <>
+                    <th>Project Name</th>
+                    <th>KT Progress</th>
+                    <th>Latest Score</th>
+                    <th>Next Assessment</th>
+                    <th>Action</th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody>
               {filteredProjects.map((project) => (
                 <tr key={project.id}>
-                  <td>
-                    <div className={styles.projectName}>{project.name}</div>
-                  </td>
-                  <td className={styles.repository}>{project.repository}</td>
-                  <td>
-                    <span className={badgeClass(project.status)}>{project.status}</span>
-                  </td>
-                  <td>
-                    <div className={styles.progressTrack}>
-                      <div className={styles.progressFill} style={{ width: `${project.ktProgress}%` }} />
-                    </div>
-                    <div className={styles.progressText}>{project.ktProgress}% complete</div>
-                  </td>
-                  <td>{project.assessmentScore ? `${project.assessmentScore}%` : "Not started"}</td>
-                  <td>
-                    <button
-                      className={styles.action}
-                      onClick={() => navigate(ROUTES.project.replace(":projectId", project.id))}
-                      type="button"
-                    >
-                      Open Workspace
-                    </button>
-                  </td>
+                  {role === "ADMIN" ? (
+                    <>
+                      <td>
+                        <div className={styles.projectName}>{project.name}</div>
+                      </td>
+                      <td className={styles.repository}>{project.repository}</td>
+                      <td>
+                        <span className={badgeClass(project.status)}>{project.status}</span>
+                      </td>
+                      <td>
+                        <div className={styles.progressTrack}>
+                          <div className={styles.progressFill} style={{ width: `${project.ktProgress}%` }} />
+                        </div>
+                        <div className={styles.progressText}>{project.ktProgress}% complete</div>
+                      </td>
+                      <td>{project.assessmentCompletion}%</td>
+                      <td>
+                        <button
+                          className={styles.action}
+                          onClick={() => navigate(ROUTES.project.replace(":projectId", project.id))}
+                          type="button"
+                        >
+                          Manage Project
+                        </button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td>
+                        <div className={styles.projectName}>{project.name}</div>
+                      </td>
+                      <td>
+                        <div className={styles.progressTrack}>
+                          <div className={styles.progressFill} style={{ width: `${project.ktProgress}%` }} />
+                        </div>
+                        <div className={styles.progressText}>{project.ktProgress}% complete</div>
+                      </td>
+                      <td>{project.assessmentScore ? `${project.assessmentScore}%` : "Not started"}</td>
+                      <td>{project.nextAssessment ?? "Not scheduled"}</td>
+                      <td>
+                        <button
+                          className={styles.action}
+                          onClick={() => navigate(ROUTES.project.replace(":projectId", project.id))}
+                          type="button"
+                        >
+                          Open Project
+                        </button>
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>

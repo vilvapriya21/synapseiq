@@ -8,6 +8,7 @@ import ProjectPage from "../pages/Project";
 import AssessmentPage from "../pages/Assessment";
 import ResultsPage from "../pages/Results";
 import ProtectedRoute from "./ProtectedRoute";
+import RoleRoute from "./RoleRoute";
 import { ROUTES } from "./routePaths";
 
 function AppRoutes() {
@@ -21,10 +22,14 @@ function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path={ROUTES.dashboard} element={<DashboardPage />} />
-          <Route path={ROUTES.repositoryOnboard} element={<RepositoryOnboardPage />} />
           <Route path={ROUTES.project} element={<ProjectPage />} />
-          <Route path={ROUTES.projectAssessment} element={<AssessmentPage />} />
           <Route path={ROUTES.projectResults} element={<ResultsPage />} />
+          <Route element={<RoleRoute allowedRoles={["ADMIN"]} />}>
+            <Route path={ROUTES.repositoryOnboard} element={<RepositoryOnboardPage />} />
+          </Route>
+          <Route element={<RoleRoute allowedRoles={["LEARNER"]} />}>
+            <Route path={ROUTES.projectAssessment} element={<AssessmentPage />} />
+          </Route>
         </Route>
       </Route>
 

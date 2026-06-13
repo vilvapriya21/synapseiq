@@ -1,29 +1,11 @@
-import apiClient from "./api";
+import { DashboardResponse, ProjectSummary, UserRole } from "../types";
+import { delay, mockDashboardByRole } from "./mockData";
 
-export interface DashboardStats {
-  totalProjects: number;
-  activeKtPlans: number;
-  pendingAssessments: number;
-  completedAssessments: number;
-}
-
-export interface DashboardProject {
-  id: string;
-  name: string;
-  repository: string;
-  status: "Active" | "Review" | "Pending" | "Completed";
-  ktProgress: number;
-  assessmentScore: number;
-}
-
-export interface DashboardResponse {
-  stats: DashboardStats;
-  projects: DashboardProject[];
-}
+export type DashboardProject = ProjectSummary;
+export type { DashboardResponse };
 
 export const dashboardService = {
-  async getDashboard() {
-    const { data } = await apiClient.get<DashboardResponse>("/dashboard");
-    return data;
+  async getDashboard(role: UserRole): Promise<DashboardResponse> {
+    return delay(mockDashboardByRole[role]);
   },
 };

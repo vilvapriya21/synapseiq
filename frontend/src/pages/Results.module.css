@@ -1,0 +1,161 @@
+.page {
+  display: grid;
+  gap: 22px;
+}
+
+.hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: #64718a;
+  font-size: 14px;
+}
+
+.heading {
+  margin: 0;
+  color: #07142f;
+  font-size: 30px;
+}
+
+.scoreCard,
+.panel,
+.category {
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.scoreCard {
+  min-width: 180px;
+  display: grid;
+  gap: 4px;
+  padding: 18px;
+}
+
+.scoreCard span,
+.category span {
+  color: #526178;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.scoreCard strong {
+  color: #07142f;
+  font-size: 36px;
+}
+
+.panel {
+  overflow: hidden;
+}
+
+.panelHeader {
+  padding: 18px 20px;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.panelHeader h2 {
+  margin: 0;
+  color: #07142f;
+  font-size: 18px;
+}
+
+.categoryGrid,
+.gridTwo {
+  display: grid;
+  gap: 14px;
+}
+
+.categoryGrid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  padding: 20px;
+}
+
+.gridTwo {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.category {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+}
+
+.category strong {
+  color: #07142f;
+  font-size: 28px;
+}
+
+.track {
+  height: 8px;
+  border-radius: 999px;
+  background: #e5eaf1;
+  overflow: hidden;
+}
+
+.track div {
+  height: 100%;
+  border-radius: inherit;
+  background: #176b87;
+}
+
+.panel ul,
+.panel ol {
+  margin: 0;
+  padding: 18px 22px 20px 42px;
+  color: #344554;
+  line-height: 1.7;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 15px 20px;
+  border-bottom: 1px solid #edf1f6;
+  text-align: left;
+}
+
+.table th {
+  color: #526178;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.state {
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #526178;
+  padding: 24px;
+}
+
+@media (max-width: 980px) {
+  .categoryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .categoryGrid,
+  .gridTwo {
+    grid-template-columns: 1fr;
+  }
+}
