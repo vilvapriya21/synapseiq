@@ -1,16 +1,17 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ROUTES } from "../routes/routePaths";
 import { useAuthStore } from "../store/authStore";
 import styles from "./DashboardLayout.module.css";
 
 const navigation = [
   { label: "Dashboard", to: ROUTES.dashboard },
-  { label: "Repository Onboard", to: ROUTES.repositoryOnboard },
+  { label: "Repository Onboarding", to: ROUTES.repositoryOnboard },
 ];
 
 function DashboardLayout() {
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
+  const location = useLocation();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -31,15 +32,27 @@ function DashboardLayout() {
           </div>
         </div>
         <nav className={styles.nav}>
-          {navigation.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) => (isActive ? styles.activeLink : styles.link)}
-            >
-              {item.label}
-            </NavLink>
-          ))}
+          {navigation.map((item) => {
+            const isActive = location.pathname === item.to;
+
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={styles.link}
+                style={{
+                  background: isActive ? "rgba(99, 130, 240, 0.2)" : "transparent",
+                  color: isActive ? "rgb(165, 180, 252)" : "rgba(255,255,255,0.55)",
+                }}
+                onClick={(event) => {
+                  event.preventDefault();
+                  navigate(item.to);
+                }}
+              >
+                {item.label}
+              </NavLink>
+            );
+          })}
         </nav>
       </aside>
       <div className={styles.content}>
