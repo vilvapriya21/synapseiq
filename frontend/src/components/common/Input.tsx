@@ -6,13 +6,13 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
 }
 
-function Input({ error, id, label, ...props }: InputProps) {
+function Input({ className = "", error, id, label, ...props }: InputProps) {
   const inputId = id || props.name;
 
   return (
     <label className={styles.field} htmlFor={inputId}>
       {label && <span className={styles.label}>{label}</span>}
-      <input id={inputId} className={styles.input} aria-invalid={Boolean(error)} {...props} />
+      <input id={inputId} className={`${styles.input} ${className}`} aria-invalid={Boolean(error)} {...props} />
       {error && <span className={styles.error}>{error}</span>}
     </label>
   );

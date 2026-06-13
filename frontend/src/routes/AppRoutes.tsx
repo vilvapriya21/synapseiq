@@ -14,6 +14,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route element={<AuthLayout />}>
+        <Route path="/" element={<LoginPage />} />
         <Route path={ROUTES.login} element={<LoginPage />} />
       </Route>
 
@@ -27,7 +28,6 @@ function AppRoutes() {
         </Route>
       </Route>
 
-      <Route path="/" element={<Navigate to={ROUTES.dashboard} replace />} />
       <Route path="*" element={<Navigate to={ROUTES.dashboard} replace />} />
     </Routes>
   );

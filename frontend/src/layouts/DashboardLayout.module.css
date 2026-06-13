@@ -2,20 +2,47 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
-  background: #f6f8fa;
+  background: #f7f9fc;
 }
 
 .sidebar {
-  border-right: 1px solid #d8e0e7;
-  background: #ffffff;
+  border-right: 1px solid #1b2741;
+  background: #10192d;
   padding: 24px 18px;
 }
 
 .brand {
-  color: #17212b;
-  font-size: 20px;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ffffff;
   margin-bottom: 28px;
+}
+
+.brand strong {
+  display: block;
+  font-size: 18px;
+}
+
+.brand span:not(.logo) {
+  display: block;
+  color: #91a0bd;
+  font-size: 12px;
+}
+
+.logo {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #2454d6;
+  color: #ffffff;
+}
+
+.logo img {
+  width: 22px;
+  height: 22px;
 }
 
 .nav {
@@ -25,7 +52,7 @@
 
 .link,
 .activeLink {
-  color: #344554;
+  color: #c8d2e8;
   text-decoration: none;
   padding: 10px 12px;
   border-radius: 8px;
@@ -33,8 +60,8 @@
 }
 
 .activeLink {
-  background: #e8f3f5;
-  color: #0e5d72;
+  background: #27365f;
+  color: #ffffff;
 }
 
 .content {
@@ -53,6 +80,12 @@
   background: #ffffff;
   color: #344554;
   font-weight: 600;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
 .logout {
@@ -75,6 +108,13 @@
 
   .sidebar {
     border-right: 0;
-    border-bottom: 1px solid #d8e0e7;
+    border-bottom: 1px solid #1b2741;
+  }
+
+  .header {
+    height: auto;
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 18px;
   }
 }
