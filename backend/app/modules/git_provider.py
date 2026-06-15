@@ -41,27 +41,26 @@ def _clean_url(url: str) -> str:
 def build_authenticated_url(url: str, token: str | None, provider: str) -> str:
     """
     Inject a user's OAuth token into the clone URL.
-    Returns a URL safe to pass directly to `git clone`.
-    Always ends with .git.
+    Uses token-as-username format which works for owners AND collaborators.
+    Format: https://{token}@github.com/owner/repo.git
+    The oauth2: prefix only works for repo owners in some cases.
     """
-    url = url.strip()
     base = _clean_url(url)
 
     if not token:
-        # Public repo - no auth, just ensure .git suffix
         return base + ".git"
 
     if provider == "github":
-        # GitHub: https://oauth2:{token}@github.com/org/repo.git
+        # Use token as username - works for owner, collaborator, org member
         authenticated = base.replace(
             "https://github.com/",
-            f"https://oauth2:{token}@github.com/",
+            f"https://{token}@github.com/",
             1,
         )
         return authenticated + ".git"
 
     if provider == "gitlab":
-        # GitLab uses the same oauth2 pattern
+        # GitLab: oauth2 as username, token as password
         authenticated = base.replace(
             "https://gitlab.com/",
             f"https://oauth2:{token}@gitlab.com/",
@@ -78,7 +77,6 @@ def build_authenticated_url(url: str, token: str | None, provider: str) -> str:
         )
         return authenticated + ".git"
 
-    # azure, other - return as-is with .git (token handling varies, future enhancement)
     return base + ".git"
 
 
