@@ -44,6 +44,7 @@ def build_authenticated_url(url: str, token: str | None, provider: str) -> str:
     Returns a URL safe to pass directly to `git clone`.
     Always ends with .git.
     """
+    url = url.strip()
     base = _clean_url(url)
 
     if not token:

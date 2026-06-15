@@ -15,9 +15,18 @@ router = APIRouter()
 
 
 @router.get("/auth/github")
-def github_auth(token: str, db: Session = Depends(get_db)) -> RedirectResponse:
+def github_auth(
+    token: str,
+    db: Session = Depends(get_db),
+) -> RedirectResponse:
+    """
+    Redirects to GitHub OAuth. Receives JWT as a query param because
+    browser redirects (window.location.href) cannot send Authorization headers.
+    """
     try:
-        payload = jose_jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        payload = jose_jwt.decode(
+            token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
+        )
         user_id = payload.get("sub")
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
@@ -26,13 +35,11 @@ def github_auth(token: str, db: Session = Depends(get_db)) -> RedirectResponse:
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
-    query_params = urlencode(
-        {
-            "client_id": settings.github_client_id,
-            "scope": "repo,read:user",
-            "state": user.id,
-        }
-    )
+    query_params = urlencode({
+        "client_id": settings.github_client_id,
+        "scope": "repo,read:user",
+        "state": user.id,
+    })
     return RedirectResponse(f"https://github.com/login/oauth/authorize?{query_params}")
 
 
@@ -64,17 +71,13 @@ def github_callback(code: str, state: str, db: Session = Depends(get_db)) -> Red
 
 @router.get("/auth/github/status")
 def github_status(current_user: User = Depends(get_current_user)) -> dict:
-    return {
-        "connected": current_user.github_access_token is not None,
-        "github_username": None,
-    }
+    return {"connected": current_user.github_access_token is not None}
 
 
-@router.delete("/auth/github")
+@router.delete("/auth/github", status_code=status.HTTP_204_NO_CONTENT)
 def github_disconnect(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> dict:
+) -> None:
     current_user.github_access_token = None
     db.commit()
-    return {"message": "GitHub account disconnected"}
