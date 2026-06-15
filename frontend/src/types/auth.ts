@@ -1,8 +1,10 @@
+export type UserRole = "ADMIN" | "LEARNER";
+
 export interface User {
   email: string;
   id: string;
   name: string;
-  roles: string[];
+  roles: UserRole[];
 }
 
 export interface AuthTokens {

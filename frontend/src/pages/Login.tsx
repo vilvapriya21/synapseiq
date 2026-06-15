@@ -5,10 +5,10 @@ import { Button, Input } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
 import { authService } from "../services/authService";
 import { useAuthStore } from "../store/authStore";
+import { UserRole } from "../types";
 import styles from "./Login.module.css";
 
 type AuthMode = "login" | "signup" | "forgot" | "reset";
-type Role = "admin" | "sme" | "learner";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const passwordRules =
@@ -32,6 +32,9 @@ function readError(error: unknown) {
       return "Cannot reach the backend. Make sure FastAPI is running on http://localhost:8000.";
     }
     return `Request failed${error.response?.status ? ` with status ${error.response.status}` : ""}. Please try again.`;
+  }
+  if (error instanceof Error) {
+    return error.message;
   }
   return "Something went wrong. Please try again.";
 }
@@ -95,7 +98,7 @@ function LoginPage() {
   const location = useLocation();
   const login = useAuthStore((state) => state.login);
   const [mode, setMode] = useState<AuthMode>("login");
-  const [role, setRole] = useState<Role>("admin");
+  const [role, setRole] = useState<UserRole>("ADMIN");
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
@@ -132,7 +135,7 @@ function LoginPage() {
       setError("Name is required");
       return;
     }
-    if ((mode === "signup" || mode === "reset") && !isValidPassword(password)) {
+    if (mode === "reset" && !isValidPassword(password)) {
       setError(passwordRules);
       return;
     }
@@ -218,14 +221,14 @@ function LoginPage() {
 
           {mode === "signup" && (
             <div className={styles.roleGrid} aria-label="Account role">
-              {(["admin", "sme", "learner"] as Role[]).map((item) => (
+              {(["ADMIN", "LEARNER"] as UserRole[]).map((item) => (
                 <button
                   className={`${styles.roleButton} ${role === item ? styles.roleButtonActive : ""}`}
                   key={item}
                   onClick={() => setRole(item)}
                   type="button"
                 >
-                  {item === "sme" ? "SME" : item[0].toUpperCase() + item.slice(1)}
+                  {item === "ADMIN" ? "Admin" : "Learner"}
                 </button>
               ))}
             </div>

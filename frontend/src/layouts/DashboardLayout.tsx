@@ -1,18 +1,21 @@
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { ROUTES } from "../routes/routePaths";
 import { useAuthStore } from "../store/authStore";
+import { UserRole } from "../types";
+import { normalizeRole } from "../utils/roles";
 import styles from "./DashboardLayout.module.css";
 
-const navigation = [
-  { label: "Dashboard", to: ROUTES.dashboard },
-  { label: "Repository Onboarding", to: ROUTES.repositoryOnboard },
+const navigation: Array<{ label: string; roles: UserRole[]; to: string }> = [
+  { label: "Dashboard", roles: ["ADMIN", "LEARNER"], to: ROUTES.dashboard },
+  { label: "Repository Onboarding", roles: ["ADMIN"], to: ROUTES.repositoryOnboard },
 ];
 
 function DashboardLayout() {
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
-  const location = useLocation();
   const navigate = useNavigate();
+  const role = normalizeRole(user?.roles[0]);
+  const visibleNavigation = navigation.filter((item) => item.roles.includes(role));
 
   const handleLogout = () => {
     logout();
@@ -32,36 +35,24 @@ function DashboardLayout() {
           </div>
         </div>
         <nav className={styles.nav}>
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.to;
-
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={styles.link}
-                style={{
-                  background: isActive ? "rgba(99, 130, 240, 0.2)" : "transparent",
-                  color: isActive ? "rgb(165, 180, 252)" : "rgba(255,255,255,0.55)",
-                }}
-                onClick={(event) => {
-                  event.preventDefault();
-                  navigate(item.to);
-                }}
-              >
-                {item.label}
-              </NavLink>
-            );
-          })}
+          {visibleNavigation.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => (isActive ? styles.activeLink : styles.link)}
+            >
+              {item.label}
+            </NavLink>
+          ))}
         </nav>
       </aside>
       <div className={styles.content}>
         <header className={styles.header}>
           <span>Production Workspace</span>
           <div className={styles.profile}>
-            <span>{user?.name || "Workspace User"}</span>
+            <span>{user?.name || "Workspace User"} - {role}</span>
             <button type="button" className={styles.logout} onClick={handleLogout}>
-            Sign out
+              Sign out
             </button>
           </div>
         </header>

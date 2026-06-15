@@ -21,6 +21,12 @@ export interface RepositoryListResponse {
   total: number;
 }
 
+export interface RepositoryAnalysis {
+  status: "mock-generated";
+  contributors: Array<{ name: string; commits: number }>;
+  metrics: Array<{ label: string; value: string }>;
+}
+
 export interface KnowledgeBaseEntry {
   id: string;
   entry_type: "file_tree" | "readme" | "dependencies" | "module_summary" | "function_index";
@@ -72,13 +78,24 @@ export const deleteRepository = async (repoId: string): Promise<void> => {
   await apiClient.delete(`/repositories/${repoId}`);
 };
 
-export async function getKnowledgeBase(
-  repoId: string,
-  entryType?: string
-): Promise<KnowledgeBaseResponse> {
+export async function getKnowledgeBase(repoId: string, entryType?: string): Promise<KnowledgeBaseResponse> {
   const params = entryType ? `?entry_type=${entryType}` : "";
-  const response = await apiClient.get<KnowledgeBaseResponse>(
-    `/repositories/${repoId}/knowledge-base${params}`
-  );
-  return response.data;
+  const { data } = await apiClient.get<KnowledgeBaseResponse>(`/repositories/${repoId}/knowledge-base${params}`);
+  return data;
 }
+
+export const repositoryService = {
+  async analyzeRepository(): Promise<RepositoryAnalysis> {
+    return {
+      status: "mock-generated",
+      contributors: [
+        { name: "Priya Menon", commits: 184 },
+        { name: "Daniel Cho", commits: 139 },
+      ],
+      metrics: [
+        { label: "Mock modules", value: "18" },
+        { label: "Mock hotspots", value: "6" },
+      ],
+    };
+  },
+};

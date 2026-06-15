@@ -1,0 +1,290 @@
+.page {
+  display: grid;
+  gap: 22px;
+}
+
+.hero,
+.panelHeader,
+.actions,
+.tabs,
+.tableActions {
+  display: flex;
+  gap: 12px;
+}
+
+.hero,
+.panelHeader {
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.actions,
+.tabs,
+.tableActions {
+  align-items: center;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: #64718a;
+  font-size: 14px;
+}
+
+.heading {
+  margin: 0;
+  color: #07142f;
+  font-size: 30px;
+}
+
+.tabs {
+  flex-wrap: wrap;
+  border-bottom: 1px solid #dbe3ee;
+}
+
+.tab,
+.activeTab {
+  min-height: 42px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #526178;
+  cursor: pointer;
+  padding: 0 4px;
+  font-weight: 800;
+}
+
+.activeTab {
+  border-color: #176b87;
+  color: #07142f;
+}
+
+.panel {
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.panelHeader {
+  padding: 20px 22px;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.panelHeader h2,
+.block h3,
+.rowCard h3 {
+  margin: 0;
+  color: #07142f;
+}
+
+.panelHeader p,
+.block p,
+.rowCard p,
+.doc p {
+  margin: 6px 0 0;
+  color: #526178;
+  line-height: 1.55;
+}
+
+.panelHeader input,
+.panelHeader select,
+.form input,
+.form select {
+  min-height: 40px;
+  border: 1px solid #cfd8e6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #17212b;
+  padding: 0 12px;
+}
+
+.gridTwo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 20px;
+}
+
+.block,
+.rowCard,
+.metric,
+.doc {
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.block,
+.rowCard,
+.doc {
+  padding: 18px;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tags span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+  background: #eef3ff;
+  color: #2454d6;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.metric {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+}
+
+.metric span,
+.progressBox span,
+.progressBox small,
+.scorePair span {
+  color: #526178;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.metric strong {
+  color: #07142f;
+  font-size: 24px;
+}
+
+.list {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+}
+
+.rowCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.progressBox {
+  min-width: 180px;
+  display: grid;
+  gap: 8px;
+}
+
+.progressTrack {
+  height: 8px;
+  border-radius: 999px;
+  background: #e5eaf1;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: inherit;
+  background: #176b87;
+}
+
+.notice {
+  margin: 20px 20px 0;
+  border: 1px solid #b7dce6;
+  border-radius: 8px;
+  background: #f0f8fa;
+  color: #176b87;
+  padding: 14px 16px;
+  font-weight: 700;
+}
+
+.scorePair {
+  min-width: 180px;
+  display: grid;
+  gap: 8px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 740px;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 15px 20px;
+  border-bottom: 1px solid #edf1f6;
+  text-align: left;
+}
+
+.table th {
+  color: #526178;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.tableActions button,
+.doc button {
+  border: 1px solid #cfd8e6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #176b87;
+  cursor: pointer;
+  padding: 8px 10px;
+  font-weight: 800;
+}
+
+.doc button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.form {
+  display: grid;
+  gap: 14px;
+}
+
+.form label {
+  display: grid;
+  gap: 6px;
+  color: #344554;
+  font-weight: 800;
+}
+
+.state {
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #526178;
+  padding: 24px;
+}
+
+@media (max-width: 820px) {
+  .hero,
+  .panelHeader,
+  .rowCard {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .gridTwo,
+  .metricGrid {
+    grid-template-columns: 1fr;
+  }
+}
