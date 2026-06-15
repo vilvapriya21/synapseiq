@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ROUTES } from "../routes/routePaths";
 import { useAuthStore } from "../store/authStore";
 import { UserRole } from "../types";
@@ -8,11 +8,15 @@ import styles from "./DashboardLayout.module.css";
 const navigation: Array<{ label: string; roles: UserRole[]; to: string }> = [
   { label: "Dashboard", roles: ["ADMIN", "LEARNER"], to: ROUTES.dashboard },
   { label: "Repository Onboard", roles: ["ADMIN"], to: ROUTES.repositoryOnboard },
+const navigation = [
+  { label: "Dashboard", to: ROUTES.dashboard },
+  { label: "Repository Onboarding", to: ROUTES.repositoryOnboard },
 ];
 
 function DashboardLayout() {
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
+  const location = useLocation();
   const navigate = useNavigate();
   const role = normalizeRole(user?.roles[0]);
   const visibleNavigation = navigation.filter((item) => item.roles.includes(role));

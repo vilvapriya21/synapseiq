@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     jwt_secret_key: str = Field(default="change-me", min_length=8)
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
+    github_client_id: str = Field(default="")
+    github_client_secret: str = Field(default="")
     backend_cors_origins: list[AnyHttpUrl] | list[str] = ["http://localhost:5173"]
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")

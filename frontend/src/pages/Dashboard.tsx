@@ -39,10 +39,15 @@ function DashboardPage() {
 
   useEffect(() => {
     let isMounted = true;
+    setIsLoading(true);
+
     dashboardService
       .getDashboard(role)
       .then((data) => {
-        if (isMounted) setDashboard(data);
+        if (isMounted) {
+          setDashboard(data);
+          setError("");
+        }
       })
       .catch(() => {
         if (isMounted) setError("Dashboard data could not be loaded.");
@@ -98,7 +103,10 @@ function DashboardPage() {
         {statLabels.map(([key, label, hint]) => (
           <article className={styles.statCard} key={key}>
             <span className={styles.statLabel}>{label}</span>
-            <span className={styles.statValue}>{dashboard.stats[key] ?? 0}{key === "averageScore" ? "%" : ""}</span>
+            <span className={styles.statValue}>
+              {dashboard.stats[key] ?? 0}
+              {key === "averageScore" ? "%" : ""}
+            </span>
             <span className={styles.statHint}>{hint}</span>
           </article>
         ))}

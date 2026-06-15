@@ -3,6 +3,7 @@ import AuthLayout from "../layouts/AuthLayout";
 import DashboardLayout from "../layouts/DashboardLayout";
 import LoginPage from "../pages/Login";
 import DashboardPage from "../pages/Dashboard";
+import RepositoryPage from "../pages/Repository";
 import RepositoryOnboardPage from "../pages/RepositoryOnboard";
 import ProjectPage from "../pages/Project";
 import AssessmentPage from "../pages/Assessment";
@@ -24,9 +25,13 @@ function AppRoutes() {
           <Route path={ROUTES.dashboard} element={<DashboardPage />} />
           <Route path={ROUTES.project} element={<ProjectPage />} />
           <Route path={ROUTES.projectResults} element={<ResultsPage />} />
+
           <Route element={<RoleRoute allowedRoles={["ADMIN"]} />}>
+            <Route path={ROUTES.repositories} element={<RepositoryOnboardPage />} />
             <Route path={ROUTES.repositoryOnboard} element={<RepositoryOnboardPage />} />
+            <Route path={ROUTES.repositoryDetail} element={<RepositoryPage />} />
           </Route>
+
           <Route element={<RoleRoute allowedRoles={["LEARNER"]} />}>
             <Route path={ROUTES.projectAssessment} element={<AssessmentPage />} />
           </Route>

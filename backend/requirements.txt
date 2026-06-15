@@ -9,3 +9,7 @@ python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.20
 alembic==1.14.0
+PyGithub==2.5.0
+gitpython==3.1.44
+chardet==5.2.0
+httpx==0.28.1
