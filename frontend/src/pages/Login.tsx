@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button, Input } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
 import { authService } from "../services/authService";
+import { useAuthStore } from "../store/authStore";
 import { UserRole } from "../types";
 import styles from "./Login.module.css";
 
@@ -102,6 +103,7 @@ function LoginPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
+  const loginUser = useAuthStore((state) => state.login);
 
   const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || ROUTES.dashboard;
 
@@ -122,7 +124,8 @@ function LoginPage() {
     const formData = new FormData(event.currentTarget);
     const email = String(formData.get("email") || "").trim();
     const password = String(formData.get("password") || "");
-    const name = String(formData.get("name") || "").trim();
+    const firstName = String(formData.get("first_name") || "").trim();
+    const lastName = String(formData.get("last_name") || "").trim();
     const code = String(formData.get("code") || "").trim();
     const confirmPassword = String(formData.get("confirmPassword") || "");
 
@@ -134,8 +137,8 @@ function LoginPage() {
       setError(identityError);
       return;
     }
-    if (mode === "signup" && !name) {
-      setError("Name is required");
+    if (mode === "signup" && !firstName) {
+      setError("First name is required");
       return;
     }
     if (mode === "reset" && !isValidPassword(password)) {
@@ -150,12 +153,24 @@ function LoginPage() {
     setIsLoading(true);
     try {
       if (mode === "login") {
-        await authService.login(email, password, rememberMe);
+        const response = await authService.login(email, password, rememberMe);
+        loginUser(
+          response.user,
+          { accessToken: response.token },
+          rememberMe,
+        );
         navigate(redirectTo, { replace: true });
       }
       if (mode === "signup") {
-        await authService.signup(name, email, password, role.toLowerCase());
-        navigate(ROUTES.dashboard, { replace: true });
+        const resp = await authService.signup({
+          first_name: firstName,
+          last_name: lastName || undefined,
+          email,
+          password,
+          role: role.toLowerCase() as UserRole,
+        });
+        setMessage(resp?.message || "Account created. Please sign in.");
+        setMode("login");
       }
       if (mode === "forgot") {
         const response = await authService.forgotPassword({ email });
@@ -205,7 +220,12 @@ function LoginPage() {
         </p>
 
         <form className={styles.form} onSubmit={handleSubmit}>
-          {mode === "signup" && <Input label="Full name" name="name" placeholder="Aarav Mehta" />}
+          {mode === "signup" && (
+            <>
+              <Input label="First name" name="first_name" placeholder="Aarav" />
+              <Input label="Last name" name="last_name" placeholder="Mehta" />
+            </>
+          )}
           <Input label="Email address" name="email" type="email" placeholder="admin@company.com" />
           {mode === "reset" && <Input label="Verification code" name="code" defaultValue={verificationCode} />}
           {mode !== "forgot" && (

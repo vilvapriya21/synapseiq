@@ -11,7 +11,7 @@ from app.core.config import settings
 from app.db.session import get_db
 from app.models.user import User
 
-password_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
