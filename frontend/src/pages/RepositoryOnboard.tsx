@@ -52,7 +52,10 @@ function RepositoryOnboardPage() {
   const [connectError, setConnectError] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [provider, setProvider] = useState<"github" | "gitlab" | "bitbucket" | "azure" | "upload">("github");
   const [githubStatus, setGithubStatus] = useState<"unknown" | "connected" | "disconnected">("unknown");
+  const [gitlabStatus, setGitlabStatus] = useState<"connected" | "disconnected" | "unknown">("unknown");
+  const [bitbucketStatus, setBitbucketStatus] = useState<"connected" | "disconnected" | "unknown">("unknown");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [azureStatus, setAzureStatus] = useState<"connected" | "disconnected" | "unknown">("unknown");
   const [azurePat, setAzurePat] = useState("");
@@ -82,6 +85,14 @@ function RepositoryOnboardPage() {
     apiClient.get("/auth/azure/status")
       .then((res) => setAzureStatus(res.data.connected ? "connected" : "disconnected"))
       .catch(() => setAzureStatus("disconnected"));
+
+    apiClient.get("/auth/gitlab/status")
+      .then(res => setGitlabStatus(res.data.connected ? "connected" : "disconnected"))
+      .catch(() => setGitlabStatus("disconnected"));
+
+    apiClient.get("/auth/bitbucket/status")
+      .then(res => setBitbucketStatus(res.data.connected ? "connected" : "disconnected"))
+      .catch(() => setBitbucketStatus("disconnected"));
   }, []);
 
   useEffect(() => {
@@ -89,6 +100,16 @@ function RepositoryOnboardPage() {
     if (params.get("github") === "connected") {
       setGithubStatus("connected");
       window.history.replaceState({}, "", location.pathname);
+    }
+
+    if (params.get("gitlab") === "connected") {
+      setGitlabStatus("connected");
+      setProvider("gitlab");
+    }
+
+    if (params.get("bitbucket") === "connected") {
+      setBitbucketStatus("connected");
+      setProvider("bitbucket");
     }
   }, []);
 
@@ -243,183 +264,375 @@ function RepositoryOnboardPage() {
         </div>
       </header>
 
-      <section className={styles.connectGrid}>
-        <form className={styles.card} onSubmit={handleConnect}>
-          <div className={styles.cardHeader}>
-            <div className={`${styles.iconBox} ${styles.githubIcon}`}>
-              <SquareCode size={22} />
-            </div>
-            <div>
-              <h2>GitHub</h2>
-              <p>Connect your GitHub account to access private repos</p>
-            </div>
+      <section className={styles.connectCard}>
+        <div className={styles.connectCardHeader}>
+          <div>
+            <h2>Connect Repository</h2>
+            <p>Select a source provider or upload a local ZIP archive</p>
           </div>
+        </div>
 
+        <div className={styles.providerTabs}>
           <button
-            className={styles.secondaryButton}
+            className={`${styles.providerTab} ${provider === "github" ? styles.providerTabActive : ""}`}
             type="button"
-            onClick={() => {
-              const stored = localStorage.getItem("synapseiq.auth");
-              const token = stored ? (JSON.parse(stored)?.state?.tokens?.accessToken ?? "") : "";
-              window.location.href = `${ENV.apiBaseUrl}/auth/github?token=${encodeURIComponent(token)}`;
-            }}
+            onClick={() => setProvider("github")}
           >
-            Connect GitHub Account
+            GitHub
           </button>
-
-          {githubStatus === "connected" ? (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
-                          background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 6,
-                          padding: "8px 12px", marginBottom: 8 }}>
-              <span style={{ color: "#15803D", fontSize: 13, fontWeight: 500 }}>
-                &#10003; GitHub connected &mdash; private repositories enabled
-              </span>
-              <button
-                type="button"
-                style={{ background: "none", border: "none", color: "#6B7280",
-                         fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
-                onClick={() => {
-                  apiClient.delete("/auth/github")
-                    .then(() => setGithubStatus("disconnected"))
-                    .catch(() => {});
-                }}
-              >
-                Disconnect
-              </button>
-            </div>
-          ) : githubStatus === "disconnected" ? (
-            <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 6,
-                          padding: "8px 12px", marginBottom: 8, fontSize: 13, color: "#92400E" }}>
-              &#9888; GitHub not connected &mdash; only public repositories will work
-            </div>
-          ) : null}
-
-          <div style={{ alignItems: "center", color: "#6b7280", display: "flex", gap: 10, fontSize: 12 }}>
-            <span style={{ background: "#e5e7eb", flex: 1, height: 1 }} />
-            <span>or enter a repository URL directly</span>
-            <span style={{ background: "#e5e7eb", flex: 1, height: 1 }} />
-          </div>
-
-          <div className={styles.formGrid}>
-            <input
-              className={styles.input}
-              type="text"
-              placeholder="https://github.com/org/repo"
-              value={url}
-              onChange={(event) => setUrl(event.target.value)}
-            />
-            <input
-              className={styles.input}
-              type="text"
-              placeholder="main"
-              value={branch}
-              onChange={(event) => setBranch(event.target.value)}
-            />
-          </div>
-
-          {connectError ? <p className={styles.error}>{connectError}</p> : null}
-
-          <button className={styles.primaryButton} type="submit" disabled={submitting}>
-            Connect Repository
+          <button
+            className={`${styles.providerTab} ${provider === "gitlab" ? styles.providerTabActive : ""}`}
+            type="button"
+            onClick={() => setProvider("gitlab")}
+          >
+            GitLab
           </button>
-        </form>
+          <button
+            className={`${styles.providerTab} ${provider === "bitbucket" ? styles.providerTabActive : ""}`}
+            type="button"
+            onClick={() => setProvider("bitbucket")}
+          >
+            Bitbucket
+          </button>
+          <button
+            className={`${styles.providerTab} ${provider === "azure" ? styles.providerTabActive : ""}`}
+            type="button"
+            onClick={() => setProvider("azure")}
+          >
+            Azure DevOps
+          </button>
+          <button
+            className={`${styles.providerTab} ${provider === "upload" ? styles.providerTabActive : ""}`}
+            type="button"
+            onClick={() => setProvider("upload")}
+          >
+            Upload ZIP
+          </button>
+        </div>
 
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <div className={`${styles.iconBox} ${styles.uploadIcon}`}>
-              <SquareCode size={22} />
+        {provider === "github" ? (
+          <form className={styles.providerPanel} onSubmit={handleConnect}>
+            <div className={styles.cardHeader}>
+              <div className={`${styles.iconBox} ${styles.githubIcon}`}>
+                <SquareCode size={22} />
+              </div>
+              <div>
+                <h2>GitHub</h2>
+                <p>Connect your GitHub account to access private repos</p>
+              </div>
             </div>
-            <div>
-              <h2>Azure DevOps</h2>
-              <p>Connect with a Personal Access Token</p>
-            </div>
-          </div>
 
-          {azureStatus === "connected" ? (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
-                          background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 6,
-                          padding: "8px 12px", marginBottom: 8 }}>
-              <span style={{ color: "#15803D", fontSize: 13, fontWeight: 500 }}>
-                &#10003; Azure DevOps connected
-              </span>
-              <button
-                type="button"
-                style={{ background: "none", border: "none", color: "#6B7280",
-                         fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
-                onClick={() => {
-                  apiClient.delete("/auth/azure")
-                    .then(() => setAzureStatus("disconnected"))
-                    .catch(() => {});
-                }}
-              >
-                Disconnect
-              </button>
+            <button
+              className={styles.oauthButton}
+              type="button"
+              onClick={() => {
+                const stored = localStorage.getItem("synapseiq.auth");
+                const token = stored ? (JSON.parse(stored)?.state?.tokens?.accessToken ?? "") : "";
+                window.location.href = `${ENV.apiBaseUrl}/auth/github?token=${encodeURIComponent(token)}`;
+              }}
+            >
+              Connect GitHub Account
+            </button>
+
+            {githubStatus === "connected" ? (
+              <div className={styles.connectedBanner}>
+                <span>&#10003; GitHub connected &mdash; private repositories enabled</span>
+                <button
+                  className={styles.disconnectLink}
+                  type="button"
+                  onClick={() => {
+                    apiClient.delete("/auth/github")
+                      .then(() => setGithubStatus("disconnected"))
+                      .catch(() => {});
+                  }}
+                >
+                  Disconnect
+                </button>
+              </div>
+            ) : githubStatus === "disconnected" ? (
+              <div className={styles.warningBanner}>
+                &#9888; GitHub not connected &mdash; only public repositories will work
+              </div>
+            ) : null}
+
+            <div className={styles.divider}>
+              <span />
+              <strong>or enter a repository URL directly</strong>
+              <span />
             </div>
-          ) : azureStatus === "disconnected" ? (
-            <>
+
+            <div className={styles.formGrid}>
               <input
                 className={styles.input}
-                type="password"
-                placeholder="Paste your Azure DevOps Personal Access Token"
-                value={azurePat}
-                onChange={(event) => setAzurePat(event.target.value)}
+                type="text"
+                placeholder="https://github.com/org/repo"
+                value={url}
+                onChange={(event) => setUrl(event.target.value)}
               />
-              <button
-                className={styles.secondaryButton}
-                type="button"
-                onClick={handleSaveAzurePat}
-                disabled={azurePatSaving}
-              >
-                Save PAT
-              </button>
-              <p style={{ color: "#6B7280", fontSize: 12, margin: 0 }}>
-                Generate at dev.azure.com &rarr; User Settings &rarr; Personal Access Tokens. Needs Code (Read) scope.
-              </p>
-            </>
-          ) : null}
-        </div>
-
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <div className={`${styles.iconBox} ${styles.uploadIcon}`}>
-              <CloudUpload size={22} />
+              <input
+                className={styles.input}
+                type="text"
+                placeholder="main"
+                value={branch}
+                onChange={(event) => setBranch(event.target.value)}
+              />
             </div>
-            <div>
-              <h2>Upload Local Project</h2>
-              <p>ZIP or folder upload</p>
+
+            {connectError ? <p className={styles.error}>{connectError}</p> : null}
+
+            <button className={styles.primaryButton} type="submit" disabled={submitting}>
+              Connect Repository
+            </button>
+          </form>
+        ) : null}
+
+        {provider === "gitlab" ? (
+          <form className={styles.providerPanel} onSubmit={handleConnect}>
+            <div className={styles.cardHeader}>
+              <div className={`${styles.iconBox} ${styles.uploadIcon}`}>
+                <SquareCode size={22} />
+              </div>
+              <div>
+                <h2>GitLab</h2>
+                <p>Connect your GitLab account to access private repos</p>
+              </div>
             </div>
+
+            <button
+              className={styles.oauthButton}
+              type="button"
+              onClick={() => {
+                const stored = localStorage.getItem("synapseiq.auth");
+                const token = stored ? (JSON.parse(stored)?.state?.tokens?.accessToken ?? "") : "";
+                window.location.href = `${ENV.apiBaseUrl}/auth/gitlab?token=${encodeURIComponent(token)}`;
+              }}
+            >
+              Connect GitLab Account
+            </button>
+
+            {gitlabStatus === "connected" ? (
+              <div className={styles.connectedBanner}>
+                <span>&#10003; GitLab connected &mdash; private repositories enabled</span>
+                <button
+                  className={styles.disconnectLink}
+                  type="button"
+                  onClick={() => {
+                    apiClient.delete("/auth/gitlab")
+                      .then(() => setGitlabStatus("disconnected"))
+                      .catch(() => {});
+                  }}
+                >
+                  Disconnect
+                </button>
+              </div>
+            ) : gitlabStatus === "disconnected" ? (
+              <div className={styles.warningBanner}>
+                &#9888; GitLab not connected &mdash; only public repositories will work
+              </div>
+            ) : null}
+
+            <div className={styles.divider}>
+              <span />
+              <strong>or enter a repository URL directly</strong>
+              <span />
+            </div>
+
+            <div className={styles.formGrid}>
+              <input
+                className={styles.input}
+                type="text"
+                placeholder="https://gitlab.com/org/repo"
+                value={url}
+                onChange={(event) => setUrl(event.target.value)}
+              />
+              <input
+                className={styles.input}
+                type="text"
+                placeholder="main"
+                value={branch}
+                onChange={(event) => setBranch(event.target.value)}
+              />
+            </div>
+
+            {connectError ? <p className={styles.error}>{connectError}</p> : null}
+
+            <button className={styles.primaryButton} type="submit" disabled={submitting}>
+              Connect Repository
+            </button>
+          </form>
+        ) : null}
+
+        {provider === "bitbucket" ? (
+          <form className={styles.providerPanel} onSubmit={handleConnect}>
+            <div className={styles.cardHeader}>
+              <div className={`${styles.iconBox} ${styles.uploadIcon}`}>
+                <SquareCode size={22} />
+              </div>
+              <div>
+                <h2>Bitbucket</h2>
+                <p>Connect your Bitbucket account to access private repos</p>
+              </div>
+            </div>
+
+            <button
+              className={styles.oauthButton}
+              type="button"
+              onClick={() => {
+                const stored = localStorage.getItem("synapseiq.auth");
+                const token = stored ? (JSON.parse(stored)?.state?.tokens?.accessToken ?? "") : "";
+                window.location.href = `${ENV.apiBaseUrl}/auth/bitbucket?token=${encodeURIComponent(token)}`;
+              }}
+            >
+              Connect Bitbucket Account
+            </button>
+
+            {bitbucketStatus === "connected" ? (
+              <div className={styles.connectedBanner}>
+                <span>&#10003; Bitbucket connected &mdash; private repositories enabled</span>
+                <button
+                  className={styles.disconnectLink}
+                  type="button"
+                  onClick={() => {
+                    apiClient.delete("/auth/bitbucket")
+                      .then(() => setBitbucketStatus("disconnected"))
+                      .catch(() => {});
+                  }}
+                >
+                  Disconnect
+                </button>
+              </div>
+            ) : bitbucketStatus === "disconnected" ? (
+              <div className={styles.warningBanner}>
+                &#9888; Bitbucket not connected &mdash; only public repositories will work
+              </div>
+            ) : null}
+
+            <div className={styles.divider}>
+              <span />
+              <strong>or enter a repository URL directly</strong>
+              <span />
+            </div>
+
+            <div className={styles.formGrid}>
+              <input
+                className={styles.input}
+                type="text"
+                placeholder="https://bitbucket.org/org/repo"
+                value={url}
+                onChange={(event) => setUrl(event.target.value)}
+              />
+              <input
+                className={styles.input}
+                type="text"
+                placeholder="main"
+                value={branch}
+                onChange={(event) => setBranch(event.target.value)}
+              />
+            </div>
+
+            {connectError ? <p className={styles.error}>{connectError}</p> : null}
+
+            <button className={styles.primaryButton} type="submit" disabled={submitting}>
+              Connect Repository
+            </button>
+          </form>
+        ) : null}
+
+        {provider === "azure" ? (
+          <div className={styles.providerPanel}>
+            <div className={styles.cardHeader}>
+              <div className={`${styles.iconBox} ${styles.uploadIcon}`}>
+                <SquareCode size={22} />
+              </div>
+              <div>
+                <h2>Azure DevOps</h2>
+                <p>Connect with a Personal Access Token</p>
+              </div>
+            </div>
+
+            {azureStatus === "connected" ? (
+              <div className={styles.connectedBanner}>
+                <span>&#10003; Azure DevOps connected</span>
+                <button
+                  className={styles.disconnectLink}
+                  type="button"
+                  onClick={() => {
+                    apiClient.delete("/auth/azure")
+                      .then(() => setAzureStatus("disconnected"))
+                      .catch(() => {});
+                  }}
+                >
+                  Disconnect
+                </button>
+              </div>
+            ) : azureStatus === "disconnected" ? (
+              <>
+                <input
+                  className={styles.input}
+                  type="password"
+                  placeholder="Paste your Azure DevOps Personal Access Token"
+                  value={azurePat}
+                  onChange={(event) => setAzurePat(event.target.value)}
+                />
+                <button
+                  className={styles.secondaryButton}
+                  type="button"
+                  onClick={handleSaveAzurePat}
+                  disabled={azurePatSaving}
+                >
+                  Save PAT
+                </button>
+                <p className={styles.helperText}>
+                  Generate at dev.azure.com &rarr; User Settings &rarr; Personal Access Tokens. Needs Code (Read) scope.
+                </p>
+              </>
+            ) : null}
           </div>
+        ) : null}
 
-          <div
-            className={`${styles.dropZone} ${dragActive ? styles.dropZoneActive : ""}`}
-            onDragOver={(event) => {
-              event.preventDefault();
-              setDragActive(true);
-            }}
-            onDragLeave={() => setDragActive(false)}
-            onDrop={(event) => {
-              event.preventDefault();
-              handleUpload(event.dataTransfer.files[0]);
-            }}
-          >
-            <CloudUpload size={30} />
-            <strong>Drag &amp; drop your project folder</strong>
-            <span>or click to browse &middot; Max 2GB</span>
+        {provider === "upload" ? (
+          <div className={styles.providerPanel}>
+            <div className={styles.cardHeader}>
+              <div className={`${styles.iconBox} ${styles.uploadIcon}`}>
+                <CloudUpload size={22} />
+              </div>
+              <div>
+                <h2>Upload Local Project</h2>
+                <p>ZIP or folder upload</p>
+              </div>
+            </div>
+
+            <div
+              className={`${styles.dropZone} ${dragActive ? styles.dropZoneActive : ""}`}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragActive(true);
+              }}
+              onDragLeave={() => setDragActive(false)}
+              onDrop={(event) => {
+                event.preventDefault();
+                handleUpload(event.dataTransfer.files[0]);
+              }}
+            >
+              <CloudUpload size={30} />
+              <strong>Drag &amp; drop your project folder</strong>
+              <span>or click to browse &middot; Max 2GB</span>
+            </div>
+
+            {uploadError ? <p className={styles.error}>{uploadError}</p> : null}
+
+            <input
+              ref={fileInputRef}
+              className={styles.hiddenInput}
+              type="file"
+              accept=".zip"
+              onChange={(event) => handleUpload(event.target.files?.[0])}
+            />
+            <button className={styles.secondaryButton} type="button" onClick={() => fileInputRef.current?.click()}>
+              Browse Files
+            </button>
           </div>
-
-          {uploadError ? <p className={styles.error}>{uploadError}</p> : null}
-
-          <input
-            ref={fileInputRef}
-            className={styles.hiddenInput}
-            type="file"
-            accept=".zip"
-            onChange={(event) => handleUpload(event.target.files?.[0])}
-          />
-          <button className={styles.secondaryButton} type="button" onClick={() => fileInputRef.current?.click()}>
-            Browse Files
-          </button>
-        </div>
+        ) : null}
       </section>
 
       <section className={styles.repositoryCard}>

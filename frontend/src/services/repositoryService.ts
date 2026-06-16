@@ -42,6 +42,12 @@ export interface KnowledgeBaseResponse {
   total: number;
 }
 
+export interface RepositoryAssignment {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export const connectRepository = async (url: string, branch: string): Promise<Repository> => {
   const { data } = await apiClient.post<Repository>("/repositories/connect", { url, branch });
   return data;
@@ -76,6 +82,24 @@ export const getRepository = async (repoId: string): Promise<Repository> => {
 
 export const deleteRepository = async (repoId: string): Promise<void> => {
   await apiClient.delete(`/repositories/${repoId}`);
+};
+
+export const getAssignedRepositories = async (): Promise<RepositoryListResponse> => {
+  const response = await apiClient.get<RepositoryListResponse>("/repositories/assigned");
+  return response.data;
+};
+
+export const getRepositoryAssignments = async (repoId: string): Promise<RepositoryAssignment[]> => {
+  const response = await apiClient.get<RepositoryAssignment[]>(`/repositories/${repoId}/assignments`);
+  return response.data;
+};
+
+export const assignLearner = async (repoId: string, learnerId: string): Promise<void> => {
+  await apiClient.post(`/repositories/${repoId}/assign`, { learner_id: learnerId });
+};
+
+export const unassignLearner = async (repoId: string, learnerId: string): Promise<void> => {
+  await apiClient.delete(`/repositories/${repoId}/assign/${learnerId}`);
 };
 
 export async function getKnowledgeBase(repoId: string, entryType?: string): Promise<KnowledgeBaseResponse> {

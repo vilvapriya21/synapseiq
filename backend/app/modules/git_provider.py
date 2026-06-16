@@ -69,7 +69,7 @@ def build_authenticated_url(url: str, token: str | None, provider: str) -> str:
         return authenticated + ".git"
 
     if provider == "bitbucket":
-        # Bitbucket uses x-token-auth for app passwords / OAuth tokens
+        # Bitbucket OAuth access tokens use x-token-auth format
         authenticated = base.replace(
             "https://bitbucket.org/",
             f"https://x-token-auth:{token}@bitbucket.org/",

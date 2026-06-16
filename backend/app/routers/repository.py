@@ -92,6 +92,8 @@ def connect_repository(
         db,
         current_user.github_access_token,
         current_user.azure_devops_token,
+        current_user.gitlab_access_token,
+        current_user.bitbucket_access_token,
     )
     return repository
 
@@ -165,6 +167,8 @@ def refresh_repository(
         db,
         current_user.github_access_token,
         current_user.azure_devops_token,
+        current_user.gitlab_access_token,
+        current_user.bitbucket_access_token,
     )
     return repository
 

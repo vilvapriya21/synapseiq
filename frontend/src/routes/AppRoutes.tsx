@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import AuthLayout from "../layouts/AuthLayout";
 import DashboardLayout from "../layouts/DashboardLayout";
 import LoginPage from "../pages/Login";
+import AdminUsersPage from "../pages/AdminUsers";
 import DashboardPage from "../pages/Dashboard";
 import RepositoryPage from "../pages/Repository";
 import RepositoryOnboardPage from "../pages/RepositoryOnboard";
@@ -25,11 +26,12 @@ function AppRoutes() {
           <Route path={ROUTES.dashboard} element={<DashboardPage />} />
           <Route path={ROUTES.project} element={<ProjectPage />} />
           <Route path={ROUTES.projectResults} element={<ResultsPage />} />
+          <Route path={ROUTES.repositoryDetail} element={<RepositoryPage />} />
 
           <Route element={<RoleRoute allowedRoles={["ADMIN"]} />}>
+            <Route path={ROUTES.adminUsers} element={<AdminUsersPage />} />
             <Route path={ROUTES.repositories} element={<RepositoryOnboardPage />} />
             <Route path={ROUTES.repositoryOnboard} element={<RepositoryOnboardPage />} />
-            <Route path={ROUTES.repositoryDetail} element={<RepositoryPage />} />
           </Route>
 
           <Route element={<RoleRoute allowedRoles={["LEARNER"]} />}>

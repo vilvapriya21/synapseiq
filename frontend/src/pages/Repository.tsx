@@ -1,14 +1,21 @@
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { EmptyState } from "../components/common";
+import { getUsers, type AdminUser } from "../services/adminService";
 import {
+  assignLearner,
   getKnowledgeBase,
   getRepository,
+  getRepositoryAssignments,
   refreshRepository,
+  unassignLearner,
   type KnowledgeBaseEntry,
   type KnowledgeBaseResponse,
   type Repository,
+  type RepositoryAssignment,
 } from "../services/repositoryService";
+import { useAuthStore } from "../store/authStore";
+import { normalizeRole } from "../utils/roles";
 import styles from "./Repository.module.css";
 
 type TabKey = "file_tree" | "readme" | "dependencies";
@@ -53,12 +60,32 @@ function formatDate(value?: string) {
 function RepositoryPage() {
   const { repoId } = useParams();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const role = normalizeRole(user?.roles[0]);
   const [repository, setRepository] = useState<Repository | null>(null);
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBaseResponse | null>(null);
+  const [assignments, setAssignments] = useState<RepositoryAssignment[]>([]);
+  const [learnerEmail, setLearnerEmail] = useState("");
+  const [assignmentError, setAssignmentError] = useState("");
+  const [assignmentSaving, setAssignmentSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("file_tree");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+
+  const fetchAssignments = async () => {
+    if (!repoId || role !== "ADMIN") {
+      return;
+    }
+
+    try {
+      const response = await getRepositoryAssignments(repoId);
+      setAssignments(response);
+      setAssignmentError("");
+    } catch {
+      setAssignmentError("Unable to load assigned learners.");
+    }
+  };
 
   const fetchRepositoryData = async () => {
     if (!repoId) {
@@ -83,7 +110,8 @@ function RepositoryPage() {
 
   useEffect(() => {
     fetchRepositoryData();
-  }, [repoId]);
+    fetchAssignments();
+  }, [repoId, role]);
 
   useEffect(() => {
     const shouldPoll =
@@ -113,6 +141,54 @@ function RepositoryPage() {
       await fetchRepositoryData();
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const handleAssignLearner = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!repoId || !learnerEmail.trim()) {
+      return;
+    }
+
+    setAssignmentSaving(true);
+    setAssignmentError("");
+    try {
+      const users = await getUsers();
+      const learner = users.find(
+        (candidate: AdminUser) =>
+          candidate.role === "learner" &&
+          candidate.email.toLowerCase() === learnerEmail.trim().toLowerCase(),
+      );
+      if (!learner) {
+        setAssignmentError("Learner not found for that email.");
+        return;
+      }
+
+      await assignLearner(repoId, learner.id);
+      setLearnerEmail("");
+      await fetchAssignments();
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string } } };
+      setAssignmentError(axiosError.response?.data?.detail || "Unable to assign learner.");
+    } finally {
+      setAssignmentSaving(false);
+    }
+  };
+
+  const handleUnassignLearner = async (learnerId: string) => {
+    if (!repoId) {
+      return;
+    }
+
+    setAssignmentSaving(true);
+    setAssignmentError("");
+    try {
+      await unassignLearner(repoId, learnerId);
+      await fetchAssignments();
+    } catch {
+      setAssignmentError("Unable to unassign learner.");
+    } finally {
+      setAssignmentSaving(false);
     }
   };
 
@@ -229,31 +305,76 @@ function RepositoryPage() {
           ) : null}
         </article>
 
-        <aside className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h2>Repository Info</h2>
+        <aside className={styles.sideColumn}>
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h2>Repository Info</h2>
+            </div>
+            <dl className={styles.infoList}>
+              <div>
+                <dt>Created</dt>
+                <dd>{formatDate(repository.created_at)}</dd>
+              </div>
+              <div>
+                <dt>Source type</dt>
+                <dd>{repository.source_type}</dd>
+              </div>
+              <div>
+                <dt>Branch</dt>
+                <dd>{repository.branch || "-"}</dd>
+              </div>
+              <div>
+                <dt>Knowledge base entries</dt>
+                <dd>{knowledgeBase?.total ?? 0}</dd>
+              </div>
+            </dl>
+            <button className={styles.outlineButton} type="button" onClick={handleReanalyze} disabled={refreshing}>
+              Re-analyze
+            </button>
           </div>
-          <dl className={styles.infoList}>
-            <div>
-              <dt>Created</dt>
-              <dd>{formatDate(repository.created_at)}</dd>
+
+          {role === "ADMIN" ? (
+            <div className={styles.card}>
+              <div className={styles.cardHeader}>
+                <h2>Assigned Learners</h2>
+              </div>
+
+              <div className={styles.assignmentList}>
+                {assignments.map((learner) => (
+                  <div className={styles.assignmentItem} key={learner.id}>
+                    <div>
+                      <strong>{learner.name}</strong>
+                      <span>{learner.email}</span>
+                    </div>
+                    <button
+                      className={styles.dangerButton}
+                      type="button"
+                      onClick={() => handleUnassignLearner(learner.id)}
+                      disabled={assignmentSaving}
+                    >
+                      Unassign
+                    </button>
+                  </div>
+                ))}
+                {assignments.length === 0 ? <p className={styles.muted}>No learners assigned yet.</p> : null}
+              </div>
+
+              <form className={styles.assignForm} onSubmit={handleAssignLearner}>
+                <input
+                  className={styles.input}
+                  type="email"
+                  placeholder="Learner email"
+                  value={learnerEmail}
+                  onChange={(event) => setLearnerEmail(event.target.value)}
+                />
+                <button className={styles.outlineButton} type="submit" disabled={assignmentSaving}>
+                  Assign Learner
+                </button>
+              </form>
+
+              {assignmentError ? <p className={styles.errorText}>{assignmentError}</p> : null}
             </div>
-            <div>
-              <dt>Source type</dt>
-              <dd>{repository.source_type}</dd>
-            </div>
-            <div>
-              <dt>Branch</dt>
-              <dd>{repository.branch || "-"}</dd>
-            </div>
-            <div>
-              <dt>Knowledge base entries</dt>
-              <dd>{knowledgeBase?.total ?? 0}</dd>
-            </div>
-          </dl>
-          <button className={styles.outlineButton} type="button" onClick={handleReanalyze} disabled={refreshing}>
-            Re-analyze
-          </button>
+          ) : null}
         </aside>
       </section>
     </div>

@@ -212,6 +212,8 @@ def analyze_repository(
     db: Session,
     github_token: str | None = None,
     azure_token: str | None = None,
+    gitlab_token: str | None = None,
+    bitbucket_token: str | None = None,
 ) -> None:
     print(f"[REPO_ANALYSIS] start repo_id={repo_id}")
     repository = db.get(Repository, repo_id)
@@ -234,7 +236,13 @@ def analyze_repository(
     try:
         if repository.source_type == "github" or repository.source_type == "git":
             print(f"[AUTH] building_authenticated_url repo_id={repo_id}")
-            token_for_provider = azure_token if repository.provider == "azure" else github_token
+            token_map = {
+                "github": github_token,
+                "azure": azure_token,
+                "gitlab": gitlab_token,
+                "bitbucket": bitbucket_token,
+            }
+            token_for_provider = token_map.get(repository.provider)
             auth_url = build_authenticated_url(
                 repository.url,
                 token_for_provider,
