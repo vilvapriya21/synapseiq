@@ -81,3 +81,29 @@ def github_disconnect(
 ) -> None:
     current_user.github_access_token = None
     db.commit()
+
+
+@router.post("/auth/azure/pat")
+def azure_pat_connect(
+    pat: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Store user's Azure DevOps Personal Access Token."""
+    current_user.azure_devops_token = pat
+    db.commit()
+    return {"message": "Azure DevOps PAT saved"}
+
+
+@router.get("/auth/azure/status")
+def azure_status(current_user: User = Depends(get_current_user)) -> dict:
+    return {"connected": current_user.azure_devops_token is not None}
+
+
+@router.delete("/auth/azure", status_code=status.HTTP_204_NO_CONTENT)
+def azure_disconnect(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    current_user.azure_devops_token = None
+    db.commit()

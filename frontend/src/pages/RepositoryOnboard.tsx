@@ -54,6 +54,9 @@ function RepositoryOnboardPage() {
   const [submitting, setSubmitting] = useState(false);
   const [githubStatus, setGithubStatus] = useState<"unknown" | "connected" | "disconnected">("unknown");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [azureStatus, setAzureStatus] = useState<"connected" | "disconnected" | "unknown">("unknown");
+  const [azurePat, setAzurePat] = useState("");
+  const [azurePatSaving, setAzurePatSaving] = useState(false);
 
   const fetchRepositories = async () => {
     setLoading(true);
@@ -75,6 +78,10 @@ function RepositoryOnboardPage() {
         setGithubStatus(res.data.connected ? "connected" : "disconnected");
       })
       .catch(() => setGithubStatus("disconnected"));
+
+    apiClient.get("/auth/azure/status")
+      .then((res) => setAzureStatus(res.data.connected ? "connected" : "disconnected"))
+      .catch(() => setAzureStatus("disconnected"));
   }, []);
 
   useEffect(() => {
@@ -213,6 +220,20 @@ function RepositoryOnboardPage() {
     }
   };
 
+  const handleSaveAzurePat = async () => {
+    if (!azurePat.trim()) return;
+    setAzurePatSaving(true);
+    try {
+      await apiClient.post(`/auth/azure/pat?pat=${encodeURIComponent(azurePat)}`);
+      setAzureStatus("connected");
+      setAzurePat("");
+    } catch {
+      setConnectError("Failed to save Azure PAT.");
+    } finally {
+      setAzurePatSaving(false);
+    }
+  };
+
   return (
     <div className={styles.page}>
       <header className={styles.hero}>
@@ -302,6 +323,61 @@ function RepositoryOnboardPage() {
             Connect Repository
           </button>
         </form>
+
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={`${styles.iconBox} ${styles.uploadIcon}`}>
+              <SquareCode size={22} />
+            </div>
+            <div>
+              <h2>Azure DevOps</h2>
+              <p>Connect with a Personal Access Token</p>
+            </div>
+          </div>
+
+          {azureStatus === "connected" ? (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+                          background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 6,
+                          padding: "8px 12px", marginBottom: 8 }}>
+              <span style={{ color: "#15803D", fontSize: 13, fontWeight: 500 }}>
+                &#10003; Azure DevOps connected
+              </span>
+              <button
+                type="button"
+                style={{ background: "none", border: "none", color: "#6B7280",
+                         fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
+                onClick={() => {
+                  apiClient.delete("/auth/azure")
+                    .then(() => setAzureStatus("disconnected"))
+                    .catch(() => {});
+                }}
+              >
+                Disconnect
+              </button>
+            </div>
+          ) : azureStatus === "disconnected" ? (
+            <>
+              <input
+                className={styles.input}
+                type="password"
+                placeholder="Paste your Azure DevOps Personal Access Token"
+                value={azurePat}
+                onChange={(event) => setAzurePat(event.target.value)}
+              />
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                onClick={handleSaveAzurePat}
+                disabled={azurePatSaving}
+              >
+                Save PAT
+              </button>
+              <p style={{ color: "#6B7280", fontSize: 12, margin: 0 }}>
+                Generate at dev.azure.com &rarr; User Settings &rarr; Personal Access Tokens. Needs Code (Read) scope.
+              </p>
+            </>
+          ) : null}
+        </div>
 
         <div className={styles.card}>
           <div className={styles.cardHeader}>

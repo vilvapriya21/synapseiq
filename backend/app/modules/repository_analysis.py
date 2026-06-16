@@ -207,7 +207,12 @@ def build_knowledge_base(repository: Repository, root: Path, file_paths: list[Pa
         db.commit()
 
 
-def analyze_repository(repo_id: str, db: Session, github_token: str | None = None) -> None:
+def analyze_repository(
+    repo_id: str,
+    db: Session,
+    github_token: str | None = None,
+    azure_token: str | None = None,
+) -> None:
     print(f"[REPO_ANALYSIS] start repo_id={repo_id}")
     repository = db.get(Repository, repo_id)
     if repository is None:
@@ -229,9 +234,10 @@ def analyze_repository(repo_id: str, db: Session, github_token: str | None = Non
     try:
         if repository.source_type == "github" or repository.source_type == "git":
             print(f"[AUTH] building_authenticated_url repo_id={repo_id}")
+            token_for_provider = azure_token if repository.provider == "azure" else github_token
             auth_url = build_authenticated_url(
                 repository.url,
-                github_token,
+                token_for_provider,
                 repository.provider,
             )
             print(f"[AUTH] authenticated_url={mask_credentials(auth_url)} credentials_injected={'@' in auth_url.split('://', 1)[-1].split('/', 1)[0]}")
