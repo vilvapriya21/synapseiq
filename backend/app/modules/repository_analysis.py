@@ -292,6 +292,14 @@ def analyze_repository(
             file_paths,
             db,
         )
+        if repository.source_type == "upload":
+            # Clean up the uploaded ZIP — we've extracted what we need into the knowledge base
+            upload_path = Path("uploaded_repos") / f"{repo_id}.zip"
+            if upload_path.exists():
+                try:
+                    upload_path.unlink()
+                except OSError:
+                    pass  # Non-critical — don't fail the analysis if cleanup fails
     except Exception as exc:
         print(f"[ERROR] repository_analysis_failed repo_id={repo_id} reason={exc}")
         repository.status = "error"

@@ -4,7 +4,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button, Input } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
 import { authService } from "../services/authService";
-import { useAuthStore } from "../store/authStore";
 import { UserRole } from "../types";
 import styles from "./Login.module.css";
 
@@ -96,7 +95,6 @@ function PasswordField({ label, name, placeholder, showHint = false }: PasswordF
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const login = useAuthStore((state) => state.login);
   const [mode, setMode] = useState<AuthMode>("login");
   const [role, setRole] = useState<UserRole>("ADMIN");
   const [isLoading, setIsLoading] = useState(false);
@@ -147,13 +145,11 @@ function LoginPage() {
     setIsLoading(true);
     try {
       if (mode === "login") {
-        const response = await authService.login({ email, password });
-        login(response.user, { accessToken: response.token }, rememberMe);
+        await authService.login(email, password, rememberMe);
         navigate(redirectTo, { replace: true });
       }
       if (mode === "signup") {
-        const response = await authService.signup({ email, password, name, role });
-        login(response.user, { accessToken: response.token }, rememberMe);
+        await authService.signup(name, email, password, role.toLowerCase());
         navigate(ROUTES.dashboard, { replace: true });
       }
       if (mode === "forgot") {
