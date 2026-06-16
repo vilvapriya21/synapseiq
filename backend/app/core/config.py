@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import AnyHttpUrl, Field
+from pydantic import AnyHttpUrl, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,13 +8,27 @@ class Settings(BaseSettings):
     app_name: str = "SynapseIQ"
     app_env: str = "development"
     api_v1_prefix: str = "/api/v1"
-    database_url: str = "sqlite:///./synapseiq.db"
+    database_url: str = Field(default="", description="PostgreSQL connection URL (NeonDB)")
     jwt_secret_key: str = Field(default="change-me", min_length=8)
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
     github_client_id: str = Field(default="")
     github_client_secret: str = Field(default="")
+    gitlab_client_id: str = Field(default="")
+    gitlab_client_secret: str = Field(default="")
+    bitbucket_client_id: str = Field(default="")
+    bitbucket_client_secret: str = Field(default="")
     backend_cors_origins: list[AnyHttpUrl] | list[str] = ["http://localhost:5173"]
+
+    @field_validator("database_url")
+    @classmethod
+    def database_url_must_be_set(cls, v: str) -> str:
+        if not v:
+            raise ValueError(
+                "DATABASE_URL is not set. Add it to backend/.env — "
+                "get the connection string from your NeonDB dashboard."
+            )
+        return v
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

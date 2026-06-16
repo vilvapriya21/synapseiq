@@ -8,6 +8,7 @@ import styles from "./DashboardLayout.module.css";
 const navigation: Array<{ label: string; roles: UserRole[]; to: string }> = [
   { label: "Dashboard", roles: ["ADMIN", "LEARNER"], to: ROUTES.dashboard },
   { label: "Repository Onboarding", roles: ["ADMIN"], to: ROUTES.repositoryOnboard },
+  { label: "User Management", roles: ["ADMIN"], to: ROUTES.adminUsers },
 ];
 
 function DashboardLayout() {

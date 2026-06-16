@@ -87,6 +87,11 @@
   gap: 16px;
 }
 
+.sideColumn {
+  display: grid;
+  gap: 16px;
+}
+
 .cardHeader {
   display: flex;
   align-items: center;
@@ -242,6 +247,76 @@
 .outlineButton:disabled {
   cursor: not-allowed;
   opacity: 0.65;
+}
+
+.input {
+  width: 100%;
+  height: 40px;
+  box-sizing: border-box;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #111827;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.assignmentList {
+  display: grid;
+  gap: 10px;
+}
+
+.assignmentItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #edf1f6;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.assignmentItem strong,
+.assignmentItem span {
+  display: block;
+}
+
+.assignmentItem strong {
+  color: #111827;
+  font-size: 13px;
+}
+
+.assignmentItem span {
+  margin-top: 2px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.assignForm {
+  display: grid;
+  gap: 10px;
+}
+
+.dangerButton {
+  cursor: pointer;
+  border: 1px solid #fca5a5;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #dc2626;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dangerButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.errorText {
+  margin: 0;
+  color: #dc2626;
+  font-size: 13px;
 }
 
 .state {

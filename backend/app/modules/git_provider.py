@@ -69,10 +69,20 @@ def build_authenticated_url(url: str, token: str | None, provider: str) -> str:
         return authenticated + ".git"
 
     if provider == "bitbucket":
-        # Bitbucket uses x-token-auth for app passwords / OAuth tokens
+        # Bitbucket OAuth access tokens use x-token-auth format
         authenticated = base.replace(
             "https://bitbucket.org/",
             f"https://x-token-auth:{token}@bitbucket.org/",
+            1,
+        )
+        return authenticated + ".git"
+
+    if provider == "azure":
+        # Azure DevOps uses Basic Auth with any username and PAT as password
+        # Format: https://user:{pat}@dev.azure.com/org/project/_git/repo
+        authenticated = base.replace(
+            "https://dev.azure.com/",
+            f"https://SynapseIQ:{token}@dev.azure.com/",
             1,
         )
         return authenticated + ".git"

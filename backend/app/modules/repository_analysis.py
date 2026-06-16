@@ -207,7 +207,14 @@ def build_knowledge_base(repository: Repository, root: Path, file_paths: list[Pa
         db.commit()
 
 
-def analyze_repository(repo_id: str, db: Session, github_token: str | None = None) -> None:
+def analyze_repository(
+    repo_id: str,
+    db: Session,
+    github_token: str | None = None,
+    azure_token: str | None = None,
+    gitlab_token: str | None = None,
+    bitbucket_token: str | None = None,
+) -> None:
     print(f"[REPO_ANALYSIS] start repo_id={repo_id}")
     repository = db.get(Repository, repo_id)
     if repository is None:
@@ -229,9 +236,16 @@ def analyze_repository(repo_id: str, db: Session, github_token: str | None = Non
     try:
         if repository.source_type == "github" or repository.source_type == "git":
             print(f"[AUTH] building_authenticated_url repo_id={repo_id}")
+            token_map = {
+                "github": github_token,
+                "azure": azure_token,
+                "gitlab": gitlab_token,
+                "bitbucket": bitbucket_token,
+            }
+            token_for_provider = token_map.get(repository.provider)
             auth_url = build_authenticated_url(
                 repository.url,
-                github_token,
+                token_for_provider,
                 repository.provider,
             )
             print(f"[AUTH] authenticated_url={mask_credentials(auth_url)} credentials_injected={'@' in auth_url.split('://', 1)[-1].split('/', 1)[0]}")
@@ -278,6 +292,14 @@ def analyze_repository(repo_id: str, db: Session, github_token: str | None = Non
             file_paths,
             db,
         )
+        if repository.source_type == "upload":
+            # Clean up the uploaded ZIP — we've extracted what we need into the knowledge base
+            upload_path = Path("uploaded_repos") / f"{repo_id}.zip"
+            if upload_path.exists():
+                try:
+                    upload_path.unlink()
+                except OSError:
+                    pass  # Non-critical — don't fail the analysis if cleanup fails
     except Exception as exc:
         print(f"[ERROR] repository_analysis_failed repo_id={repo_id} reason={exc}")
         repository.status = "error"
