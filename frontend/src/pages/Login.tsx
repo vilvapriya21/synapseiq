@@ -107,6 +107,11 @@ function LoginPage() {
 
   const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || ROUTES.dashboard;
 
+  const clearAlerts = () => {
+    setError("");
+    setMessage("");
+  };
+
   const validateIdentity = (email: string, password?: string) => {
     if (!email) return "Email is required";
     if (!emailPattern.test(email)) return "Enter a valid email address";
@@ -240,7 +245,14 @@ function LoginPage() {
                 <input checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} type="checkbox" />
                 Remember me
               </label>
-              <button className={styles.link} onClick={() => setMode("forgot")} type="button">
+              <button
+                className={styles.link}
+                onClick={() => {
+                  clearAlerts();
+                  setMode("forgot");
+                }}
+                type="button"
+              >
                 Forgot password?
               </button>
             </div>
@@ -259,7 +271,14 @@ function LoginPage() {
 
         <p className={styles.footer}>
           {mode === "login" ? "No account yet? " : "Already have an account? "}
-          <button className={styles.link} onClick={() => setMode(mode === "login" ? "signup" : "login")} type="button">
+          <button
+            className={styles.link}
+            onClick={() => {
+              clearAlerts();
+              setMode(mode === "login" ? "signup" : "login");
+            }}
+            type="button"
+          >
             {mode === "login" ? "Sign up" : "Sign in"}
           </button>
         </p>
