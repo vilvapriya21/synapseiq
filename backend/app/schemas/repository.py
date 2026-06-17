@@ -48,6 +48,29 @@ class KnowledgeBaseResponse(BaseModel):
     total: int
 
 
+class RepositoryFileResponse(BaseModel):
+    repository_id: str
+    path: str
+    entry_type: str
+    content: str
+    mime_type: Optional[str] = None
+    size: int
+
+
+class RepositoryUploadResponse(BaseModel):
+    id: str
+    filename: str
+    content_type: Optional[str] = None
+    size: int
+    uploaded_at: datetime
+    uploaded_by: str
+
+
+class RepositoryUploadListResponse(BaseModel):
+    uploads: list[RepositoryUploadResponse]
+    total: int
+
+
 class ContributorResponse(BaseModel):
     id: str
     name: str
@@ -65,15 +88,15 @@ class ContributorListResponse(BaseModel):
 
 
 class AssignLearnerRequest(BaseModel):
-    kt_topic_id: str
+    kt_topic_id: Optional[str] = None
     learner_id: str
 
 
 class AssignmentResponse(BaseModel):
     id: str
     repository_id: str
-    kt_topic_id: str
-    kt_topic_title: str
+    kt_topic_id: Optional[str] = None
+    kt_topic_title: Optional[str] = None
     learner_id: str
     learner_name: str
     learner_email: str
@@ -90,8 +113,8 @@ class MyAssignmentResponse(BaseModel):
     assignment_id: str
     repository_id: str
     repository_name: str
-    kt_topic_id: str
-    kt_topic_title: str
+    kt_topic_id: Optional[str] = None
+    kt_topic_title: Optional[str] = None
     kt_topic_description: Optional[str]
     status: str
     assigned_at: datetime

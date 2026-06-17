@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete as sql_delete, select
+from sqlalchemy import delete as sql_delete, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
@@ -8,7 +8,7 @@ from app.models.contributor import Contributor
 from app.models.kt_topic import KTTopic
 from app.models.repository_assignment import RepositoryAssignment
 from app.models.user import User
-from app.routers.repository import get_owned_repository
+from app.routers.repository import REPOSITORY_LEARNING_TOPIC_MARKER, get_owned_repository
 from app.schemas.kt_topic import (
     CreateKTTopicRequest,
     KTTopicListResponse,
@@ -55,7 +55,15 @@ def list_kt_topics(
     current_user: User = Depends(get_current_user),
 ) -> KTTopicListResponse:
     topics = db.scalars(
-        select(KTTopic).where(KTTopic.repository_id == repo_id).order_by(KTTopic.created_at)
+        select(KTTopic)
+        .where(
+            KTTopic.repository_id == repo_id,
+            or_(
+                KTTopic.path_patterns.is_(None),
+                KTTopic.path_patterns != REPOSITORY_LEARNING_TOPIC_MARKER,
+            ),
+        )
+        .order_by(KTTopic.created_at)
     ).all()
     return KTTopicListResponse(topics=topics, total=len(topics))
 

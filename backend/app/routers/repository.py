@@ -1,7 +1,13 @@
+from base64 import b64encode
+from datetime import datetime, timezone
+import json
+import mimetypes
 from pathlib import Path
 import shutil
+from uuid import uuid4
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession
 
@@ -15,7 +21,14 @@ from app.models.repository_assignment import RepositoryAssignment
 from app.models.user import User
 from app.modules.contributor_analysis import analyze_contributors
 from app.modules.git_provider import detect_provider, extract_repo_name, is_valid_git_url
-from app.modules.repository_analysis import analyze_repository
+from app.modules.repository_analysis import (
+    IMAGE_FILE_EXTENSIONS,
+    MAX_IMAGE_FILE_BYTES,
+    MAX_TEXT_FILE_BYTES,
+    REPOSITORY_STORAGE_DIR,
+    TEXT_FILE_EXTENSIONS,
+    analyze_repository,
+)
 from app.schemas.repository import (
     AssignmentListResponse,
     AssignmentResponse,
@@ -23,6 +36,9 @@ from app.schemas.repository import (
     ContributorListResponse,
     KnowledgeBaseResponse,
     MyAssignmentResponse,
+    RepositoryFileResponse,
+    RepositoryUploadListResponse,
+    RepositoryUploadResponse,
     RepositoryConnectRequest,
     RepositoryListResponse,
     RepositoryResponse,
@@ -32,6 +48,9 @@ router = APIRouter()
 
 MAX_UPLOAD_SIZE_BYTES = 2_000_000_000
 UPLOAD_DIR = Path("uploaded_repos")
+DOCUMENT_UPLOAD_DIR = Path("uploads") / "documents"
+MAX_DOCUMENT_UPLOAD_SIZE_BYTES = 100_000_000
+REPOSITORY_LEARNING_TOPIC_MARKER = "__repository_current_learning__"
 
 
 def is_admin(user: User) -> bool:
@@ -54,6 +73,57 @@ def get_upload_size(file: UploadFile) -> int:
     size = file.file.tell()
     file.file.seek(0)
     return size
+
+
+def get_repository_document_dir(repo_id: str) -> Path:
+    return DOCUMENT_UPLOAD_DIR / repo_id
+
+
+def get_repository_upload_manifest_path(repo_id: str) -> Path:
+    return get_repository_document_dir(repo_id) / "manifest.json"
+
+
+def read_repository_upload_manifest(repo_id: str) -> list[dict]:
+    manifest_path = get_repository_upload_manifest_path(repo_id)
+    if not manifest_path.exists():
+        return []
+
+    try:
+        return json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+
+
+def write_repository_upload_manifest(repo_id: str, uploads: list[dict]) -> None:
+    upload_dir = get_repository_document_dir(repo_id)
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    get_repository_upload_manifest_path(repo_id).write_text(
+        json.dumps(uploads, indent=2),
+        encoding="utf-8",
+    )
+
+
+def get_repository_upload_file_path(repo_id: str, upload_id: str) -> Path:
+    root = get_repository_document_dir(repo_id).resolve()
+    requested = (root / upload_id).resolve()
+
+    try:
+        requested.relative_to(root)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid upload id") from exc
+
+    return requested
+
+
+def to_repository_upload_response(upload: dict) -> RepositoryUploadResponse:
+    return RepositoryUploadResponse(
+        id=upload["id"],
+        filename=upload["filename"],
+        content_type=upload.get("content_type"),
+        size=upload["size"],
+        uploaded_at=datetime.fromisoformat(upload["uploaded_at"]),
+        uploaded_by=upload["uploaded_by"],
+    )
 
 
 def get_owned_repository(db: DbSession, repo_id: str, owner_id: str) -> Repository:
@@ -85,6 +155,32 @@ def get_accessible_repository(db: DbSession, repo_id: str, current_user: User) -
                 return repository
 
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Repository not found")
+
+
+def get_or_create_repository_learning_topic(
+    db: DbSession,
+    repository: Repository,
+    current_user: User,
+) -> KTTopic:
+    topic = db.scalar(
+        select(KTTopic).where(
+            KTTopic.repository_id == repository.id,
+            KTTopic.path_patterns == REPOSITORY_LEARNING_TOPIC_MARKER,
+        )
+    )
+    if topic is not None:
+        return topic
+
+    topic = KTTopic(
+        repository_id=repository.id,
+        title=repository.name,
+        description=None,
+        path_patterns=REPOSITORY_LEARNING_TOPIC_MARKER,
+        created_by=current_user.id,
+    )
+    db.add(topic)
+    db.flush()
+    return topic
 
 
 @router.post("/connect", response_model=RepositoryResponse, status_code=status.HTTP_201_CREATED)
@@ -194,13 +290,14 @@ def get_my_assignments(
     for a in rows:
         repo = db.get(Repository, a.repository_id)
         topic = db.get(KTTopic, a.kt_topic_id)
+        is_repository_learning = topic and topic.path_patterns == REPOSITORY_LEARNING_TOPIC_MARKER
         results.append(MyAssignmentResponse(
             assignment_id=a.id,
             repository_id=a.repository_id,
             repository_name=repo.name if repo else "Unknown",
             kt_topic_id=a.kt_topic_id,
-            kt_topic_title=topic.title if topic else "Unknown",
-            kt_topic_description=topic.description if topic else None,
+            kt_topic_title=None if is_repository_learning else topic.title if topic else None,
+            kt_topic_description=None if is_repository_learning else topic.description if topic else None,
             status=a.status,
             assigned_at=a.assigned_at,
         ))
@@ -273,6 +370,162 @@ def get_knowledge_base(
     )
 
 
+def get_stored_repository_file(repo_id: str, file_path: str) -> Path:
+    root = (REPOSITORY_STORAGE_DIR / repo_id).resolve()
+    requested = (root / file_path).resolve()
+
+    try:
+        requested.relative_to(root)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid file path") from exc
+
+    if not requested.exists() or not requested.is_file():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found. Re-analyze this repository.")
+
+    return requested
+
+
+@router.get("/{repo_id}/files", response_model=RepositoryFileResponse)
+def get_repository_file(
+    repo_id: str,
+    file_path: str = Query(..., alias="path"),
+    db: DbSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> RepositoryFileResponse:
+    get_accessible_repository(db, repo_id, current_user)
+    requested = get_stored_repository_file(repo_id, file_path)
+    size = requested.stat().st_size
+    suffix = requested.suffix.lower()
+
+    if suffix in TEXT_FILE_EXTENSIONS:
+        if size > MAX_TEXT_FILE_BYTES:
+            content = f"[Skipped: text file is {size} bytes, above the {MAX_TEXT_FILE_BYTES} byte preview limit.]"
+        else:
+            content = requested.read_text(encoding="utf-8", errors="replace")
+        return RepositoryFileResponse(
+            repository_id=repo_id,
+            path=file_path,
+            entry_type="source_file",
+            content=content,
+            mime_type=mimetypes.guess_type(requested.name)[0] or "text/plain",
+            size=size,
+        )
+
+    if suffix in IMAGE_FILE_EXTENSIONS:
+        mime_type = mimetypes.guess_type(requested.name)[0] or "application/octet-stream"
+        if size > MAX_IMAGE_FILE_BYTES:
+            content = f"[Skipped: image file is {size} bytes, above the {MAX_IMAGE_FILE_BYTES} byte preview limit.]"
+        else:
+            content = f"data:{mime_type};base64,{b64encode(requested.read_bytes()).decode('ascii')}"
+        return RepositoryFileResponse(
+            repository_id=repo_id,
+            path=file_path,
+            entry_type="image_file",
+            content=content,
+            mime_type=mime_type,
+            size=size,
+        )
+
+    raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail="Preview is not available for this file type")
+
+
+@router.get("/{repo_id}/uploads", response_model=RepositoryUploadListResponse)
+def list_repository_uploads(
+    repo_id: str,
+    db: DbSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> RepositoryUploadListResponse:
+    get_accessible_repository(db, repo_id, current_user)
+    uploads = [to_repository_upload_response(upload) for upload in read_repository_upload_manifest(repo_id)]
+    uploads.sort(key=lambda upload: upload.uploaded_at, reverse=True)
+    return RepositoryUploadListResponse(uploads=uploads, total=len(uploads))
+
+
+@router.post("/{repo_id}/uploads", response_model=RepositoryUploadResponse, status_code=status.HTTP_201_CREATED)
+def upload_repository_document(
+    repo_id: str,
+    file: UploadFile = File(...),
+    db: DbSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> RepositoryUploadResponse:
+    if not is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    get_owned_repository(db, repo_id, current_user.id)
+    filename = Path(file.filename or "upload").name
+    size = get_upload_size(file)
+    if size > MAX_DOCUMENT_UPLOAD_SIZE_BYTES:
+        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Uploaded file exceeds 100MB")
+
+    upload_id = str(uuid4())
+    upload_dir = get_repository_document_dir(repo_id)
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    upload_path = upload_dir / upload_id
+    with upload_path.open("wb") as destination:
+        shutil.copyfileobj(file.file, destination)
+
+    upload = {
+        "id": upload_id,
+        "filename": filename,
+        "content_type": file.content_type,
+        "size": size,
+        "uploaded_at": datetime.now(timezone.utc).isoformat(),
+        "uploaded_by": current_user.id,
+    }
+    uploads = read_repository_upload_manifest(repo_id)
+    uploads.append(upload)
+    write_repository_upload_manifest(repo_id, uploads)
+    return to_repository_upload_response(upload)
+
+
+@router.get("/{repo_id}/uploads/{upload_id}/download")
+def download_repository_upload(
+    repo_id: str,
+    upload_id: str,
+    db: DbSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> FileResponse:
+    get_accessible_repository(db, repo_id, current_user)
+    uploads = read_repository_upload_manifest(repo_id)
+    upload = next((candidate for candidate in uploads if candidate["id"] == upload_id), None)
+    if upload is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Upload not found")
+
+    upload_path = get_repository_upload_file_path(repo_id, upload_id)
+    if not upload_path.exists() or not upload_path.is_file():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Uploaded file not found")
+
+    return FileResponse(
+        upload_path,
+        media_type=upload.get("content_type") or "application/octet-stream",
+        filename=upload["filename"],
+    )
+
+
+@router.delete("/{repo_id}/uploads/{upload_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_repository_upload(
+    repo_id: str,
+    upload_id: str,
+    db: DbSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    if not is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    get_owned_repository(db, repo_id, current_user.id)
+    uploads = read_repository_upload_manifest(repo_id)
+    upload = next((candidate for candidate in uploads if candidate["id"] == upload_id), None)
+    if upload is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Upload not found")
+
+    upload_path = get_repository_upload_file_path(repo_id, upload_id)
+    if upload_path.exists() and upload_path.is_file():
+        upload_path.unlink()
+
+    remaining_uploads = [candidate for candidate in uploads if candidate["id"] != upload_id]
+    write_repository_upload_manifest(repo_id, remaining_uploads)
+
+
 @router.post("/{repo_id}/analyze-contributors", response_model=ContributorListResponse)
 def analyze_repository_contributors(
     repo_id: str,
@@ -340,11 +593,15 @@ def create_assignment(
     if not is_admin(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
-    get_owned_repository(db, repo_id, current_user.id)
+    repository = get_owned_repository(db, repo_id, current_user.id)
 
-    topic = db.get(KTTopic, payload.kt_topic_id)
-    if topic is None or topic.repository_id != repo_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
+    topic = None
+    if payload.kt_topic_id is not None:
+        topic = db.get(KTTopic, payload.kt_topic_id)
+        if topic is None or topic.repository_id != repo_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
+    else:
+        topic = get_or_create_repository_learning_topic(db, repository, current_user)
 
     learner = db.get(User, payload.learner_id)
     if learner is None or not is_learner(learner):
@@ -352,16 +609,16 @@ def create_assignment(
 
     existing = db.scalar(
         select(RepositoryAssignment).where(
-            RepositoryAssignment.kt_topic_id == payload.kt_topic_id,
+            RepositoryAssignment.repository_id == repo_id,
             RepositoryAssignment.learner_id == payload.learner_id,
         )
     )
     if existing is not None:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Learner already assigned to this topic")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Learner already assigned to this repository")
 
     assignment = RepositoryAssignment(
         repository_id=repo_id,
-        kt_topic_id=payload.kt_topic_id,
+        kt_topic_id=topic.id,
         learner_id=payload.learner_id,
         assigned_by=current_user.id,
         status="assigned",
@@ -374,7 +631,7 @@ def create_assignment(
         id=assignment.id,
         repository_id=assignment.repository_id,
         kt_topic_id=assignment.kt_topic_id,
-        kt_topic_title=topic.title,
+        kt_topic_title=None if topic.path_patterns == REPOSITORY_LEARNING_TOPIC_MARKER else topic.title,
         learner_id=assignment.learner_id,
         learner_name=learner.name,
         learner_email=learner.email,
@@ -396,12 +653,13 @@ def list_assignments(
     results = []
     for a in rows:
         topic = db.get(KTTopic, a.kt_topic_id)
+        is_repository_learning = topic and topic.path_patterns == REPOSITORY_LEARNING_TOPIC_MARKER
         learner = db.get(User, a.learner_id)
         results.append(AssignmentResponse(
             id=a.id,
             repository_id=a.repository_id,
             kt_topic_id=a.kt_topic_id,
-            kt_topic_title=topic.title if topic else "Unknown",
+            kt_topic_title=None if is_repository_learning else topic.title if topic else None,
             learner_id=a.learner_id,
             learner_name=learner.name if learner else "Unknown",
             learner_email=learner.email if learner else "",
@@ -438,6 +696,14 @@ def delete_repository(
     upload_path = UPLOAD_DIR / f"{repo_id}.zip"
     if upload_path.exists():
         upload_path.unlink()
+
+    repository_path = REPOSITORY_STORAGE_DIR / repo_id
+    if repository_path.exists():
+        shutil.rmtree(repository_path)
+
+    document_path = get_repository_document_dir(repo_id)
+    if document_path.exists():
+        shutil.rmtree(document_path)
 
     from sqlalchemy import delete as sql_delete
     from app.models.knowledge_base import KnowledgeBase
