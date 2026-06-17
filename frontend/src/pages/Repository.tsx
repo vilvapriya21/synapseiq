@@ -323,7 +323,11 @@ function RepositoryPage() {
   return (
     <div className={styles.page}>
       <section className={styles.headerCard}>
-        <button className={styles.backButton} type="button" onClick={() => navigate("/repositories")}>
+        <button
+          className={styles.backButton}
+          type="button"
+          onClick={() => navigate(role === "LEARNER" ? "/dashboard" : "/repositories")}
+        >
           &#8592; Repositories
         </button>
         <div className={styles.headerMain}>
