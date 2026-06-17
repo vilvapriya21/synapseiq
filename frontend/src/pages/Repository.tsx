@@ -3,16 +3,25 @@ import { useNavigate, useParams } from "react-router-dom";
 import { EmptyState } from "../components/common";
 import { getUsers, type AdminUser } from "../services/adminService";
 import {
+  analyzeContributors,
   assignLearner,
+  createKTTopic,
+  deleteKTTopic,
+  getAssignments,
+  getContributors,
+  getKTTopics,
   getKnowledgeBase,
   getRepository,
-  getRepositoryAssignments,
+  getTopicRecommendation,
   refreshRepository,
   unassignLearner,
+  type Assignment,
+  type Contributor,
   type KnowledgeBaseEntry,
   type KnowledgeBaseResponse,
+  type KTTopic,
   type Repository,
-  type RepositoryAssignment,
+  type RecommendedContributor,
 } from "../services/repositoryService";
 import { useAuthStore } from "../store/authStore";
 import { normalizeRole } from "../utils/roles";
@@ -64,10 +73,20 @@ function RepositoryPage() {
   const role = normalizeRole(user?.roles[0]);
   const [repository, setRepository] = useState<Repository | null>(null);
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBaseResponse | null>(null);
-  const [assignments, setAssignments] = useState<RepositoryAssignment[]>([]);
-  const [learnerEmail, setLearnerEmail] = useState("");
-  const [assignmentError, setAssignmentError] = useState("");
-  const [assignmentSaving, setAssignmentSaving] = useState(false);
+  const [contributors, setContributors] = useState<Contributor[]>([]);
+  const [analyzingContributors, setAnalyzingContributors] = useState(false);
+  const [contributorError, setContributorError] = useState("");
+  const [topics, setTopics] = useState<KTTopic[]>([]);
+  const [showTopicForm, setShowTopicForm] = useState(false);
+  const [topicTitle, setTopicTitle] = useState("");
+  const [topicDescription, setTopicDescription] = useState("");
+  const [topicPaths, setTopicPaths] = useState("");
+  const [recommendations, setRecommendations] = useState<Record<string, RecommendedContributor[]>>({});
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [learners, setLearners] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [selectedTopicId, setSelectedTopicId] = useState("");
+  const [selectedLearnerId, setSelectedLearnerId] = useState("");
+  const [assignError, setAssignError] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("file_tree");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -79,11 +98,38 @@ function RepositoryPage() {
     }
 
     try {
-      const response = await getRepositoryAssignments(repoId);
-      setAssignments(response);
-      setAssignmentError("");
+      const response = await getAssignments(repoId);
+      setAssignments(response.assignments);
+      setAssignError("");
     } catch {
-      setAssignmentError("Unable to load assigned learners.");
+      setAssignError("Unable to load assigned learners.");
+    }
+  };
+
+  const fetchAdminData = async () => {
+    if (!repoId || role !== "ADMIN") {
+      return;
+    }
+
+    try {
+      const [contributorsResponse, topicsResponse, assignmentsResponse, usersResponse] = await Promise.all([
+        getContributors(repoId),
+        getKTTopics(repoId),
+        getAssignments(repoId),
+        getUsers(),
+      ]);
+      setContributors(contributorsResponse.contributors);
+      setTopics(topicsResponse.topics);
+      setAssignments(assignmentsResponse.assignments);
+      setLearners(
+        usersResponse
+          .filter((candidate: AdminUser) => ["learner", "user"].includes(candidate.role.toLowerCase()))
+          .map((candidate) => ({ id: candidate.id, name: candidate.name, email: candidate.email })),
+      );
+      setContributorError("");
+      setAssignError("");
+    } catch {
+      setAssignError("Unable to load KT assignment data.");
     }
   };
 
@@ -110,7 +156,7 @@ function RepositoryPage() {
 
   useEffect(() => {
     fetchRepositoryData();
-    fetchAssignments();
+    fetchAdminData();
   }, [repoId, role]);
 
   useEffect(() => {
@@ -144,52 +190,90 @@ function RepositoryPage() {
     }
   };
 
-  const handleAssignLearner = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!repoId || !learnerEmail.trim()) {
-      return;
-    }
-
-    setAssignmentSaving(true);
-    setAssignmentError("");
-    try {
-      const users = await getUsers();
-      const learner = users.find(
-        (candidate: AdminUser) =>
-          candidate.role === "learner" &&
-          candidate.email.toLowerCase() === learnerEmail.trim().toLowerCase(),
-      );
-      if (!learner) {
-        setAssignmentError("Learner not found for that email.");
-        return;
-      }
-
-      await assignLearner(repoId, learner.id);
-      setLearnerEmail("");
-      await fetchAssignments();
-    } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { detail?: string } } };
-      setAssignmentError(axiosError.response?.data?.detail || "Unable to assign learner.");
-    } finally {
-      setAssignmentSaving(false);
-    }
-  };
-
-  const handleUnassignLearner = async (learnerId: string) => {
+  const handleAnalyzeContributors = async () => {
     if (!repoId) {
       return;
     }
 
-    setAssignmentSaving(true);
-    setAssignmentError("");
+    setAnalyzingContributors(true);
+    setContributorError("");
     try {
-      await unassignLearner(repoId, learnerId);
-      await fetchAssignments();
+      const result = await analyzeContributors(repoId);
+      setContributors(result.contributors);
     } catch {
-      setAssignmentError("Unable to unassign learner.");
+      setContributorError("Failed to analyze contributors. The repository may be too large or access was denied.");
     } finally {
-      setAssignmentSaving(false);
+      setAnalyzingContributors(false);
     }
+  };
+
+  const handleCreateTopic = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!repoId) {
+      return;
+    }
+
+    await createKTTopic(repoId, {
+      title: topicTitle,
+      description: topicDescription,
+      path_patterns: topicPaths,
+    });
+    setTopicTitle("");
+    setTopicDescription("");
+    setTopicPaths("");
+    setShowTopicForm(false);
+    const result = await getKTTopics(repoId);
+    setTopics(result.topics);
+  };
+
+  const handleViewRecommendation = async (topicId: string) => {
+    if (!repoId) {
+      return;
+    }
+
+    const result = await getTopicRecommendation(repoId, topicId);
+    setRecommendations((previous) => ({ ...previous, [topicId]: result.recommendations }));
+  };
+
+  const handleDeleteTopic = async (topicId: string) => {
+    if (!repoId) {
+      return;
+    }
+    if (!window.confirm("Delete this KT topic? Any assignments to it will also be removed.")) {
+      return;
+    }
+
+    await deleteKTTopic(repoId, topicId);
+    const result = await getKTTopics(repoId);
+    setTopics(result.topics);
+    await fetchAssignments();
+  };
+
+  const handleAssign = async () => {
+    if (!repoId || !selectedTopicId || !selectedLearnerId) {
+      return;
+    }
+
+    setAssignError("");
+    try {
+      await assignLearner(repoId, selectedTopicId, selectedLearnerId);
+      const result = await getAssignments(repoId);
+      setAssignments(result.assignments);
+      setSelectedTopicId("");
+      setSelectedLearnerId("");
+    } catch {
+      setAssignError("Failed to assign learner. They may already be assigned to this topic.");
+    }
+  };
+
+  const handleUnassign = async (assignmentId: string) => {
+    if (!repoId) {
+      return;
+    }
+
+    await unassignLearner(repoId, assignmentId);
+    const result = await getAssignments(repoId);
+    setAssignments(result.assignments);
   };
 
   const entries = knowledgeBase?.entries ?? [];
@@ -239,7 +323,11 @@ function RepositoryPage() {
   return (
     <div className={styles.page}>
       <section className={styles.headerCard}>
-        <button className={styles.backButton} type="button" onClick={() => navigate("/repositories")}>
+        <button
+          className={styles.backButton}
+          type="button"
+          onClick={() => navigate(role === "LEARNER" ? "/dashboard" : "/repositories")}
+        >
           &#8592; Repositories
         </button>
         <div className={styles.headerMain}>
@@ -332,51 +420,185 @@ function RepositoryPage() {
               Re-analyze
             </button>
           </div>
-
-          {role === "ADMIN" ? (
-            <div className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h2>Assigned Learners</h2>
-              </div>
-
-              <div className={styles.assignmentList}>
-                {assignments.map((learner) => (
-                  <div className={styles.assignmentItem} key={learner.id}>
-                    <div>
-                      <strong>{learner.name}</strong>
-                      <span>{learner.email}</span>
-                    </div>
-                    <button
-                      className={styles.dangerButton}
-                      type="button"
-                      onClick={() => handleUnassignLearner(learner.id)}
-                      disabled={assignmentSaving}
-                    >
-                      Unassign
-                    </button>
-                  </div>
-                ))}
-                {assignments.length === 0 ? <p className={styles.muted}>No learners assigned yet.</p> : null}
-              </div>
-
-              <form className={styles.assignForm} onSubmit={handleAssignLearner}>
-                <input
-                  className={styles.input}
-                  type="email"
-                  placeholder="Learner email"
-                  value={learnerEmail}
-                  onChange={(event) => setLearnerEmail(event.target.value)}
-                />
-                <button className={styles.outlineButton} type="submit" disabled={assignmentSaving}>
-                  Assign Learner
-                </button>
-              </form>
-
-              {assignmentError ? <p className={styles.errorText}>{assignmentError}</p> : null}
-            </div>
-          ) : null}
         </aside>
       </section>
+
+      {role === "ADMIN" ? (
+        <>
+          <section className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h2>Contributors</h2>
+              <button
+                className={styles.secondaryButton}
+                onClick={handleAnalyzeContributors}
+                disabled={analyzingContributors || repository.source_type !== "git"}
+                type="button"
+              >
+                {analyzingContributors ? "Analyzing..." : "Analyze Contributors"}
+              </button>
+            </div>
+            {contributorError ? <p className={styles.error}>{contributorError}</p> : null}
+            {contributors.length === 0 ? (
+              <p className={styles.emptyText}>
+                No contributor data yet. Click "Analyze Contributors" to extract commit history.
+              </p>
+            ) : (
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Commits</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {contributors.map((contributor) => (
+                    <tr key={contributor.id}>
+                      <td>{contributor.name}</td>
+                      <td>{contributor.email}</td>
+                      <td>{contributor.commit_count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+
+          <section className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h2>KT Topics</h2>
+              <button className={styles.primaryButton} onClick={() => setShowTopicForm(!showTopicForm)} type="button">
+                {showTopicForm ? "Cancel" : "+ Add Topic"}
+              </button>
+            </div>
+
+            {showTopicForm ? (
+              <form onSubmit={handleCreateTopic} className={styles.topicForm}>
+                <input
+                  className={styles.input}
+                  placeholder="Topic title (e.g. Payment Gateway Integration)"
+                  value={topicTitle}
+                  onChange={(event) => setTopicTitle(event.target.value)}
+                  required
+                />
+                <input
+                  className={styles.input}
+                  placeholder="Description (optional)"
+                  value={topicDescription}
+                  onChange={(event) => setTopicDescription(event.target.value)}
+                />
+                <input
+                  className={styles.input}
+                  placeholder="Path patterns, comma-separated (e.g. src/payments,src/billing)"
+                  value={topicPaths}
+                  onChange={(event) => setTopicPaths(event.target.value)}
+                />
+                <button className={styles.primaryButton} type="submit">Create Topic</button>
+              </form>
+            ) : null}
+
+            {topics.length === 0 ? (
+              <p className={styles.emptyText}>No KT topics yet. Add one to start organizing knowledge transfer.</p>
+            ) : (
+              <div className={styles.topicList}>
+                {topics.map((topic) => (
+                  <div key={topic.id} className={styles.topicItem}>
+                    <div>
+                      <strong>{topic.title}</strong>
+                      {topic.description ? <p className={styles.topicDescription}>{topic.description}</p> : null}
+                      {topic.path_patterns ? <span className={styles.pathTag}>{topic.path_patterns}</span> : null}
+                    </div>
+                    <div className={styles.topicActions}>
+                      <button className={styles.linkButton} onClick={() => handleViewRecommendation(topic.id)} type="button">
+                        Recommend Person
+                      </button>
+                      <button className={styles.deleteButton} onClick={() => handleDeleteTopic(topic.id)} type="button">
+                        Remove
+                      </button>
+                    </div>
+                    {recommendations[topic.id] ? (
+                      <div className={styles.recommendationBox}>
+                        {recommendations[topic.id].length === 0 ? (
+                          <p className={styles.emptyText}>
+                            No matching contributors found. Run "Analyze Contributors" first, or check the path patterns.
+                          </p>
+                        ) : (
+                          recommendations[topic.id].map((recommendation, index) => (
+                            <div key={`${recommendation.email}-${index}`} className={styles.recommendationRow}>
+                              <span>{recommendation.name} ({recommendation.email})</span>
+                              <span>
+                                {recommendation.relevant_file_matches} relevant files &middot; {recommendation.commit_count} total commits
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className={styles.card}>
+            <h2>Assigned Learners</h2>
+
+            <div className={styles.assignForm}>
+              <select
+                className={styles.input}
+                value={selectedTopicId}
+                onChange={(event) => setSelectedTopicId(event.target.value)}
+              >
+                <option value="">Select KT Topic...</option>
+                {topics.map((topic) => (
+                  <option key={topic.id} value={topic.id}>{topic.title}</option>
+                ))}
+              </select>
+              <select
+                className={styles.input}
+                value={selectedLearnerId}
+                onChange={(event) => setSelectedLearnerId(event.target.value)}
+              >
+                <option value="">Select Learner...</option>
+                {learners.map((learner) => (
+                  <option key={learner.id} value={learner.id}>{learner.name} ({learner.email})</option>
+                ))}
+              </select>
+              <button className={styles.primaryButton} onClick={handleAssign} type="button">Assign</button>
+            </div>
+            {assignError ? <p className={styles.error}>{assignError}</p> : null}
+
+            {assignments.length === 0 ? (
+              <p className={styles.emptyText}>No learners assigned yet.</p>
+            ) : (
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Learner</th>
+                    <th>KT Topic</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {assignments.map((assignment) => (
+                    <tr key={assignment.id}>
+                      <td>{assignment.learner_name} ({assignment.learner_email})</td>
+                      <td>{assignment.kt_topic_title}</td>
+                      <td>{assignment.status}</td>
+                      <td>
+                        <button className={styles.deleteButton} onClick={() => handleUnassign(assignment.id)} type="button">
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+        </>
+      ) : null}
     </div>
   );
 }

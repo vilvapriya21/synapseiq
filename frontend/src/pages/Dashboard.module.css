@@ -70,6 +70,38 @@
   overflow: hidden;
 }
 
+.card {
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 20px 22px;
+}
+
+.card h2 {
+  margin: 0 0 16px;
+  color: #07142f;
+  font-size: 18px;
+}
+
+.assignmentGrid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.assignmentCard { border: 1px solid #E5E7EB; border-radius: 8px; padding: 14px; }
+.assignmentCard h3 { margin: 10px 0 6px; color: #07142f; font-size: 16px; }
+.assignmentCard p { margin: 0; color: #526178; font-size: 13px; line-height: 1.45; }
+.repoTag { background: #EEF2FF; border-radius: 4px; color: #1B4FD8; font-size: 11px; padding: 2px 8px; }
+.statusBadge { background: #F3F4F6; border-radius: 4px; color: #6B7280; display: inline-block; font-size: 11px; margin: 8px 0; padding: 2px 8px; }
+.emptyText { color: #9CA3AF; font-size: 13px; margin: 0; }
+
+.primaryButton {
+  display: block;
+  cursor: pointer;
+  border: 1px solid #2454d6;
+  border-radius: 8px;
+  background: #2454d6;
+  color: #ffffff;
+  padding: 9px 12px;
+  font-weight: 800;
+}
+
 .panelHeader {
   display: flex;
   justify-content: space-between;

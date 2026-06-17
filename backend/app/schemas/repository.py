@@ -46,3 +46,52 @@ class KnowledgeBaseResponse(BaseModel):
     status: str
     entries: list[KnowledgeBaseEntry]
     total: int
+
+
+class ContributorResponse(BaseModel):
+    id: str
+    name: str
+    email: str
+    commit_count: int
+    top_files: Optional[str]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ContributorListResponse(BaseModel):
+    repository_id: str
+    contributors: list[ContributorResponse]
+    total: int
+
+
+class AssignLearnerRequest(BaseModel):
+    kt_topic_id: str
+    learner_id: str
+
+
+class AssignmentResponse(BaseModel):
+    id: str
+    repository_id: str
+    kt_topic_id: str
+    kt_topic_title: str
+    learner_id: str
+    learner_name: str
+    learner_email: str
+    status: str
+    assigned_at: datetime
+
+
+class AssignmentListResponse(BaseModel):
+    assignments: list[AssignmentResponse]
+    total: int
+
+
+class MyAssignmentResponse(BaseModel):
+    assignment_id: str
+    repository_id: str
+    repository_name: str
+    kt_topic_id: str
+    kt_topic_title: str
+    kt_topic_description: Optional[str]
+    status: str
+    assigned_at: datetime

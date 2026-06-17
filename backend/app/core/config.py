@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     gitlab_client_secret: str = Field(default="")
     bitbucket_client_id: str = Field(default="")
     bitbucket_client_secret: str = Field(default="")
+    ollama_base_url: str = Field(default="http://localhost:11434")
+    ollama_model: str = Field(default="llama3.1")
     backend_cors_origins: list[AnyHttpUrl] | list[str] = ["http://localhost:5173"]
 
     @field_validator("database_url")
