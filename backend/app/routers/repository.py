@@ -68,6 +68,25 @@ def get_owned_repository(db: DbSession, repo_id: str, owner_id: str) -> Reposito
     return repository
 
 
+def get_accessible_repository(db: DbSession, repo_id: str, current_user: User) -> Repository:
+    if is_admin(current_user):
+        return get_owned_repository(db, repo_id, current_user.id)
+
+    if is_learner(current_user):
+        assignment = db.scalar(
+            select(RepositoryAssignment).where(
+                RepositoryAssignment.repository_id == repo_id,
+                RepositoryAssignment.learner_id == current_user.id,
+            )
+        )
+        if assignment is not None:
+            repository = db.get(Repository, repo_id)
+            if repository is not None:
+                return repository
+
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Repository not found")
+
+
 @router.post("/connect", response_model=RepositoryResponse, status_code=status.HTTP_201_CREATED)
 def connect_repository(
     payload: RepositoryConnectRequest,
@@ -238,7 +257,7 @@ def get_knowledge_base(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> KnowledgeBaseResponse:
-    repository = get_owned_repository(db, repo_id, current_user.id)
+    repository = get_accessible_repository(db, repo_id, current_user)
 
     query = select(KnowledgeBase).where(KnowledgeBase.repository_id == repo_id)
     if entry_type:
@@ -436,4 +455,4 @@ def get_repository(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Repository:
-    return get_owned_repository(db, repo_id, current_user.id)
+    return get_accessible_repository(db, repo_id, current_user)
