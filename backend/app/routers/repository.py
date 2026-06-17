@@ -86,7 +86,15 @@ def connect_repository(
     db.add(repository)
     db.commit()
     db.refresh(repository)
-    background_tasks.add_task(analyze_repository, repository.id, db, current_user.github_access_token)
+    background_tasks.add_task(
+        analyze_repository,
+        repository.id,
+        db,
+        current_user.github_access_token,
+        current_user.azure_devops_token,
+        current_user.gitlab_access_token,
+        current_user.bitbucket_access_token,
+    )
     return repository
 
 
@@ -153,7 +161,15 @@ def refresh_repository(
     repository.error_message = None
     db.commit()
     db.refresh(repository)
-    background_tasks.add_task(analyze_repository, repository.id, db, current_user.github_access_token)
+    background_tasks.add_task(
+        analyze_repository,
+        repository.id,
+        db,
+        current_user.github_access_token,
+        current_user.azure_devops_token,
+        current_user.gitlab_access_token,
+        current_user.bitbucket_access_token,
+    )
     return repository
 
 

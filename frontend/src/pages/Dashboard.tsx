@@ -2,30 +2,32 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
-import { dashboardService, DashboardResponse } from "../services/dashboardService";
+import { dashboardService, type DashboardResponse } from "../services/dashboardService";
+import {
+  getAssignedRepositories,
+  type Repository,
+  type RepositoryListResponse,
+} from "../services/repositoryService";
 import { useAuthStore } from "../store/authStore";
-import { ProjectSummary } from "../types";
 import { normalizeRole } from "../utils/roles";
 import styles from "./Dashboard.module.css";
 
 const adminStatLabels = [
-  ["totalProjects", "Total Projects", "Across connected repositories"],
-  ["activeProjects", "Active Projects", "Currently in progress"],
-  ["pendingAssessments", "Pending Assessments", "Awaiting completion"],
-  ["completedAssessments", "Completed Assessments", "Validated knowledge checks"],
+  ["totalRepositories", "Total Repositories", "Connected and analysed"],
+  ["indexedRepositories", "Indexed", "Ready for knowledge extraction"],
+  ["pendingRepositories", "Pending / Indexing", "Analysis in progress"],
+  ["knowledgeBasesReady", "Knowledge Bases", "Ready to query"],
 ] as const;
 
-const learnerStatLabels = [
-  ["assignedProjects", "Assigned Projects", "Knowledge paths assigned to you"],
-  ["pendingAssessments", "Pending Assessments", "Awaiting completion"],
-  ["completedAssessments", "Completed Assessments", "Validated knowledge checks"],
-  ["averageScore", "Average Score", "Across completed assessments"],
-] as const;
+function badgeClass(status: string) {
+  if (status === "indexed") return `${styles.badge} ${styles.badgeActive}`;
+  if (status === "indexing") return `${styles.badge} ${styles.badgeReview}`;
+  if (status === "error") return `${styles.badge} ${styles.badgeError}`;
+  return `${styles.badge} ${styles.badgePending}`;
+}
 
-function badgeClass(status: ProjectSummary["status"]) {
-  if (status === "Review") return `${styles.badge} ${styles.badgeReview}`;
-  if (status === "Pending") return `${styles.badge} ${styles.badgePending}`;
-  return styles.badge;
+function truncate(value: string, maxLength = 40) {
+  return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
 }
 
 function DashboardPage() {
@@ -33,6 +35,7 @@ function DashboardPage() {
   const user = useAuthStore((state) => state.user);
   const role = normalizeRole(user?.roles[0]);
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
+  const [assignedRepositories, setAssignedRepositories] = useState<RepositoryListResponse | null>(null);
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -40,13 +43,19 @@ function DashboardPage() {
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
+    setError("");
 
-    dashboardService
-      .getDashboard(role)
+    const request = role === "LEARNER" ? getAssignedRepositories() : dashboardService.getDashboard();
+
+    request
       .then((data) => {
-        if (isMounted) {
-          setDashboard(data);
-          setError("");
+        if (!isMounted) return;
+        if (role === "LEARNER") {
+          setAssignedRepositories(data as RepositoryListResponse);
+          setDashboard(null);
+        } else {
+          setDashboard(data as DashboardResponse);
+          setAssignedRepositories(null);
         }
       })
       .catch(() => {
@@ -69,44 +78,141 @@ function DashboardPage() {
       (project) =>
         project.name.toLowerCase().includes(query) ||
         project.repository.toLowerCase().includes(query) ||
-        project.status.toLowerCase().includes(query),
+        project.language.toLowerCase().includes(query),
     );
   }, [dashboard?.projects, search]);
+
+  const filteredAssignedRepositories = useMemo(() => {
+    const repositories = assignedRepositories?.repositories || [];
+    const query = search.toLowerCase().trim();
+    if (!query) return repositories;
+    return repositories.filter(
+      (repository) =>
+        repository.name.toLowerCase().includes(query) ||
+        (repository.url || "").toLowerCase().includes(query) ||
+        (repository.language || "").toLowerCase().includes(query),
+    );
+  }, [assignedRepositories?.repositories, search]);
 
   if (isLoading) {
     return <div className={styles.state}>Loading dashboard...</div>;
   }
 
-  if (error || !dashboard) {
-    return <div className={styles.state}>{error || "No dashboard data available."}</div>;
+  if (error) {
+    return <div className={styles.state}>{error}</div>;
   }
 
-  const statLabels = role === "ADMIN" ? adminStatLabels : learnerStatLabels;
+  if (role === "LEARNER") {
+    const assignedCount = assignedRepositories?.total ?? filteredAssignedRepositories.length;
+    const knowledgeBasesReady = filteredAssignedRepositories.filter(
+      (repository) => repository.knowledge_base_status === "ready",
+    ).length;
+
+    return (
+      <div className={styles.page}>
+        <section className={styles.hero}>
+          <div>
+            <p className={styles.eyebrow}>Welcome {user?.name || "User"}</p>
+            <h1 className={styles.heading}>Learner Dashboard</h1>
+          </div>
+          <input
+            className={styles.search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search repositories"
+            type="search"
+            value={search}
+          />
+        </section>
+
+        <section className={styles.stats}>
+          <article className={styles.statCard}>
+            <span className={styles.statLabel}>Repositories Assigned</span>
+            <span className={styles.statValue}>{assignedCount}</span>
+            <span className={styles.statHint}>Available to learn</span>
+          </article>
+          <article className={styles.statCard}>
+            <span className={styles.statLabel}>Knowledge Bases Ready</span>
+            <span className={styles.statValue}>{knowledgeBasesReady}</span>
+            <span className={styles.statHint}>Ready to query</span>
+          </article>
+        </section>
+
+        <section className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <div>
+              <h2>Assigned Repositories</h2>
+              <p>{filteredAssignedRepositories.length} repositories matched</p>
+            </div>
+          </div>
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Repository</th>
+                  <th>Language</th>
+                  <th>Status</th>
+                  <th>KB Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAssignedRepositories.map((repository) => (
+                  <tr key={repository.id}>
+                    <td>
+                      <div className={styles.projectName}>{repository.name}</div>
+                      <div className={styles.repository}>{repository.url || `upload/${repository.name}`}</div>
+                    </td>
+                    <td>{repository.language || "Unknown"}</td>
+                    <td>
+                      <span className={badgeClass(repository.status)}>{repository.status}</span>
+                    </td>
+                    <td className={repository.knowledge_base_status === "none" ? styles.repository : undefined}>
+                      {repository.knowledge_base_status || "none"}
+                    </td>
+                    <td>
+                      <button
+                        className={styles.action}
+                        onClick={() => navigate(`/repositories/${repository.id}`)}
+                        type="button"
+                      >
+                        Open
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (!dashboard) {
+    return <div className={styles.state}>No dashboard data available.</div>;
+  }
 
   return (
     <div className={styles.page}>
       <section className={styles.hero}>
         <div>
           <p className={styles.eyebrow}>Welcome {user?.name || "User"}</p>
-          <h1 className={styles.heading}>{role === "ADMIN" ? "Admin Dashboard" : "Learner Dashboard"}</h1>
+          <h1 className={styles.heading}>Admin Dashboard</h1>
         </div>
         <input
           className={styles.search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search projects"
+          placeholder="Search repositories"
           type="search"
           value={search}
         />
       </section>
 
       <section className={styles.stats}>
-        {statLabels.map(([key, label, hint]) => (
+        {adminStatLabels.map(([key, label, hint]) => (
           <article className={styles.statCard} key={key}>
             <span className={styles.statLabel}>{label}</span>
-            <span className={styles.statValue}>
-              {dashboard.stats[key] ?? 0}
-              {key === "averageScore" ? "%" : ""}
-            </span>
+            <span className={styles.statValue}>{dashboard.stats[key] ?? 0}</span>
             <span className={styles.statHint}>{hint}</span>
           </article>
         ))}
@@ -115,92 +221,50 @@ function DashboardPage() {
       <section className={styles.panel}>
         <div className={styles.panelHeader}>
           <div>
-            <h2>Projects</h2>
+            <h2>Repositories</h2>
             <p>{filteredProjects.length} repositories matched</p>
           </div>
-          {role === "ADMIN" && (
-            <Button onClick={() => navigate(ROUTES.repositoryOnboard)} type="button">
-              Add Repository
-            </Button>
-          )}
+          <Button onClick={() => navigate(ROUTES.repositoryOnboard)} type="button">
+            Add Repository
+          </Button>
         </div>
         <div className={styles.tableWrap}>
           <table className={styles.table}>
             <thead>
               <tr>
-                {role === "ADMIN" ? (
-                  <>
-                    <th>Project Name</th>
-                    <th>Repository</th>
-                    <th>Status</th>
-                    <th>KT Progress</th>
-                    <th>Assessment Completion</th>
-                    <th>Actions</th>
-                  </>
-                ) : (
-                  <>
-                    <th>Project Name</th>
-                    <th>KT Progress</th>
-                    <th>Latest Score</th>
-                    <th>Next Assessment</th>
-                    <th>Action</th>
-                  </>
-                )}
+                <th>Repository Name</th>
+                <th>URL/Source</th>
+                <th>Language</th>
+                <th>Modules</th>
+                <th>Status</th>
+                <th>KB Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredProjects.map((project) => (
                 <tr key={project.id}>
-                  {role === "ADMIN" ? (
-                    <>
-                      <td>
-                        <div className={styles.projectName}>{project.name}</div>
-                      </td>
-                      <td className={styles.repository}>{project.repository}</td>
-                      <td>
-                        <span className={badgeClass(project.status)}>{project.status}</span>
-                      </td>
-                      <td>
-                        <div className={styles.progressTrack}>
-                          <div className={styles.progressFill} style={{ width: `${project.ktProgress}%` }} />
-                        </div>
-                        <div className={styles.progressText}>{project.ktProgress}% complete</div>
-                      </td>
-                      <td>{project.assessmentCompletion}%</td>
-                      <td>
-                        <button
-                          className={styles.action}
-                          onClick={() => navigate(ROUTES.project.replace(":projectId", project.id))}
-                          type="button"
-                        >
-                          Manage Project
-                        </button>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td>
-                        <div className={styles.projectName}>{project.name}</div>
-                      </td>
-                      <td>
-                        <div className={styles.progressTrack}>
-                          <div className={styles.progressFill} style={{ width: `${project.ktProgress}%` }} />
-                        </div>
-                        <div className={styles.progressText}>{project.ktProgress}% complete</div>
-                      </td>
-                      <td>{project.assessmentScore ? `${project.assessmentScore}%` : "Not started"}</td>
-                      <td>{project.nextAssessment ?? "Not scheduled"}</td>
-                      <td>
-                        <button
-                          className={styles.action}
-                          onClick={() => navigate(ROUTES.project.replace(":projectId", project.id))}
-                          type="button"
-                        >
-                          Open Project
-                        </button>
-                      </td>
-                    </>
-                  )}
+                  <td>
+                    <div className={styles.projectName}>{project.name}</div>
+                  </td>
+                  <td className={styles.repository}>{truncate(project.repository)}</td>
+                  <td>{project.language}</td>
+                  <td>{project.module_count}</td>
+                  <td>
+                    <span className={badgeClass(project.status)}>{project.status}</span>
+                  </td>
+                  <td className={project.knowledge_base_status === "none" ? styles.repository : undefined}>
+                    {project.knowledge_base_status}
+                  </td>
+                  <td>
+                    <button
+                      className={styles.action}
+                      onClick={() => navigate(`/repositories/${project.id}`)}
+                      type="button"
+                    >
+                      Open
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

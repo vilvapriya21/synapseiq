@@ -28,6 +28,131 @@
   gap: 16px;
 }
 
+.connectCard {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 18px 20px;
+}
+
+.connectCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.connectCardHeader h2 {
+  margin: 0;
+  color: #07142f;
+  font-size: 18px;
+}
+
+.connectCardHeader p {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.providerTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.providerTab {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+}
+
+.providerTabActive {
+  border-bottom-color: #1b4fd8;
+  color: #1b4fd8;
+}
+
+.providerPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.oauthButton {
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #6b7280;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.connectedBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  background: #f0fdf4;
+  color: #15803d;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.warningBanner {
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  background: #fffbeb;
+  color: #92400e;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.disconnectLink {
+  border: 0;
+  background: none;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.divider span {
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.divider strong {
+  font-weight: 500;
+}
+
+.helperText {
+  margin: 0;
+  color: #6b7280;
+  font-size: 12px;
+}
+
 .card,
 .repositoryCard {
   border: 1px solid #e5e7eb;

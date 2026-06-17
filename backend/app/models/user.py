@@ -16,6 +16,9 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(50), default="learner", nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     github_access_token: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    gitlab_access_token: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    bitbucket_access_token: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    azure_devops_token: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
