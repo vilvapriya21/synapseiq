@@ -7,7 +7,8 @@ export interface LoginRequest {
 }
 
 export interface SignupRequest extends LoginRequest {
-  name: string;
+  first_name: string;
+  last_name?: string;
   role: UserRole;
 }
 
@@ -33,16 +34,15 @@ export interface LoginResponse {
 }
 
 export const authService = {
-  login: async (payload: LoginRequest) => {
+  login: async (payloadOrEmail: LoginRequest | string, password?: string, remember?: boolean) => {
+    const payload: LoginRequest =
+      typeof payloadOrEmail === "string" ? { email: payloadOrEmail, password: password || "" } : payloadOrEmail;
     const response = await apiClient.post<LoginResponse>("/auth/login", payload);
     return response.data;
   },
 
   signup: async (payload: SignupRequest) => {
-    const response = await apiClient.post<LoginResponse>("/auth/signup", {
-      ...payload,
-      role: payload.role.toLowerCase(),
-    });
+    const response = await apiClient.post<{ message: string }>("/auth/signup", payload);
     return response.data;
   },
 

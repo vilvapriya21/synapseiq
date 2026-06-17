@@ -7,7 +7,8 @@ class LoginRequest(BaseModel):
 
 
 class SignupRequest(LoginRequest):
-    name: str
+    first_name: str
+    last_name: str | None = None
     role: str = "learner"
 
 
@@ -39,6 +40,11 @@ class ForgotPasswordRequest(BaseModel):
 class ForgotPasswordResponse(BaseModel):
     message: str
     verification_code: str | None = None
+
+
+class VerifyResetRequest(BaseModel):
+    email: EmailStr
+    code: str
 
 
 class ResetPasswordRequest(BaseModel):
