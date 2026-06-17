@@ -1,19 +1,14 @@
+import { apiClient } from "./api";
 import { User, UserRole } from "../types";
-import { useAuthStore } from "../store/authStore";
-import apiClient from "./api";
 
 export interface LoginRequest {
   email: string;
   password: string;
 }
 
-export interface LoginResponse {
-  token: string;
-  user: User;
-}
-
 export interface SignupRequest extends LoginRequest {
-  name: string;
+  first_name: string;
+  last_name?: string;
   role: UserRole;
 }
 
@@ -33,45 +28,36 @@ export interface ResetPasswordRequest {
   confirm_password: string;
 }
 
+export interface LoginResponse {
+  token: string;
+  user: User;
+}
+
 export const authService = {
-  async login(email: string, password: string, rememberMe = true) {
-    const response = await apiClient.post<{ token: string; user: User }>("/auth/login", {
-      email,
-      password,
-    });
-    const { token, user } = response.data;
-    useAuthStore.getState().login(user, { accessToken: token }, rememberMe);
-    return { token, user };
-  },
-
-  async signup(name: string, email: string, password: string, role: string) {
-    const response = await apiClient.post<{ token: string; user: User }>("/auth/signup", {
-      name,
-      email,
-      password,
-      role,
-    });
-    const { token, user } = response.data;
-    useAuthStore.getState().login(user, { accessToken: token });
-    return { token, user };
-  },
-
-  async me() {
-    const response = await apiClient.get<User>("/auth/me");
+  login: async (payloadOrEmail: LoginRequest | string, password?: string, remember?: boolean) => {
+    const payload: LoginRequest =
+      typeof payloadOrEmail === "string" ? { email: payloadOrEmail, password: password || "" } : payloadOrEmail;
+    const response = await apiClient.post<LoginResponse>("/auth/login", payload);
     return response.data;
   },
 
-  logout() {
-    useAuthStore.getState().logout();
+  signup: async (payload: SignupRequest) => {
+    const response = await apiClient.post<{ message: string }>("/auth/signup", payload);
+    return response.data;
   },
 
-  async forgotPassword(payload: ForgotPasswordRequest) {
+  forgotPassword: async (payload: ForgotPasswordRequest) => {
     const response = await apiClient.post<ForgotPasswordResponse>("/auth/forgot-password", payload);
     return response.data;
   },
 
-  async resetPassword(payload: ResetPasswordRequest) {
+  resetPassword: async (payload: ResetPasswordRequest) => {
     const response = await apiClient.post<{ message: string }>("/auth/reset-password", payload);
+    return response.data;
+  },
+
+  me: async () => {
+    const response = await apiClient.get<User>("/auth/me");
     return response.data;
   },
 };

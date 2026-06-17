@@ -42,10 +42,73 @@ export interface KnowledgeBaseResponse {
   total: number;
 }
 
-export interface RepositoryAssignment {
+export interface Contributor {
   id: string;
   name: string;
   email: string;
+  commit_count: number;
+  top_files?: string;
+}
+
+export interface ContributorListResponse {
+  repository_id: string;
+  contributors: Contributor[];
+  total: number;
+}
+
+export interface KTTopic {
+  id: string;
+  repository_id: string;
+  title: string;
+  description?: string;
+  path_patterns?: string;
+  created_at: string;
+}
+
+export interface KTTopicListResponse {
+  topics: KTTopic[];
+  total: number;
+}
+
+export interface Assignment {
+  id: string;
+  repository_id: string;
+  kt_topic_id: string;
+  kt_topic_title: string;
+  learner_id: string;
+  learner_name: string;
+  learner_email: string;
+  status: string;
+  assigned_at: string;
+}
+
+export interface AssignmentListResponse {
+  assignments: Assignment[];
+  total: number;
+}
+
+export interface MyAssignment {
+  assignment_id: string;
+  repository_id: string;
+  repository_name: string;
+  kt_topic_id: string;
+  kt_topic_title: string;
+  kt_topic_description?: string;
+  status: string;
+  assigned_at: string;
+}
+
+export interface RecommendedContributor {
+  name: string;
+  email: string;
+  commit_count: number;
+  relevant_file_matches: number;
+}
+
+export interface TopicRecommendationResponse {
+  kt_topic_id: string;
+  kt_topic_title: string;
+  recommendations: RecommendedContributor[];
 }
 
 export const connectRepository = async (url: string, branch: string): Promise<Repository> => {
@@ -89,17 +152,21 @@ export const getAssignedRepositories = async (): Promise<RepositoryListResponse>
   return response.data;
 };
 
-export const getRepositoryAssignments = async (repoId: string): Promise<RepositoryAssignment[]> => {
-  const response = await apiClient.get<RepositoryAssignment[]>(`/repositories/${repoId}/assignments`);
+export const getRepositoryAssignments = async (repoId: string): Promise<Assignment[]> => {
+  const response = await apiClient.get<AssignmentListResponse>(`/repositories/${repoId}/assignments`);
+  return response.data.assignments;
+};
+
+export const assignLearner = async (repoId: string, ktTopicId: string, learnerId: string): Promise<Assignment> => {
+  const response = await apiClient.post<Assignment>(`/repositories/${repoId}/assignments`, {
+    kt_topic_id: ktTopicId,
+    learner_id: learnerId,
+  });
   return response.data;
 };
 
-export const assignLearner = async (repoId: string, learnerId: string): Promise<void> => {
-  await apiClient.post(`/repositories/${repoId}/assign`, { learner_id: learnerId });
-};
-
-export const unassignLearner = async (repoId: string, learnerId: string): Promise<void> => {
-  await apiClient.delete(`/repositories/${repoId}/assign/${learnerId}`);
+export const unassignLearner = async (repoId: string, assignmentId: string): Promise<void> => {
+  await apiClient.delete(`/repositories/${repoId}/assignments/${assignmentId}`);
 };
 
 export async function getKnowledgeBase(repoId: string, entryType?: string): Promise<KnowledgeBaseResponse> {
@@ -107,6 +174,53 @@ export async function getKnowledgeBase(repoId: string, entryType?: string): Prom
   const { data } = await apiClient.get<KnowledgeBaseResponse>(`/repositories/${repoId}/knowledge-base${params}`);
   return data;
 }
+
+export async function getContributors(repoId: string): Promise<ContributorListResponse> {
+  const { data } = await apiClient.get<ContributorListResponse>(`/repositories/${repoId}/contributors`);
+  return data;
+}
+
+export async function analyzeContributors(repoId: string): Promise<ContributorListResponse> {
+  const { data } = await apiClient.post<ContributorListResponse>(`/repositories/${repoId}/analyze-contributors`);
+  return data;
+}
+
+export const createKTTopic = async (
+  repoId: string,
+  data: { title: string; description?: string; path_patterns?: string },
+): Promise<KTTopic> => {
+  const response = await apiClient.post<KTTopic>(`/repositories/${repoId}/kt-topics`, data);
+  return response.data;
+};
+
+export const getKTTopics = async (repoId: string): Promise<KTTopicListResponse> => {
+  const response = await apiClient.get<KTTopicListResponse>(`/repositories/${repoId}/kt-topics`);
+  return response.data;
+};
+
+export const deleteKTTopic = async (repoId: string, topicId: string): Promise<void> => {
+  await apiClient.delete(`/repositories/${repoId}/kt-topics/${topicId}`);
+};
+
+export const getAssignments = async (repoId: string): Promise<AssignmentListResponse> => {
+  const response = await apiClient.get<AssignmentListResponse>(`/repositories/${repoId}/assignments`);
+  return response.data;
+};
+
+export const getMyAssignments = async (): Promise<MyAssignment[]> => {
+  const response = await apiClient.get<MyAssignment[]>("/repositories/assigned-to-me");
+  return response.data;
+};
+
+export const getTopicRecommendation = async (
+  repoId: string,
+  topicId: string,
+): Promise<TopicRecommendationResponse> => {
+  const response = await apiClient.get<TopicRecommendationResponse>(
+    `/repositories/${repoId}/kt-topics/${topicId}/recommend`,
+  );
+  return response.data;
+};
 
 export const repositoryService = {
   async analyzeRepository(): Promise<RepositoryAnalysis> {

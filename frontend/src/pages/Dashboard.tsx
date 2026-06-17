@@ -5,6 +5,8 @@ import { ROUTES } from "../routes/routePaths";
 import { dashboardService, type DashboardResponse } from "../services/dashboardService";
 import {
   getAssignedRepositories,
+  getMyAssignments,
+  type MyAssignment,
   type Repository,
   type RepositoryListResponse,
 } from "../services/repositoryService";
@@ -36,6 +38,7 @@ function DashboardPage() {
   const role = normalizeRole(user?.roles[0]);
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [assignedRepositories, setAssignedRepositories] = useState<RepositoryListResponse | null>(null);
+  const [myAssignments, setMyAssignments] = useState<MyAssignment[]>([]);
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -45,17 +48,22 @@ function DashboardPage() {
     setIsLoading(true);
     setError("");
 
-    const request = role === "LEARNER" ? getAssignedRepositories() : dashboardService.getDashboard();
+    const request = role === "LEARNER"
+      ? Promise.all([getAssignedRepositories(), getMyAssignments()])
+      : dashboardService.getDashboard();
 
     request
       .then((data) => {
         if (!isMounted) return;
         if (role === "LEARNER") {
-          setAssignedRepositories(data as RepositoryListResponse);
+          const [repositoriesResponse, assignmentsResponse] = data as [RepositoryListResponse, MyAssignment[]];
+          setAssignedRepositories(repositoriesResponse);
+          setMyAssignments(assignmentsResponse);
           setDashboard(null);
         } else {
           setDashboard(data as DashboardResponse);
           setAssignedRepositories(null);
+          setMyAssignments([]);
         }
       })
       .catch(() => {
@@ -135,6 +143,31 @@ function DashboardPage() {
             <span className={styles.statValue}>{knowledgeBasesReady}</span>
             <span className={styles.statHint}>Ready to query</span>
           </article>
+        </section>
+
+        <section className={styles.card}>
+          <h2>My Knowledge Transfer Assignments</h2>
+          {myAssignments.length === 0 ? (
+            <p className={styles.emptyText}>No KT topics assigned yet. Check back soon.</p>
+          ) : (
+            <div className={styles.assignmentGrid}>
+              {myAssignments.map((assignment) => (
+                <div key={assignment.assignment_id} className={styles.assignmentCard}>
+                  <span className={styles.repoTag}>{assignment.repository_name}</span>
+                  <h3>{assignment.kt_topic_title}</h3>
+                  {assignment.kt_topic_description ? <p>{assignment.kt_topic_description}</p> : null}
+                  <span className={styles.statusBadge}>{assignment.status}</span>
+                  <button
+                    className={styles.primaryButton}
+                    onClick={() => navigate(`/repositories/${assignment.repository_id}`)}
+                    type="button"
+                  >
+                    Start Learning
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className={styles.panel}>
