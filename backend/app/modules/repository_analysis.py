@@ -38,12 +38,32 @@ DEPENDENCY_FILES = {
     "composer.json", "pubspec.yaml",
 }
 
+TEXT_FILE_EXTENSIONS = {
+    ".bat", ".c", ".cfg", ".cmake", ".cpp", ".cs", ".css", ".csv", ".dart",
+    ".env", ".go", ".gradle", ".h", ".html", ".ini", ".java", ".js", ".json",
+    ".jsx", ".kt", ".lock", ".md", ".php", ".properties", ".py", ".r", ".rb",
+    ".rs", ".rst", ".scala", ".sh", ".sql", ".swift", ".toml", ".ts", ".tsx",
+    ".txt", ".xml", ".yaml", ".yml",
+}
 
-def clone_repository(clone_url: str, target_dir: Path) -> None:
-    command = ["git", "clone", "--depth=1", "--single-branch", clone_url, str(target_dir)]
+IMAGE_FILE_EXTENSIONS = {
+    ".avif", ".bmp", ".gif", ".ico", ".jpg", ".jpeg", ".png", ".svg", ".webp",
+}
+
+MAX_TEXT_FILE_BYTES = 500_000
+MAX_IMAGE_FILE_BYTES = 5_000_000
+REPOSITORY_STORAGE_DIR = Path("uploads") / "repositories"
+
+
+def clone_repository(clone_url: str, target_dir: Path, branch: str | None = None) -> None:
+    command = ["git", "clone", "--depth=1", "--single-branch"]
+    if branch:
+        command.extend(["--branch", branch])
+    command.extend([clone_url, str(target_dir)])
     print(f"[CLONE] target_dir={target_dir}")
     print(f"[CLONE] target_dir_exists_before={target_dir.exists()}")
-    print(f"[CLONE] command=git clone --depth=1 --single-branch {mask_credentials(clone_url)} {target_dir}")
+    branch_part = f"--branch {branch} " if branch else ""
+    print(f"[CLONE] command=git clone --depth=1 --single-branch {branch_part}{mask_credentials(clone_url)} {target_dir}")
     try:
         result = subprocess.run(
             command,
@@ -124,6 +144,27 @@ def extract_dependencies(root: Path) -> list[tuple[str, str]]:
             content = path.read_text(encoding="utf-8", errors="ignore")[:3000]
             dependencies.append((path.name, content))
     return dependencies
+
+
+def is_text_file(file_path: Path) -> bool:
+    return file_path.suffix.lower() in TEXT_FILE_EXTENSIONS
+
+
+def is_image_file(file_path: Path) -> bool:
+    return file_path.suffix.lower() in IMAGE_FILE_EXTENSIONS
+
+
+def persist_repository_files(root: Path, repo_id: str) -> None:
+    destination = REPOSITORY_STORAGE_DIR / repo_id
+    REPOSITORY_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+    if destination.exists():
+        shutil.rmtree(destination)
+
+    shutil.copytree(
+        root,
+        destination,
+        ignore=shutil.ignore_patterns(".git"),
+    )
 
 
 def extract_python_signatures(file_path: Path) -> str:
@@ -250,7 +291,7 @@ def analyze_repository(
             )
             print(f"[AUTH] authenticated_url={mask_credentials(auth_url)} credentials_injected={'@' in auth_url.split('://', 1)[-1].split('/', 1)[0]}")
             print(f"[CLONE] before_clone repo_id={repo_id}")
-            clone_repository(auth_url, temp_dir / "repo")
+            clone_repository(auth_url, temp_dir / "repo", repository.branch)
             print(f"[CLONE] after_clone_success repo_id={repo_id}")
             root = temp_dir / "repo"
         elif repository.source_type == "upload":
@@ -277,6 +318,8 @@ def analyze_repository(
             f"[REPO_ANALYSIS] analyzed repo_id={repo_id} language={language or 'Unknown'} "
             f"module_count={module_count} file_count={file_count}"
         )
+        persist_repository_files(root, repo_id)
+        print(f"[REPO_ANALYSIS] persisted repo_id={repo_id} path={REPOSITORY_STORAGE_DIR / repo_id}")
 
         repository.status = "indexed"
         repository.language = language or "Unknown"

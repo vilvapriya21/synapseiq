@@ -156,7 +156,15 @@ def list_kt_topics(
     current_user: User = Depends(get_current_user),
 ) -> KTTopicListResponse:
     topics = db.scalars(
-        select(KTTopic).where(KTTopic.repository_id == repo_id).order_by(KTTopic.created_at)
+        select(KTTopic)
+        .where(
+            KTTopic.repository_id == repo_id,
+            or_(
+                KTTopic.path_patterns.is_(None),
+                KTTopic.path_patterns != REPOSITORY_LEARNING_TOPIC_MARKER,
+            ),
+        )
+        .order_by(KTTopic.created_at)
     ).all()
     return KTTopicListResponse(topics=topics, total=len(topics))
 

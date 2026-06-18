@@ -29,7 +29,14 @@ export interface RepositoryAnalysis {
 
 export interface KnowledgeBaseEntry {
   id: string;
-  entry_type: "file_tree" | "readme" | "dependencies" | "module_summary" | "function_index";
+  entry_type:
+    | "file_tree"
+    | "readme"
+    | "dependencies"
+    | "module_summary"
+    | "function_index"
+    | "source_file"
+    | "image_file";
   file_path?: string;
   content: string;
   language?: string;
@@ -39,6 +46,29 @@ export interface KnowledgeBaseResponse {
   repository_id: string;
   status: string;
   entries: KnowledgeBaseEntry[];
+  total: number;
+}
+
+export interface RepositoryFileResponse {
+  repository_id: string;
+  path: string;
+  entry_type: "source_file" | "image_file";
+  content: string;
+  mime_type?: string;
+  size: number;
+}
+
+export interface RepositoryUpload {
+  id: string;
+  filename: string;
+  content_type?: string;
+  size: number;
+  uploaded_at: string;
+  uploaded_by: string;
+}
+
+export interface RepositoryUploadListResponse {
+  uploads: RepositoryUpload[];
   total: number;
 }
 
@@ -73,8 +103,8 @@ export interface KTTopicListResponse {
 export interface Assignment {
   id: string;
   repository_id: string;
-  kt_topic_id: string;
-  kt_topic_title: string;
+  kt_topic_id?: string;
+  kt_topic_title?: string;
   learner_id: string;
   learner_name: string;
   learner_email: string;
@@ -91,8 +121,8 @@ export interface MyAssignment {
   assignment_id: string;
   repository_id: string;
   repository_name: string;
-  kt_topic_id: string;
-  kt_topic_title: string;
+  kt_topic_id?: string;
+  kt_topic_title?: string;
   kt_topic_description?: string;
   status: string;
   assigned_at: string;
@@ -201,7 +231,7 @@ export const getRepositoryAssignments = async (repoId: string): Promise<Assignme
   return response.data.assignments;
 };
 
-export const assignLearner = async (repoId: string, ktTopicId: string, learnerId: string): Promise<Assignment> => {
+export const assignLearner = async (repoId: string, learnerId: string, ktTopicId?: string): Promise<Assignment> => {
   const response = await apiClient.post<Assignment>(`/repositories/${repoId}/assignments`, {
     kt_topic_id: ktTopicId,
     learner_id: learnerId,
@@ -217,6 +247,45 @@ export async function getKnowledgeBase(repoId: string, entryType?: string): Prom
   const params = entryType ? `?entry_type=${entryType}` : "";
   const { data } = await apiClient.get<KnowledgeBaseResponse>(`/repositories/${repoId}/knowledge-base${params}`);
   return data;
+}
+
+export async function getRepositoryFile(repoId: string, path: string): Promise<RepositoryFileResponse> {
+  const { data } = await apiClient.get<RepositoryFileResponse>(`/repositories/${repoId}/files`, {
+    params: { path },
+  });
+  return data;
+}
+
+export async function getRepositoryUploads(repoId: string): Promise<RepositoryUploadListResponse> {
+  const { data } = await apiClient.get<RepositoryUploadListResponse>(`/repositories/${repoId}/uploads`);
+  return data;
+}
+
+export async function uploadRepositoryDocument(repoId: string, file: File): Promise<RepositoryUpload> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const { data } = await apiClient.post<RepositoryUpload>(`/repositories/${repoId}/uploads`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+export async function deleteRepositoryUpload(repoId: string, uploadId: string): Promise<void> {
+  await apiClient.delete(`/repositories/${repoId}/uploads/${uploadId}`);
+}
+
+export async function downloadRepositoryUpload(repoId: string, upload: RepositoryUpload): Promise<void> {
+  const response = await apiClient.get<Blob>(`/repositories/${repoId}/uploads/${upload.id}/download`, {
+    responseType: "blob",
+  });
+  const url = window.URL.createObjectURL(response.data);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = upload.filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 }
 
 export async function getContributors(repoId: string): Promise<ContributorListResponse> {
