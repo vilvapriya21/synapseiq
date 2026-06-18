@@ -146,15 +146,15 @@ function DashboardPage() {
         </section>
 
         <section className={styles.card}>
-          <h2>My Knowledge Transfer Assignments</h2>
+          <h2>My Current Learning</h2>
           {myAssignments.length === 0 ? (
-            <p className={styles.emptyText}>No KT topics assigned yet. Check back soon.</p>
+            <p className={styles.emptyText}>No repositories assigned yet. Check back soon.</p>
           ) : (
             <div className={styles.assignmentGrid}>
               {myAssignments.map((assignment) => (
                 <div key={assignment.assignment_id} className={styles.assignmentCard}>
                   <span className={styles.repoTag}>{assignment.repository_name}</span>
-                  <h3>{assignment.kt_topic_title}</h3>
+                  <h3>{assignment.kt_topic_title || assignment.repository_name}</h3>
                   {assignment.kt_topic_description ? <p>{assignment.kt_topic_description}</p> : null}
                   <span className={styles.statusBadge}>{assignment.status}</span>
                   <button

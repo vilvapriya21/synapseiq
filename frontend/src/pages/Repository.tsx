@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { EmptyState } from "../components/common";
 import { getUsers, type AdminUser } from "../services/adminService";
@@ -7,32 +7,46 @@ import {
   assignLearner,
   createKTTopic,
   deleteKTTopic,
+  deleteRepositoryUpload,
+  downloadRepositoryUpload,
   getAssignments,
   getContributors,
   getKTTopics,
   getKnowledgeBase,
+  getRepositoryFile,
+  getRepositoryUploads,
   getRepository,
   getTopicRecommendation,
   refreshRepository,
   unassignLearner,
+  uploadRepositoryDocument,
   type Assignment,
   type Contributor,
   type KnowledgeBaseEntry,
   type KnowledgeBaseResponse,
   type KTTopic,
   type Repository,
+  type RepositoryFileResponse,
+  type RepositoryUpload,
   type RecommendedContributor,
 } from "../services/repositoryService";
 import { useAuthStore } from "../store/authStore";
 import { normalizeRole } from "../utils/roles";
 import styles from "./Repository.module.css";
 
-type TabKey = "file_tree" | "readme" | "dependencies";
+type TabKey = "file_tree" | "readme" | "dependencies" | "uploads";
+type FileTreeNode = {
+  name: string;
+  path: string;
+  type: "file" | "folder";
+  children: FileTreeNode[];
+};
 
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "file_tree", label: "File Tree" },
   { key: "readme", label: "README" },
   { key: "dependencies", label: "Dependencies" },
+  { key: "uploads", label: "Uploads" },
 ];
 
 function getStatusClass(status: Repository["status"] | Repository["knowledge_base_status"]) {
@@ -56,6 +70,49 @@ function findEntry(entries: KnowledgeBaseEntry[], entryType: KnowledgeBaseEntry[
   return entries.find((entry) => entry.entry_type === entryType);
 }
 
+function normalizeFilePath(path: string) {
+  return path.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+}
+
+function buildFileTree(content: string): FileTreeNode[] {
+  const root: FileTreeNode = { name: "", path: "", type: "folder", children: [] };
+  const paths = content
+    .split(/\r?\n/)
+    .map(normalizeFilePath)
+    .filter(Boolean);
+
+  paths.forEach((filePath) => {
+    const parts = filePath.split("/").filter(Boolean);
+    let current = root;
+
+    parts.forEach((part, index) => {
+      const path = parts.slice(0, index + 1).join("/");
+      const type = index === parts.length - 1 ? "file" : "folder";
+      let node = current.children.find((child) => child.name === part && child.type === type);
+
+      if (!node) {
+        node = { name: part, path, type, children: [] };
+        current.children.push(node);
+      }
+
+      current = node;
+    });
+  });
+
+  const sortNodes = (nodes: FileTreeNode[]) => {
+    nodes.sort((left, right) => {
+      if (left.type !== right.type) {
+        return left.type === "folder" ? -1 : 1;
+      }
+      return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+    });
+    nodes.forEach((node) => sortNodes(node.children));
+  };
+
+  sortNodes(root.children);
+  return root.children;
+}
+
 function formatDate(value?: string) {
   if (!value) {
     return "-";
@@ -64,6 +121,16 @@ function formatDate(value?: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function formatFileSize(size: number) {
+  if (size < 1024) {
+    return `${size} B`;
+  }
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
+  }
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function RepositoryPage() {
@@ -84,10 +151,18 @@ function RepositoryPage() {
   const [recommendations, setRecommendations] = useState<Record<string, RecommendedContributor[]>>({});
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [learners, setLearners] = useState<{ id: string; name: string; email: string }[]>([]);
-  const [selectedTopicId, setSelectedTopicId] = useState("");
   const [selectedLearnerId, setSelectedLearnerId] = useState("");
   const [assignError, setAssignError] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("file_tree");
+  const [selectedFilePath, setSelectedFilePath] = useState("");
+  const [selectedFile, setSelectedFile] = useState<RepositoryFileResponse | null>(null);
+  const [fileLoading, setFileLoading] = useState(false);
+  const [fileError, setFileError] = useState("");
+  const [fileSearch, setFileSearch] = useState("");
+  const [uploads, setUploads] = useState<RepositoryUpload[]>([]);
+  const [uploadsLoading, setUploadsLoading] = useState(false);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -140,12 +215,14 @@ function RepositoryPage() {
 
     setLoading(true);
     try {
-      const [repositoryResponse, knowledgeBaseResponse] = await Promise.all([
+      const [repositoryResponse, knowledgeBaseResponse, uploadsResponse] = await Promise.all([
         getRepository(repoId),
         getKnowledgeBase(repoId),
+        getRepositoryUploads(repoId),
       ]);
       setRepository(repositoryResponse);
       setKnowledgeBase(knowledgeBaseResponse);
+      setUploads(uploadsResponse.uploads);
       setError("");
     } catch {
       setError("Unable to load repository details.");
@@ -250,19 +327,18 @@ function RepositoryPage() {
   };
 
   const handleAssign = async () => {
-    if (!repoId || !selectedTopicId || !selectedLearnerId) {
+    if (!repoId || !selectedLearnerId) {
       return;
     }
 
     setAssignError("");
     try {
-      await assignLearner(repoId, selectedTopicId, selectedLearnerId);
+      await assignLearner(repoId, selectedLearnerId);
       const result = await getAssignments(repoId);
       setAssignments(result.assignments);
-      setSelectedTopicId("");
       setSelectedLearnerId("");
     } catch {
-      setAssignError("Failed to assign learner. They may already be assigned to this topic.");
+      setAssignError("Failed to assign learner. They may already be assigned to this repository.");
     }
   };
 
@@ -276,17 +352,238 @@ function RepositoryPage() {
     setAssignments(result.assignments);
   };
 
+  const fetchUploads = async () => {
+    if (!repoId) {
+      return;
+    }
+
+    setUploadsLoading(true);
+    try {
+      const response = await getRepositoryUploads(repoId);
+      setUploads(response.uploads);
+      setUploadError("");
+    } catch {
+      setUploadError("Unable to load uploaded files.");
+    } finally {
+      setUploadsLoading(false);
+    }
+  };
+
+  const handleUploadDocument = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!repoId || !file) {
+      return;
+    }
+
+    setUploadingDocument(true);
+    setUploadError("");
+    try {
+      await uploadRepositoryDocument(repoId, file);
+      await fetchUploads();
+    } catch {
+      setUploadError("Unable to upload this file. Check the file size and try again.");
+    } finally {
+      setUploadingDocument(false);
+    }
+  };
+
+  const handleDeleteUpload = async (uploadId: string) => {
+    if (!repoId) {
+      return;
+    }
+
+    if (!window.confirm("Delete this uploaded KT file?")) {
+      return;
+    }
+
+    try {
+      await deleteRepositoryUpload(repoId, uploadId);
+      await fetchUploads();
+    } catch {
+      setUploadError("Unable to delete this file.");
+    }
+  };
+
+  const handleDownloadUpload = async (upload: RepositoryUpload) => {
+    if (!repoId) {
+      return;
+    }
+
+    try {
+      await downloadRepositoryUpload(repoId, upload);
+    } catch {
+      setUploadError("Unable to download this file.");
+    }
+  };
+
   const entries = knowledgeBase?.entries ?? [];
   const fileTreeEntry = findEntry(entries, "file_tree");
   const readmeEntry = findEntry(entries, "readme");
   const dependencyEntries = entries.filter((entry) => entry.entry_type === "dependencies");
 
+  const filterFileTreeNodes = (nodes: FileTreeNode[], query: string): FileTreeNode[] => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return nodes;
+    }
+
+    return nodes.reduce<FileTreeNode[]>((matches, node) => {
+      const children = filterFileTreeNodes(node.children, normalizedQuery);
+      const isMatch = node.name.toLowerCase().includes(normalizedQuery) || node.path.toLowerCase().includes(normalizedQuery);
+
+      if (isMatch || children.length > 0) {
+        matches.push({ ...node, children });
+      }
+
+      return matches;
+    }, []);
+  };
+
+  const handleSelectFile = async (path: string) => {
+    if (!repoId) {
+      return;
+    }
+
+    setSelectedFilePath(path);
+    setSelectedFile(null);
+    setFileError("");
+    setFileLoading(true);
+    try {
+      const file = await getRepositoryFile(repoId, path);
+      setSelectedFile(file);
+    } catch {
+      setFileError("Unable to preview this file. Re-analyze the repository if it was indexed before local storage was added.");
+    } finally {
+      setFileLoading(false);
+    }
+  };
+
+  const renderCodePreview = (content: string) => {
+    const lines = content.split(/\r?\n/);
+
+    return (
+      <div className={styles.codeViewer}>
+        {lines.map((line, index) => (
+          <div className={styles.codeLine} key={`${index}-${line}`}>
+            <span className={styles.lineNumber}>{index + 1}</span>
+            <code className={styles.lineContent}>{line || " "}</code>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderFilePreview = () => {
+    if (!selectedFilePath) {
+      return (
+        <div className={styles.emptyPreview}>
+          <p>Select a file to preview its content.</p>
+        </div>
+      );
+    }
+
+    if (fileLoading) {
+      return (
+        <div className={styles.emptyPreview}>
+          <p>Loading {selectedFilePath}&hellip;</p>
+        </div>
+      );
+    }
+
+    if (fileError) {
+      return (
+        <div className={styles.emptyPreview}>
+          <p className={styles.error}>{fileError}</p>
+        </div>
+      );
+    }
+
+    if (!selectedFile) {
+      return (
+        <div className={styles.emptyPreview}>
+          <p>No preview available for {selectedFilePath}.</p>
+        </div>
+      );
+    }
+
+    if (selectedFile.entry_type === "image_file") {
+      return selectedFile.content.startsWith("data:") ? (
+        <div className={styles.imagePreviewWrap}>
+          <img className={styles.imagePreview} src={selectedFile.content} alt={selectedFile.path} />
+        </div>
+      ) : (
+        <p className={styles.muted}>{selectedFile.content}</p>
+      );
+    }
+
+    return renderCodePreview(selectedFile.content);
+  };
+
+  const renderFileTreeNodes = (nodes: FileTreeNode[], forceOpen = false) => (
+    <ul className={styles.fileTreeList}>
+      {nodes.map((node) => (
+        <li key={node.path}>
+          {node.type === "folder" ? (
+            <details className={styles.fileTreeFolder} open={forceOpen || undefined}>
+              <summary title={node.path}>
+                <span className={styles.fileIcon} aria-hidden="true">&gt;</span>
+                <span>{node.name}</span>
+              </summary>
+              {node.children.length > 0 ? renderFileTreeNodes(node.children, forceOpen) : null}
+            </details>
+          ) : (
+            <button
+              className={`${styles.fileTreeFile} ${selectedFilePath === node.path ? styles.fileTreeFileActive : ""}`}
+              onClick={() => handleSelectFile(node.path)}
+              title={node.path}
+              type="button"
+            >
+              <span className={styles.fileIcon} aria-hidden="true">-</span>
+              <span>{node.name}</span>
+            </button>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+
   const renderTabContent = () => {
     if (activeTab === "file_tree") {
-      return fileTreeEntry ? (
-        <pre className={styles.codeBlock}>{fileTreeEntry.content}</pre>
+      if (!fileTreeEntry) {
+        return <p className={styles.muted}>Not found in this repository</p>;
+      }
+
+      const fileTreeNodes = filterFileTreeNodes(buildFileTree(fileTreeEntry.content), fileSearch);
+      return fileTreeNodes.length > 0 ? (
+        <div className={styles.fileWorkspace}>
+          <aside className={styles.fileSidebar}>
+            <div className={styles.fileSidebarHeader}>
+              <strong>Files</strong>
+              <span>{repository?.branch || "main"}</span>
+            </div>
+            <input
+              className={styles.fileSearch}
+              onChange={(event) => setFileSearch(event.target.value)}
+              placeholder="Go to file"
+              type="search"
+              value={fileSearch}
+            />
+            <div className={styles.fileTree}>{renderFileTreeNodes(fileTreeNodes, Boolean(fileSearch.trim()))}</div>
+          </aside>
+          <section className={styles.filePreview}>
+            <div className={styles.filePreviewHeader}>
+              <div>
+                <strong>{selectedFilePath ? selectedFilePath.split("/").pop() : "Select a file"}</strong>
+                {selectedFilePath ? <span>{selectedFilePath}</span> : null}
+              </div>
+              {selectedFile ? <span>{selectedFile.size.toLocaleString()} bytes</span> : null}
+            </div>
+            {renderFilePreview()}
+          </section>
+        </div>
       ) : (
-        <p className={styles.muted}>Not found in this repository</p>
+        <p className={styles.muted}>No files matched your search.</p>
       );
     }
 
@@ -298,18 +595,72 @@ function RepositoryPage() {
       );
     }
 
-    return dependencyEntries.length > 0 ? (
-      <div className={styles.dependencyList}>
-        {dependencyEntries.map((entry) => (
-          <div key={entry.id} className={styles.dependencyItem}>
-            <h3>{entry.file_path}</h3>
-            <pre className={styles.codeBlock}>{entry.content}</pre>
+    if (activeTab === "dependencies") {
+      return dependencyEntries.length > 0 ? (
+        <div className={styles.dependencyList}>
+          {dependencyEntries.map((entry) => (
+            <div key={entry.id} className={styles.dependencyItem}>
+              <h3>{entry.file_path}</h3>
+              <pre className={styles.codeBlock}>{entry.content}</pre>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className={styles.muted}>Not found in this repository</p>
+      );
+    }
+
+    if (activeTab === "uploads") {
+      return (
+        <div className={styles.uploadPanel}>
+          <div className={styles.uploadHeader}>
+            <div>
+              <h3>Uploaded KT Files</h3>
+              <p>Extra sheets, docs, images, and reference files for this repository.</p>
+            </div>
+            {role === "ADMIN" ? (
+              <label className={`${styles.primaryButton} ${styles.uploadButton}`}>
+                {uploadingDocument ? "Uploading..." : "Upload File"}
+                <input disabled={uploadingDocument} onChange={handleUploadDocument} type="file" />
+              </label>
+            ) : null}
           </div>
-        ))}
-      </div>
-    ) : (
-      <p className={styles.muted}>Not found in this repository</p>
-    );
+
+          {uploadError ? <p className={styles.error}>{uploadError}</p> : null}
+
+          {uploadsLoading ? (
+            <p className={styles.muted}>Loading uploaded files&hellip;</p>
+          ) : uploads.length === 0 ? (
+            <p className={styles.emptyText}>No extra KT files uploaded yet.</p>
+          ) : (
+            <div className={styles.uploadList}>
+              {uploads.map((upload) => (
+                <div className={styles.uploadItem} key={upload.id}>
+                  <div className={styles.uploadMeta}>
+                    <strong>{upload.filename}</strong>
+                    <span>
+                      {upload.content_type || "file"} &middot; {formatFileSize(upload.size)} &middot; {formatDate(upload.uploaded_at)}
+                    </span>
+                  </div>
+                  <div className={styles.uploadActions}>
+                    <button className={styles.secondaryButton} onClick={() => handleDownloadUpload(upload)} type="button">
+                      Download
+                    </button>
+                    {role === "ADMIN" ? (
+                      <button className={styles.deleteButton} onClick={() => handleDeleteUpload(upload.id)} type="button">
+                        Delete
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return null;
   };
 
   if (loading && !repository) {
@@ -348,11 +699,18 @@ function RepositoryPage() {
           <span className={styles.statChip}>Language: {repository.language || "-"}</span>
           <span className={styles.statChip}>Modules: {repository.module_count}</span>
           <span className={styles.statChip}>Files: {repository.file_count}</span>
+          <span className={styles.statChip}>Branch: {repository.branch || "-"}</span>
+          <span className={styles.statChip}>Source: {repository.source_type}</span>
+          <span className={styles.statChip}>KB Entries: {knowledgeBase?.total ?? 0}</span>
+          <span className={styles.statChip}>Created: {formatDate(repository.created_at)}</span>
         </div>
+        <button className={styles.outlineButton} type="button" onClick={handleReanalyze} disabled={refreshing}>
+          Re-analyze
+        </button>
       </section>
 
-      <section className={styles.detailGrid}>
-        <article className={styles.card}>
+      <section className={styles.knowledgeSection}>
+        <article className={`${styles.card} ${styles.knowledgeCard}`}>
           <div className={styles.cardHeader}>
             <h2>Knowledge Base</h2>
             <span className={`${styles.badge} ${getStatusClass(repository.knowledge_base_status)}`}>
@@ -392,35 +750,6 @@ function RepositoryPage() {
             </>
           ) : null}
         </article>
-
-        <aside className={styles.sideColumn}>
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
-              <h2>Repository Info</h2>
-            </div>
-            <dl className={styles.infoList}>
-              <div>
-                <dt>Created</dt>
-                <dd>{formatDate(repository.created_at)}</dd>
-              </div>
-              <div>
-                <dt>Source type</dt>
-                <dd>{repository.source_type}</dd>
-              </div>
-              <div>
-                <dt>Branch</dt>
-                <dd>{repository.branch || "-"}</dd>
-              </div>
-              <div>
-                <dt>Knowledge base entries</dt>
-                <dd>{knowledgeBase?.total ?? 0}</dd>
-              </div>
-            </dl>
-            <button className={styles.outlineButton} type="button" onClick={handleReanalyze} disabled={refreshing}>
-              Re-analyze
-            </button>
-          </div>
-        </aside>
       </section>
 
       {role === "ADMIN" ? (
@@ -541,19 +870,9 @@ function RepositoryPage() {
           </section>
 
           <section className={styles.card}>
-            <h2>Assigned Learners</h2>
+            <h2>Current Learning</h2>
 
             <div className={styles.assignForm}>
-              <select
-                className={styles.input}
-                value={selectedTopicId}
-                onChange={(event) => setSelectedTopicId(event.target.value)}
-              >
-                <option value="">Select KT Topic...</option>
-                {topics.map((topic) => (
-                  <option key={topic.id} value={topic.id}>{topic.title}</option>
-                ))}
-              </select>
               <select
                 className={styles.input}
                 value={selectedLearnerId}
@@ -575,7 +894,7 @@ function RepositoryPage() {
                 <thead>
                   <tr>
                     <th>Learner</th>
-                    <th>KT Topic</th>
+                    <th>Repository</th>
                     <th>Status</th>
                     <th></th>
                   </tr>
@@ -584,7 +903,7 @@ function RepositoryPage() {
                   {assignments.map((assignment) => (
                     <tr key={assignment.id}>
                       <td>{assignment.learner_name} ({assignment.learner_email})</td>
-                      <td>{assignment.kt_topic_title}</td>
+                      <td>{repository.name}</td>
                       <td>{assignment.status}</td>
                       <td>
                         <button className={styles.deleteButton} onClick={() => handleUnassign(assignment.id)} type="button">

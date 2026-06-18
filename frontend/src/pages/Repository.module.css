@@ -75,11 +75,12 @@
   color: #1b4fd8;
 }
 
-.detailGrid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 16px;
-  align-items: start;
+.knowledgeSection {
+  display: block;
+}
+
+.knowledgeCard {
+  min-width: 0;
 }
 
 .card {
@@ -171,6 +172,245 @@
   white-space: pre;
 }
 
+.fileWorkspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 24%) minmax(0, 1fr);
+  min-height: 720px;
+  height: min(78vh, 860px);
+  overflow: hidden;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.fileSidebar {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  min-width: 0;
+  border-right: 1px solid #d0d7de;
+  background: #f6f8fa;
+}
+
+.fileSidebarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-bottom: 1px solid #d0d7de;
+}
+
+.fileSidebarHeader strong {
+  color: #24292f;
+  font-size: 14px;
+}
+
+.fileSidebarHeader span {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #57606a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fileSearch {
+  width: calc(100% - 16px);
+  height: 34px;
+  margin: 8px;
+  box-sizing: border-box;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #24292f;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.fileTree {
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+  padding: 6px 8px 12px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+}
+
+.fileTreeList {
+  display: grid;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 16px;
+}
+
+.fileTree > .fileTreeList {
+  padding-left: 0;
+}
+
+.fileTreeFolder summary,
+.fileTreeFile {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+  min-height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #24292f;
+  cursor: default;
+  font: inherit;
+  overflow-wrap: anywhere;
+  padding: 2px 6px;
+  text-align: left;
+}
+
+.fileTreeFolder summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.fileTreeFolder summary::-webkit-details-marker {
+  display: none;
+}
+
+.fileTreeFolder summary:hover,
+.fileTreeFile:hover {
+  background: #f6f8fa;
+}
+
+.fileTreeFile {
+  cursor: pointer;
+}
+
+.fileTreeFileActive {
+  background: #eaeef2;
+  color: #0969da;
+}
+
+.fileTreeFolder[open] > summary .fileIcon {
+  transform: rotate(90deg);
+}
+
+.fileIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  color: #57606a;
+  font-size: 11px;
+  transition: transform 0.12s ease;
+}
+
+.filePreview {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  background: #ffffff;
+}
+
+.filePreviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+  border-bottom: 1px solid #d0d7de;
+  background: #f6f8fa;
+  color: #57606a;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.filePreviewHeader div {
+  display: grid;
+  min-width: 0;
+}
+
+.filePreviewHeader strong,
+.filePreviewHeader span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filePreviewHeader strong {
+  color: #24292f;
+  font-size: 13px;
+}
+
+.filePreviewHeader span {
+  color: #57606a;
+}
+
+.codeViewer {
+  min-height: 0;
+  overflow: auto;
+  background: #ffffff;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.codeLine {
+  display: grid;
+  grid-template-columns: 56px minmax(max-content, 1fr);
+  min-height: 22px;
+}
+
+.codeLine:hover {
+  background: #f6f8fa;
+}
+
+.lineNumber {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  user-select: none;
+  border-right: 1px solid #f0f2f4;
+  background: inherit;
+  color: #6e7781;
+  padding: 0 12px 0 8px;
+  text-align: right;
+}
+
+.lineContent {
+  color: #0f172a;
+  padding: 0 16px;
+  white-space: pre;
+}
+
+.emptyPreview {
+  display: grid;
+  place-items: center;
+  min-height: 260px;
+  color: #57606a;
+  font-size: 13px;
+  text-align: center;
+}
+
+.imagePreviewWrap {
+  display: grid;
+  place-items: center;
+  max-height: none;
+  overflow: auto;
+  background: #ffffff;
+  padding: 24px;
+}
+
+.imagePreview {
+  max-width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+}
+
 .muted {
   margin: 0;
   color: #6b7280;
@@ -208,6 +448,88 @@
   margin: 0;
   color: #111827;
   font-size: 14px;
+}
+
+.uploadPanel {
+  display: grid;
+  gap: 16px;
+}
+
+.uploadHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.uploadHeader h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 15px;
+}
+
+.uploadHeader p {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.uploadButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uploadButton input {
+  display: none;
+}
+
+.uploadList {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.uploadItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.uploadItem:last-child {
+  border-bottom: 0;
+}
+
+.uploadMeta {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.uploadMeta strong,
+.uploadMeta span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uploadMeta strong {
+  color: #111827;
+  font-size: 13px;
+}
+
+.uploadMeta span {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.uploadActions {
+  display: flex;
+  gap: 8px;
 }
 
 .infoList {
@@ -255,6 +577,7 @@
   padding: 8px 16px;
   font-size: 13px;
   font-weight: 600;
+  width: fit-content;
 }
 
 .outlineButton:disabled {
@@ -470,15 +793,19 @@
   }
 }
 
-@media (max-width: 980px) {
-  .detailGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 640px) {
   .headerMain {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .fileWorkspace {
+    grid-template-columns: 1fr;
+  }
+
+  .fileSidebar {
+    min-height: 320px;
+    border-right: 0;
+    border-bottom: 1px solid #d0d7de;
   }
 }
