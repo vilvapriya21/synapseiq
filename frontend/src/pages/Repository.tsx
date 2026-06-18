@@ -156,6 +156,7 @@ function RepositoryPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [learners, setLearners] = useState<{ id: string; name: string; email: string }[]>([]);
   const [selectedLearnerId, setSelectedLearnerId] = useState("");
+  const [selectedTopicId, setSelectedTopicId] = useState("");
   const [assignError, setAssignError] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("file_tree");
   const [selectedFilePath, setSelectedFilePath] = useState("");
@@ -355,16 +356,17 @@ function RepositoryPage() {
   };
 
   const handleAssign = async () => {
-    if (!repoId || !selectedLearnerId) {
+    if (!repoId || !selectedLearnerId || !selectedTopicId) {
       return;
     }
 
     setAssignError("");
     try {
-      await assignLearner(repoId, selectedLearnerId);
+      await assignLearner(repoId, selectedLearnerId, selectedTopicId || undefined);
       const result = await getAssignments(repoId);
       setAssignments(result.assignments);
       setSelectedLearnerId("");
+      setSelectedTopicId("");
     } catch {
       setAssignError("Failed to assign learner. They may already be assigned to this repository.");
     }
@@ -928,6 +930,16 @@ function RepositoryPage() {
                     <option value="">Select Learner...</option>
                     {learners.map((learner) => (
                       <option key={learner.id} value={learner.id}>{learner.name} ({learner.email})</option>
+                    ))}
+                  </select>
+                  <select
+                    className={styles.input}
+                    value={selectedTopicId}
+                    onChange={(event) => setSelectedTopicId(event.target.value)}
+                  >
+                    <option value="">Select Topic...</option>
+                    {topics.map((topic) => (
+                      <option key={topic.id} value={topic.id}>{topic.title}</option>
                     ))}
                   </select>
                   <button className={styles.primaryButton} onClick={handleAssign} type="button">Assign</button>

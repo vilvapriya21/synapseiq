@@ -1,3 +1,10 @@
+from app.models.assessment import (
+    Assessment,
+    AssessmentAttempt,
+    AssessmentAttemptAnswer,
+    AssessmentOption,
+    AssessmentQuestion,
+)
 from app.models.knowledge_base import KnowledgeBase
 from app.models.user import PasswordResetCode, User
 from app.models.repository import Repository
@@ -8,6 +15,11 @@ from app.models.contributor import Contributor
 from app.models.repository_assignment import RepositoryAssignment
 
 __all__ = [
+    "Assessment",
+    "AssessmentAttempt",
+    "AssessmentAttemptAnswer",
+    "AssessmentOption",
+    "AssessmentQuestion",
     "KnowledgeBase",
     "PasswordResetCode",
     "Repository",

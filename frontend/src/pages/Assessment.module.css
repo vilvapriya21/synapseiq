@@ -22,6 +22,15 @@
   font-size: 30px;
 }
 
+.search {
+  width: min(100%, 420px);
+  height: 44px;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  padding: 0 14px;
+  background: #ffffff;
+}
+
 .duration {
   min-height: 36px;
   display: inline-flex;
@@ -121,6 +130,16 @@
 .assessmentName {
   margin-bottom: 8px;
   color: #07142f;
+  font-weight: 800;
+}
+
+.action {
+  border: 1px solid #cfd8e6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #176b87;
+  cursor: pointer;
+  padding: 9px 12px;
   font-weight: 800;
 }
 

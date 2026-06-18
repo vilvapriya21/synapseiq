@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import health
-from app.routers import admin, auth, chat, dashboard, github_auth, kt_topic, repository
+from app.routers import admin, assessment, auth, chat, dashboard, github_auth, kt_topic, repository
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -16,3 +16,4 @@ api_router.include_router(
     prefix="/repositories/{repo_id}/kt-topics",
     tags=["kt-topics"],
 )
+api_router.include_router(assessment.router, prefix="/assessment", tags=["assessment"])
