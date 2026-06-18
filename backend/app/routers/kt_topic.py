@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete as sql_delete, func, select
+from sqlalchemy import delete as sql_delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.llm_dependency import get_llm
@@ -15,7 +15,7 @@ from app.models.repository_assignment import RepositoryAssignment
 from app.models.user import User
 from app.modules.checklist_generator import generate_checklist_items
 from app.modules.llm_client import LLMProvider
-from app.routers.repository import get_owned_repository
+from app.routers.repository import REPOSITORY_LEARNING_TOPIC_MARKER, get_owned_repository
 from app.schemas.kt_topic import (
     ChecklistItemCreate,
     ChecklistItemResponse,
