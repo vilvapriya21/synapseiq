@@ -52,16 +52,27 @@
 
 .link,
 .activeLink {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
   color: #c8d2e8;
   text-decoration: none;
-  padding: 10px 12px;
+  padding: 0 12px;
   border-radius: 8px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 650;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.link:hover {
+  background: #1a2642;
+  color: #ffffff;
 }
 
 .activeLink {
   background: #27365f;
   color: #ffffff;
+  box-shadow: inset 3px 0 0 #8fb1ff;
 }
 
 .content {

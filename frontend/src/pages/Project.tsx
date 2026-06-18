@@ -1,315 +1,280 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Button, EmptyState, Modal } from "../components/common";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
-import { workspaceService } from "../services/workspaceService";
+import {
+  getAssignedRepositories,
+  getMyAssignments,
+  listRepositories,
+  type MyAssignment,
+  type Repository,
+} from "../services/repositoryService";
 import { useAuthStore } from "../store/authStore";
-import { AssignmentStatus, ChecklistStatus, KTAssignment, WorkspaceResponse } from "../types";
 import { normalizeRole } from "../utils/roles";
 import styles from "./Project.module.css";
 
-type WorkspaceTab = "Overview" | "KT Checklist" | "SME Recommendations" | "KT Assignments" | "Knowledge Base";
+type BadgeTone = "indexed" | "indexing" | "error" | "pending";
 
-const checklistFilters: Array<ChecklistStatus | "All"> = ["All", "Not Started", "In Progress", "Completed"];
-const assignmentStatuses: AssignmentStatus[] = ["Assigned", "In Progress", "Completed", "Overdue"];
+function formatCount(count: number, label: string) {
+  return `${count.toLocaleString()} ${label}${count === 1 ? "" : "s"}`;
+}
+
+function formatDate(value?: string) {
+  if (!value) return "Not available";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not available";
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
+function getKnowledgeLabel(status: Repository["knowledge_base_status"]) {
+  if (status === "ready") return "Knowledge ready";
+  if (status === "building") return "Knowledge building";
+  if (status === "error") return "Knowledge error";
+  return "Knowledge pending";
+}
+
+function getBadgeTone(repository: Repository): BadgeTone {
+  if (repository.status === "error" || repository.knowledge_base_status === "error") return "error";
+  if (repository.status === "indexed" || repository.knowledge_base_status === "ready") return "indexed";
+  if (repository.status === "indexing" || repository.knowledge_base_status === "building") return "indexing";
+  return "pending";
+}
+
+function fallbackRepositoriesFromAssignments(assignments: MyAssignment[]): Repository[] {
+  const repositories = new Map<string, Repository>();
+
+  assignments.forEach((assignment) => {
+    if (!repositories.has(assignment.repository_id)) {
+      repositories.set(assignment.repository_id, {
+        id: assignment.repository_id,
+        name: assignment.repository_name,
+        source_type: "git",
+        module_count: 0,
+        file_count: 0,
+        status: "pending",
+        knowledge_base_status: "none",
+        created_at: assignment.assigned_at,
+      });
+    }
+  });
+
+  return Array.from(repositories.values());
+}
 
 function ProjectPage() {
-  const { projectId = "alpha-payments" } = useParams();
   const navigate = useNavigate();
   const role = normalizeRole(useAuthStore((state) => state.user?.roles[0]));
-  const [workspace, setWorkspace] = useState<WorkspaceResponse | null>(null);
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>("Overview");
-  const [checklistFilter, setChecklistFilter] = useState<ChecklistStatus | "All">("All");
-  const [knowledgeSearch, setKnowledgeSearch] = useState("");
-  const [expandedDocs, setExpandedDocs] = useState<Record<string, boolean>>({});
-  const [editingAssignment, setEditingAssignment] = useState<KTAssignment | null>(null);
-  const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
+  const [repositories, setRepositories] = useState<Repository[]>([]);
+  const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
-    setIsLoading(true);
-    workspaceService
-      .getWorkspace(projectId)
-      .then((data) => {
-        if (isMounted) {
-          setWorkspace(data);
+
+    async function loadRepositories() {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        if (role === "ADMIN") {
+          const response = await listRepositories();
+          if (isMounted) setRepositories(response.repositories);
+          return;
         }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setError("Project workspace could not be loaded.");
+
+        try {
+          const response = await getAssignedRepositories();
+          if (isMounted) setRepositories(response.repositories);
+        } catch {
+          const assignments = await getMyAssignments();
+          if (isMounted) setRepositories(fallbackRepositoriesFromAssignments(assignments));
         }
-      })
-      .finally(() => {
+      } catch (err) {
+        console.error("[ProjectWorkspace] Repository load failed", err);
         if (isMounted) {
-          setIsLoading(false);
+          setError("Project Workspace could not load repositories. Please try again.");
+          setRepositories([]);
         }
-      });
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+
+    loadRepositories();
 
     return () => {
       isMounted = false;
     };
-  }, [projectId]);
+  }, [role]);
 
-  const tabs: WorkspaceTab[] = role === "ADMIN"
-    ? ["Overview", "KT Checklist", "SME Recommendations", "KT Assignments", "Knowledge Base"]
-    : ["Overview", "KT Checklist", "SME Recommendations", "Knowledge Base"];
+  const filteredRepositories = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return repositories;
 
-  const filteredChecklist = useMemo(() => {
-    const items = workspace?.checklist ?? [];
-    return checklistFilter === "All" ? items : items.filter((item) => item.status === checklistFilter);
-  }, [checklistFilter, workspace?.checklist]);
-
-  const filteredDocuments = useMemo(() => {
-    const documents = workspace?.knowledgeBase ?? [];
-    const query = knowledgeSearch.trim().toLowerCase();
-    if (!query) return documents;
-    return documents.filter(
-      (document) =>
-        document.title.toLowerCase().includes(query) ||
-        document.section.toLowerCase().includes(query) ||
-        document.content.toLowerCase().includes(query),
+    return repositories.filter((repository) =>
+      [
+        repository.name,
+        repository.provider,
+        repository.language,
+        repository.branch,
+        repository.url,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query)),
     );
-  }, [knowledgeSearch, workspace?.knowledgeBase]);
+  }, [repositories, search]);
 
-  const refreshAssignments = async () => {
-    const nextWorkspace = await workspaceService.getWorkspace(projectId);
-    setWorkspace(nextWorkspace);
+  const openRepository = (repoId: string) => {
+    navigate(ROUTES.repositoryDetail.replace(":repoId", repoId));
   };
 
-  const handleAssignmentSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const assignment: KTAssignment = {
-      id: editingAssignment?.id ?? "",
-      sme: String(formData.get("sme") || "").trim(),
-      learner: String(formData.get("learner") || "").trim(),
-      dueDate: String(formData.get("dueDate") || ""),
-      status: String(formData.get("status") || "Assigned") as AssignmentStatus,
-    };
-
-    if (editingAssignment) {
-      await workspaceService.updateAssignment(assignment);
-    } else {
-      await workspaceService.createAssignment(assignment);
-    }
-
-    setIsAssignmentModalOpen(false);
-    setEditingAssignment(null);
-    await refreshAssignments();
-  };
-
-  const handleCancelAssignment = async (assignmentId: string) => {
-    await workspaceService.cancelAssignment(assignmentId);
-    await refreshAssignments();
-  };
-
-  if (isLoading) {
-    return <div className={styles.state}>Loading project workspace...</div>;
-  }
-
-  if (error || !workspace) {
-    return <div className={styles.state}>{error || "No project workspace data available."}</div>;
-  }
+  const emptyMessage =
+    role === "ADMIN"
+      ? "No repositories connected yet."
+      : "No repositories assigned yet. Please contact your admin.";
 
   return (
     <div className={styles.page}>
       <section className={styles.hero}>
         <div>
-          <p className={styles.eyebrow}>Project Workspace</p>
-          <h1 className={styles.heading}>{projectId}</h1>
+          <p className={styles.eyebrow}>Repositories</p>
+          <h1 className={styles.heading}>Project Workspace</h1>
+          <p className={styles.subtitle}>
+            {role === "ADMIN"
+              ? "View and manage connected codebases."
+              : "Open repositories assigned to you for knowledge transfer."}
+          </p>
         </div>
-        <div className={styles.actions}>
-          {role === "LEARNER" && (
-            <Button type="button" onClick={() => navigate(ROUTES.projectAssessment.replace(":projectId", projectId))}>
-              Take Assessment
-            </Button>
-          )}
-          <Button type="button" variant="secondary" onClick={() => navigate(ROUTES.projectResults.replace(":projectId", projectId))}>
-            View Results
+        {role === "ADMIN" && (
+          <Button type="button" onClick={() => navigate(ROUTES.repositoryOnboard)}>
+            Connect Repository
           </Button>
-        </div>
+        )}
       </section>
 
-      <nav className={styles.tabs} aria-label="Project workspace tabs">
-        {tabs.map((tab) => (
-          <button className={activeTab === tab ? styles.activeTab : styles.tab} key={tab} onClick={() => setActiveTab(tab)} type="button">
-            {tab}
-          </button>
-        ))}
-      </nav>
+      <section className={styles.toolbar} aria-label="Repository filters">
+        <div className={styles.searchBox}>
+          <span aria-hidden="true">Search</span>
+          <input
+            aria-label="Search repositories"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search repositories..."
+            type="search"
+          />
+        </div>
+        <p className={styles.count}>{formatCount(filteredRepositories.length, "repository")}</p>
+      </section>
 
-      {activeTab === "Overview" && (
-        <section className={styles.panel}>
-          <div className={styles.panelHeader}>
-            <h2>Overview</h2>
-            <p>{workspace.overview.summary}</p>
-          </div>
-          <div className={styles.gridTwo}>
-            <article className={styles.block}>
-              <h3>Architecture Overview</h3>
-              <p>{workspace.overview.architectureOverview}</p>
+      {isLoading && (
+        <div className={styles.list}>
+          {[0, 1, 2].map((item) => (
+            <article className={styles.skeletonCard} key={item}>
+              <span />
+              <span />
+              <span />
             </article>
-            <article className={styles.block}>
-              <h3>Technology Stack</h3>
-              <div className={styles.tags}>{workspace.overview.technologyStack.map((item) => <span key={item}>{item}</span>)}</div>
-            </article>
-            <article className={styles.block}>
-              <h3>Integrations</h3>
-              <div className={styles.tags}>{workspace.overview.integrations.map((item) => <span key={item}>{item}</span>)}</div>
-            </article>
-            <article className={styles.block}>
-              <h3>Repository Statistics</h3>
-              <div className={styles.metricGrid}>
-                {workspace.overview.repositoryStatistics.map((stat) => (
-                  <div className={styles.metric} key={stat.label}>
-                    <span>{stat.label}</span>
-                    <strong>{stat.value}</strong>
-                  </div>
-                ))}
-              </div>
-            </article>
-          </div>
-        </section>
+          ))}
+        </div>
       )}
 
-      {activeTab === "KT Checklist" && (
-        <section className={styles.panel}>
-          <div className={styles.panelHeader}>
-            <h2>KT Checklist</h2>
-            <select value={checklistFilter} onChange={(event) => setChecklistFilter(event.target.value as ChecklistStatus | "All")}>
-              {checklistFilters.map((filter) => <option key={filter}>{filter}</option>)}
-            </select>
-          </div>
-          <div className={styles.list}>
-            {filteredChecklist.map((item) => (
-              <article className={styles.rowCard} key={item.id}>
-                <div>
-                  <h3>{item.title}</h3>
-                  <p>{item.description}</p>
-                </div>
-                <div className={styles.progressBox}>
-                  <span>{item.status}</span>
-                  <div className={styles.progressTrack}>
-                    <div className={styles.progressFill} style={{ width: `${item.completionPercentage}%` }} />
-                  </div>
-                  <small>{item.completionPercentage}%</small>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
+      {!isLoading && error && <div className={styles.stateCard}>{error}</div>}
 
-      {activeTab === "SME Recommendations" && (
-        <section className={styles.panel}>
-          <div className={styles.notice}>SME recommendations are currently generated from mock repository analysis and will be replaced once repository integration is available.</div>
-          <div className={styles.list}>
-            {workspace.smeRecommendations.map((sme) => (
-              <article className={styles.rowCard} key={sme.id}>
-                <div>
-                  <h3>{sme.name}</h3>
-                  <div className={styles.tags}>{sme.expertiseAreas.map((area) => <span key={area}>{area}</span>)}</div>
-                </div>
-                <div className={styles.scorePair}>
-                  <span>Contribution {sme.contributionScore}</span>
-                  <span>Confidence {sme.confidenceScore}</span>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {activeTab === "KT Assignments" && role === "ADMIN" && (
-        <section className={styles.panel}>
-          <div className={styles.panelHeader}>
-            <h2>KT Assignments</h2>
-            <Button type="button" onClick={() => setIsAssignmentModalOpen(true)}>Create Assignment</Button>
-          </div>
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>SME</th>
-                  <th>Learner</th>
-                  <th>Due Date</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {workspace.assignments.map((assignment) => (
-                  <tr key={assignment.id}>
-                    <td>{assignment.sme}</td>
-                    <td>{assignment.learner}</td>
-                    <td>{assignment.dueDate}</td>
-                    <td>{assignment.status}</td>
-                    <td className={styles.tableActions}>
-                      <button type="button" onClick={() => { setEditingAssignment(assignment); setIsAssignmentModalOpen(true); }}>Edit</button>
-                      <button type="button" onClick={() => handleCancelAssignment(assignment.id)}>Cancel</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {activeTab === "Knowledge Base" && (
-        <section className={styles.panel}>
-          <div className={styles.panelHeader}>
-            <h2>Knowledge Base</h2>
-            <input value={knowledgeSearch} onChange={(event) => setKnowledgeSearch(event.target.value)} placeholder="Search documents" type="search" />
-          </div>
-          {filteredDocuments.length === 0 ? (
-            <EmptyState title="No knowledge base content" description="No generated KT documents match this search." />
-          ) : (
-            <div className={styles.list}>
-              {filteredDocuments.map((document) => (
-                <article className={styles.doc} key={document.id}>
-                  <button type="button" onClick={() => setExpandedDocs((current) => ({ ...current, [document.id]: !current[document.id] }))}>
-                    <span>{document.section}: {document.title}</span>
-                    <span>{expandedDocs[document.id] ? "Collapse" : "Expand"}</span>
-                  </button>
-                  {expandedDocs[document.id] && <p>{document.content}</p>}
-                </article>
-              ))}
-            </div>
+      {!isLoading && !error && filteredRepositories.length === 0 && (
+        <div className={styles.stateCard}>
+          <h2>{emptyMessage}</h2>
+          {role === "ADMIN" && (
+            <Button type="button" onClick={() => navigate(ROUTES.repositoryOnboard)}>
+              Connect Repository
+            </Button>
           )}
-        </section>
+        </div>
       )}
 
-      <Modal
-        isOpen={isAssignmentModalOpen}
-        onClose={() => { setIsAssignmentModalOpen(false); setEditingAssignment(null); }}
-        title={editingAssignment ? "Edit Assignment" : "Create Assignment"}
-      >
-        <form className={styles.form} onSubmit={handleAssignmentSubmit}>
-          <label>
-            SME
-            <input name="sme" required defaultValue={editingAssignment?.sme ?? ""} />
-          </label>
-          <label>
-            Learner
-            <input name="learner" required defaultValue={editingAssignment?.learner ?? ""} />
-          </label>
-          <label>
-            Due Date
-            <input name="dueDate" required type="date" defaultValue={editingAssignment?.dueDate ?? "2026-06-20"} />
-          </label>
-          <label>
-            Status
-            <select name="status" defaultValue={editingAssignment?.status ?? "Assigned"}>
-              {assignmentStatuses.map((status) => <option key={status}>{status}</option>)}
-            </select>
-          </label>
-          <Button type="submit">{editingAssignment ? "Save Assignment" : "Create Assignment"}</Button>
-        </form>
-      </Modal>
+      {!isLoading && !error && filteredRepositories.length > 0 && (
+        <section className={styles.list} aria-label="Repository list">
+          {filteredRepositories.map((repository) => {
+            const badgeTone = getBadgeTone(repository);
+            const source = repository.provider || repository.source_type || "Repository";
+
+            return (
+              <article
+                className={styles.repoCard}
+                key={repository.id}
+                onClick={() => openRepository(repository.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    openRepository(repository.id);
+                  }
+                }}
+              >
+                <div className={styles.repoMain}>
+                  <div>
+                    <h2>{repository.name}</h2>
+                    <p>{repository.url || "Uploaded repository"}</p>
+                  </div>
+                  <span className={`${styles.badge} ${styles[badgeTone]}`}>{repository.status}</span>
+                </div>
+
+                <div className={styles.metaGrid}>
+                  <div>
+                    <span>Provider</span>
+                    <strong>{source}</strong>
+                  </div>
+                  <div>
+                    <span>Branch</span>
+                    <strong>{repository.branch || "Default"}</strong>
+                  </div>
+                  <div>
+                    <span>Language</span>
+                    <strong>{repository.language || "Mixed"}</strong>
+                  </div>
+                  <div>
+                    <span>Modules</span>
+                    <strong>{repository.module_count.toLocaleString()}</strong>
+                  </div>
+                  <div>
+                    <span>Files</span>
+                    <strong>{(repository.file_count ?? 0).toLocaleString()}</strong>
+                  </div>
+                  <div>
+                    <span>Knowledge Base</span>
+                    <strong>{getKnowledgeLabel(repository.knowledge_base_status)}</strong>
+                  </div>
+                  <div>
+                    <span>Created</span>
+                    <strong>{formatDate(repository.created_at)}</strong>
+                  </div>
+                </div>
+
+                <div className={styles.cardFooter}>
+                  {repository.error_message && <p>{repository.error_message}</p>}
+                  <button
+                    className={styles.viewButton}
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openRepository(repository.id);
+                    }}
+                  >
+                    View
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      )}
     </div>
   );
 }
