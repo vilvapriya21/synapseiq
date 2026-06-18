@@ -141,6 +141,50 @@ export interface TopicRecommendationResponse {
   recommendations: RecommendedContributor[];
 }
 
+export interface ChatMessage {
+  id?: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at?: string;
+}
+
+export interface ChatHistoryResponse {
+  messages: ChatMessage[];
+  total: number;
+}
+
+export interface ChatMessageResponse {
+  user_message?: ChatMessage;
+  assistant_message: ChatMessage;
+}
+
+export interface ChecklistItem {
+  id: string;
+  kt_topic_id: string;
+  title: string;
+  description?: string | null;
+  order: number;
+  created_at: string;
+  completed: boolean;
+  completed_at?: string | null;
+}
+
+export interface ChecklistListResponse {
+  items: ChecklistItem[];
+  total: number;
+}
+
+export interface ChecklistItemCreate {
+  title: string;
+  description?: string | null;
+}
+
+export interface ChecklistItemUpdate {
+  title?: string;
+  description?: string | null;
+  order?: number;
+}
+
 export const connectRepository = async (url: string, branch: string): Promise<Repository> => {
   const { data } = await apiClient.post<Repository>("/repositories/connect", { url, branch });
   return data;
@@ -289,6 +333,74 @@ export const getTopicRecommendation = async (
     `/repositories/${repoId}/kt-topics/${topicId}/recommend`,
   );
   return response.data;
+};
+
+export const getChatHistory = async (repoId: string): Promise<ChatHistoryResponse> => {
+  const response = await apiClient.get<ChatHistoryResponse>(`/repositories/${repoId}/chat`);
+  return response.data;
+};
+
+export const postChatMessage = async (repoId: string, content: string): Promise<ChatMessageResponse> => {
+  const response = await apiClient.post<ChatMessageResponse>(`/repositories/${repoId}/chat`, { content });
+  return response.data;
+};
+
+export const getChecklist = async (repoId: string, topicId: string): Promise<ChecklistListResponse> => {
+  const response = await apiClient.get<ChecklistListResponse>(
+    `/repositories/${repoId}/kt-topics/${topicId}/checklist`,
+  );
+  return response.data;
+};
+
+export const addChecklistItem = async (
+  repoId: string,
+  topicId: string,
+  data: ChecklistItemCreate,
+): Promise<ChecklistItem> => {
+  const response = await apiClient.post<ChecklistItem>(
+    `/repositories/${repoId}/kt-topics/${topicId}/checklist`,
+    data,
+  );
+  return response.data;
+};
+
+export const updateChecklistItem = async (
+  repoId: string,
+  topicId: string,
+  itemId: string,
+  data: ChecklistItemUpdate,
+): Promise<ChecklistItem> => {
+  const response = await apiClient.patch<ChecklistItem>(
+    `/repositories/${repoId}/kt-topics/${topicId}/checklist/${itemId}`,
+    data,
+  );
+  return response.data;
+};
+
+export const deleteChecklistItem = async (repoId: string, topicId: string, itemId: string): Promise<void> => {
+  await apiClient.delete(`/repositories/${repoId}/kt-topics/${topicId}/checklist/${itemId}`);
+};
+
+export const regenerateChecklist = async (repoId: string, topicId: string): Promise<ChecklistListResponse> => {
+  const response = await apiClient.post<ChecklistListResponse>(
+    `/repositories/${repoId}/kt-topics/${topicId}/checklist/regenerate`,
+  );
+  return response.data;
+};
+
+export const completeChecklistItem = async (
+  repoId: string,
+  topicId: string,
+  itemId: string,
+): Promise<ChecklistItem> => {
+  const response = await apiClient.post<ChecklistItem>(
+    `/repositories/${repoId}/kt-topics/${topicId}/checklist/${itemId}/complete`,
+  );
+  return response.data;
+};
+
+export const uncompleteChecklistItem = async (repoId: string, topicId: string, itemId: string): Promise<void> => {
+  await apiClient.delete(`/repositories/${repoId}/kt-topics/${topicId}/checklist/${itemId}/complete`);
 };
 
 export const repositoryService = {

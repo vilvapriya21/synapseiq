@@ -1,5 +1,7 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import ChatPanel from "../components/ChatPanel";
+import KTChecklist from "../components/KTChecklist";
 import { EmptyState } from "../components/common";
 import { getUsers, type AdminUser } from "../services/adminService";
 import {
@@ -13,6 +15,7 @@ import {
   getContributors,
   getKTTopics,
   getKnowledgeBase,
+  getMyAssignments,
   getRepositoryFile,
   getRepositoryUploads,
   getRepository,
@@ -149,6 +152,7 @@ function RepositoryPage() {
   const [topicDescription, setTopicDescription] = useState("");
   const [topicPaths, setTopicPaths] = useState("");
   const [recommendations, setRecommendations] = useState<Record<string, RecommendedContributor[]>>({});
+  const [expandedChecklistTopicIds, setExpandedChecklistTopicIds] = useState<Record<string, boolean>>({});
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [learners, setLearners] = useState<{ id: string; name: string; email: string }[]>([]);
   const [selectedLearnerId, setSelectedLearnerId] = useState("");
@@ -208,6 +212,29 @@ function RepositoryPage() {
     }
   };
 
+  const fetchLearnerTopics = async () => {
+    if (!repoId || role === "ADMIN") {
+      return;
+    }
+
+    try {
+      const rows = await getMyAssignments();
+      setTopics(
+        rows
+          .filter((assignment) => assignment.repository_id === repoId && assignment.kt_topic_id && assignment.kt_topic_title)
+          .map((assignment) => ({
+            id: assignment.kt_topic_id as string,
+            repository_id: assignment.repository_id,
+            title: assignment.kt_topic_title as string,
+            description: assignment.kt_topic_description,
+            created_at: assignment.assigned_at,
+          })),
+      );
+    } catch {
+      setTopics([]);
+    }
+  };
+
   const fetchRepositoryData = async () => {
     if (!repoId) {
       return;
@@ -234,6 +261,7 @@ function RepositoryPage() {
   useEffect(() => {
     fetchRepositoryData();
     fetchAdminData();
+    fetchLearnerTopics();
   }, [repoId, role]);
 
   useEffect(() => {
@@ -350,6 +378,10 @@ function RepositoryPage() {
     await unassignLearner(repoId, assignmentId);
     const result = await getAssignments(repoId);
     setAssignments(result.assignments);
+  };
+
+  const toggleChecklist = (topicId: string) => {
+    setExpandedChecklistTopicIds((current) => ({ ...current, [topicId]: !current[topicId] }));
   };
 
   const fetchUploads = async () => {
@@ -695,7 +727,7 @@ function RepositoryPage() {
           <span className={`${styles.badge} ${getStatusClass(repository.status)}`}>{repository.status}</span>
         </div>
         <div className={styles.stats}>
-          <span className={`${styles.statChip} ${styles.providerChip}`}>{repository.provider}</span>
+          <span className={`${styles.statChip} ${styles.providerChip}`}>{repository.provider || "local"}</span>
           <span className={styles.statChip}>Language: {repository.language || "-"}</span>
           <span className={styles.statChip}>Modules: {repository.module_count}</span>
           <span className={styles.statChip}>Files: {repository.file_count}</span>
@@ -709,99 +741,59 @@ function RepositoryPage() {
         </button>
       </section>
 
-      <section className={styles.knowledgeSection}>
-        <article className={`${styles.card} ${styles.knowledgeCard}`}>
-          <div className={styles.cardHeader}>
-            <h2>Knowledge Base</h2>
-            <span className={`${styles.badge} ${getStatusClass(repository.knowledge_base_status)}`}>
-              {repository.knowledge_base_status}
-            </span>
-          </div>
-
-          {repository.knowledge_base_status === "none" ? (
-            <EmptyState
-              title="Analysis pending"
-              description="Knowledge base will be generated after indexing"
-            />
-          ) : null}
-
-          {repository.knowledge_base_status === "building" ? (
-            <div className={styles.buildingState}>
-              <span className={styles.spinner} />
-              <span>Building knowledge base&hellip;</span>
-            </div>
-          ) : null}
-
-          {repository.knowledge_base_status === "ready" ? (
-            <>
-              <div className={styles.tabBar}>
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.key}
-                    className={`${styles.tab} ${activeTab === tab.key ? styles.tabActive : ""}`}
-                    type="button"
-                    onClick={() => setActiveTab(tab.key)}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
+      <div className={styles.workspaceLayout}>
+        <main className={styles.workspaceMain}>
+          <section className={styles.knowledgeSection}>
+            <article className={`${styles.card} ${styles.knowledgeCard}`}>
+              <div className={styles.cardHeader}>
+                <h2>Knowledge Base</h2>
+                <span className={`${styles.badge} ${getStatusClass(repository.knowledge_base_status)}`}>
+                  {repository.knowledge_base_status}
+                </span>
               </div>
-              {renderTabContent()}
-            </>
-          ) : null}
-        </article>
-      </section>
 
-      {role === "ADMIN" ? (
-        <>
-          <section className={styles.card}>
-            <div className={styles.cardHeader}>
-              <h2>Contributors</h2>
-              <button
-                className={styles.secondaryButton}
-                onClick={handleAnalyzeContributors}
-                disabled={analyzingContributors || repository.source_type !== "git"}
-                type="button"
-              >
-                {analyzingContributors ? "Analyzing..." : "Analyze Contributors"}
-              </button>
-            </div>
-            {contributorError ? <p className={styles.error}>{contributorError}</p> : null}
-            {contributors.length === 0 ? (
-              <p className={styles.emptyText}>
-                No contributor data yet. Click "Analyze Contributors" to extract commit history.
-              </p>
-            ) : (
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Commits</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {contributors.map((contributor) => (
-                    <tr key={contributor.id}>
-                      <td>{contributor.name}</td>
-                      <td>{contributor.email}</td>
-                      <td>{contributor.commit_count}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+              {repository.knowledge_base_status === "none" ? (
+                <EmptyState title="Analysis pending" description="Knowledge base will be generated after indexing" />
+              ) : null}
+
+              {repository.knowledge_base_status === "building" ? (
+                <div className={styles.buildingState}>
+                  <span className={styles.spinner} />
+                  <span>Building knowledge base&hellip;</span>
+                </div>
+              ) : null}
+
+              {repository.knowledge_base_status === "ready" ? (
+                <>
+                  <div className={styles.tabBar}>
+                    {tabs.map((tab) => (
+                      <button
+                        key={tab.key}
+                        className={`${styles.tab} ${activeTab === tab.key ? styles.tabActive : ""}`}
+                        type="button"
+                        onClick={() => setActiveTab(tab.key)}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                  {renderTabContent()}
+                </>
+              ) : null}
+            </article>
           </section>
 
           <section className={styles.card}>
             <div className={styles.cardHeader}>
               <h2>KT Topics</h2>
-              <button className={styles.primaryButton} onClick={() => setShowTopicForm(!showTopicForm)} type="button">
-                {showTopicForm ? "Cancel" : "+ Add Topic"}
-              </button>
+              {role === "ADMIN" ? (
+                <button className={styles.primaryButton} onClick={() => setShowTopicForm(!showTopicForm)} type="button">
+                  {showTopicForm ? "Cancel" : "+ Add Topic"}
+                </button>
+              ) : null}
             </div>
 
-            {showTopicForm ? (
+            {role === "ADMIN" && showTopicForm ? (
               <form onSubmit={handleCreateTopic} className={styles.topicForm}>
                 <input
                   className={styles.input}
@@ -827,7 +819,11 @@ function RepositoryPage() {
             ) : null}
 
             {topics.length === 0 ? (
-              <p className={styles.emptyText}>No KT topics yet. Add one to start organizing knowledge transfer.</p>
+              <p className={styles.emptyText}>
+                {role === "ADMIN"
+                  ? "No KT topics yet. Add one to start organizing knowledge transfer."
+                  : "No KT topics assigned yet."}
+              </p>
             ) : (
               <div className={styles.topicList}>
                 {topics.map((topic) => (
@@ -838,12 +834,19 @@ function RepositoryPage() {
                       {topic.path_patterns ? <span className={styles.pathTag}>{topic.path_patterns}</span> : null}
                     </div>
                     <div className={styles.topicActions}>
-                      <button className={styles.linkButton} onClick={() => handleViewRecommendation(topic.id)} type="button">
-                        Recommend Person
+                      <button className={styles.linkButton} onClick={() => toggleChecklist(topic.id)} type="button">
+                        {expandedChecklistTopicIds[topic.id] ? "Hide Checklist" : "View Checklist"}
                       </button>
-                      <button className={styles.deleteButton} onClick={() => handleDeleteTopic(topic.id)} type="button">
-                        Remove
-                      </button>
+                      {role === "ADMIN" ? (
+                        <>
+                          <button className={styles.linkButton} onClick={() => handleViewRecommendation(topic.id)} type="button">
+                            Recommend Person
+                          </button>
+                          <button className={styles.deleteButton} onClick={() => handleDeleteTopic(topic.id)} type="button">
+                            Remove
+                          </button>
+                        </>
+                      ) : null}
                     </div>
                     {recommendations[topic.id] ? (
                       <div className={styles.recommendationBox}>
@@ -863,61 +866,111 @@ function RepositoryPage() {
                         )}
                       </div>
                     ) : null}
+                    {expandedChecklistTopicIds[topic.id] && repoId ? (
+                      <KTChecklist repoId={repoId} topicId={topic.id} isAdmin={role === "ADMIN"} />
+                    ) : null}
                   </div>
                 ))}
               </div>
             )}
           </section>
 
-          <section className={styles.card}>
-            <h2>Current Learning</h2>
+          {role === "ADMIN" ? (
+            <>
+              <section className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h2>Contributors</h2>
+                  <button
+                    className={styles.secondaryButton}
+                    onClick={handleAnalyzeContributors}
+                    disabled={analyzingContributors || repository.source_type !== "git"}
+                    type="button"
+                  >
+                    {analyzingContributors ? "Analyzing..." : "Analyze Contributors"}
+                  </button>
+                </div>
+                {contributorError ? <p className={styles.error}>{contributorError}</p> : null}
+                {contributors.length === 0 ? (
+                  <p className={styles.emptyText}>
+                    No contributor data yet. Click "Analyze Contributors" to extract commit history.
+                  </p>
+                ) : (
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Commits</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {contributors.map((contributor) => (
+                        <tr key={contributor.id}>
+                          <td>{contributor.name}</td>
+                          <td>{contributor.email}</td>
+                          <td>{contributor.commit_count}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </section>
 
-            <div className={styles.assignForm}>
-              <select
-                className={styles.input}
-                value={selectedLearnerId}
-                onChange={(event) => setSelectedLearnerId(event.target.value)}
-              >
-                <option value="">Select Learner...</option>
-                {learners.map((learner) => (
-                  <option key={learner.id} value={learner.id}>{learner.name} ({learner.email})</option>
-                ))}
-              </select>
-              <button className={styles.primaryButton} onClick={handleAssign} type="button">Assign</button>
-            </div>
-            {assignError ? <p className={styles.error}>{assignError}</p> : null}
+              <section className={styles.card}>
+                <h2>Current Learning</h2>
 
-            {assignments.length === 0 ? (
-              <p className={styles.emptyText}>No learners assigned yet.</p>
-            ) : (
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Learner</th>
-                    <th>Repository</th>
-                    <th>Status</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {assignments.map((assignment) => (
-                    <tr key={assignment.id}>
-                      <td>{assignment.learner_name} ({assignment.learner_email})</td>
-                      <td>{repository.name}</td>
-                      <td>{assignment.status}</td>
-                      <td>
-                        <button className={styles.deleteButton} onClick={() => handleUnassign(assignment.id)} type="button">
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </section>
-        </>
-      ) : null}
+                <div className={styles.assignForm}>
+                  <select
+                    className={styles.input}
+                    value={selectedLearnerId}
+                    onChange={(event) => setSelectedLearnerId(event.target.value)}
+                  >
+                    <option value="">Select Learner...</option>
+                    {learners.map((learner) => (
+                      <option key={learner.id} value={learner.id}>{learner.name} ({learner.email})</option>
+                    ))}
+                  </select>
+                  <button className={styles.primaryButton} onClick={handleAssign} type="button">Assign</button>
+                </div>
+                {assignError ? <p className={styles.error}>{assignError}</p> : null}
+
+                {assignments.length === 0 ? (
+                  <p className={styles.emptyText}>No learners assigned yet.</p>
+                ) : (
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Learner</th>
+                        <th>Repository</th>
+                        <th>Status</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {assignments.map((assignment) => (
+                        <tr key={assignment.id}>
+                          <td>{assignment.learner_name} ({assignment.learner_email})</td>
+                          <td>{repository.name}</td>
+                          <td>{assignment.status}</td>
+                          <td>
+                            <button className={styles.deleteButton} onClick={() => handleUnassign(assignment.id)} type="button">
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </section>
+            </>
+          ) : null}
+        </main>
+
+        <aside className={styles.workspaceSidebar}>
+          {repoId ? <ChatPanel repoId={repoId} /> : null}
+        </aside>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import AnyHttpUrl, Field, field_validator
+from pydantic import AnyHttpUrl, Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     gitlab_client_secret: str = Field(default="")
     bitbucket_client_id: str = Field(default="")
     bitbucket_client_secret: str = Field(default="")
+    llm_provider: str = Field(default="ollama")
+    groq_api_key: str = Field(default="")
+    groq_model: str = Field(default="llama-3.3-70b-versatile")
     ollama_base_url: str = Field(default="http://localhost:11434")
     ollama_model: str = Field(default="llama3.1")
     backend_cors_origins: list[AnyHttpUrl] | list[str] = ["http://localhost:5173"]
@@ -30,6 +33,13 @@ class Settings(BaseSettings):
                 "DATABASE_URL is not set. Add it to backend/.env — "
                 "get the connection string from your NeonDB dashboard."
             )
+        return v
+
+    @field_validator("groq_api_key")
+    @classmethod
+    def groq_api_key_required_for_groq(cls, v: str, info: ValidationInfo) -> str:
+        if info.data.get("llm_provider") == "groq" and not v:
+            raise ValueError("LLM_PROVIDER is set to 'groq'. Set GROQ_API_KEY in backend/.env.")
         return v
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")

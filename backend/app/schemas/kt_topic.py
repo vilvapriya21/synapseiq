@@ -37,3 +37,30 @@ class TopicRecommendationResponse(BaseModel):
     kt_topic_id: str
     kt_topic_title: str
     recommendations: list[RecommendedContributor]
+
+
+class ChecklistItemResponse(BaseModel):
+    id: str
+    kt_topic_id: str
+    title: str
+    description: str | None
+    order: int
+    created_at: datetime
+    completed: bool = False
+    completed_at: datetime | None = None
+
+
+class ChecklistItemCreate(BaseModel):
+    title: str
+    description: str | None
+
+
+class ChecklistItemUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    order: int | None = None
+
+
+class ChecklistListResponse(BaseModel):
+    items: list[ChecklistItemResponse]
+    total: int
