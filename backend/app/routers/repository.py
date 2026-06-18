@@ -20,7 +20,7 @@ from app.models.repository import Repository
 from app.models.repository_assignment import RepositoryAssignment
 from app.models.user import User
 from app.modules.contributor_analysis import analyze_contributors
-from app.modules.git_provider import detect_provider, extract_repo_name, is_valid_git_url
+from app.modules.git_provider import detect_provider, extract_repo_name, is_valid_azure_repo_url, is_valid_git_url
 from app.modules.repository_analysis import (
     IMAGE_FILE_EXTENSIONS,
     MAX_IMAGE_FILE_BYTES,
@@ -195,7 +195,25 @@ def connect_repository(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Please enter a valid git repository URL starting with https://",
         )
-    provider = detect_provider(payload.url)
+    provider_hint = (payload.provider or payload.source_type or "").strip().lower()
+    detected_provider = detect_provider(payload.url)
+    provider = "azure" if provider_hint == "azure" else detected_provider
+
+    if provider == "azure":
+        if not is_valid_azure_repo_url(payload.url):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Please enter a valid Azure DevOps repository URL in the format "
+                    "https://dev.azure.com/org/project/_git/repo or "
+                    "https://org.visualstudio.com/project/_git/repo."
+                ),
+            )
+        if not current_user.azure_devops_token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please save Azure DevOps PAT before connecting a repository.",
+            )
 
     existing_repository = db.scalar(
         select(Repository).where(

@@ -1,4 +1,5 @@
 import re
+from urllib.parse import quote, urlsplit, urlunsplit
 
 PROVIDER_PATTERNS: list[tuple[str, str]] = [
     ("github", r"https?://(www\.)?github\.com/"),
@@ -27,6 +28,15 @@ def is_valid_git_url(url: str) -> bool:
         return False
     path = without_scheme.split("/", 1)[1]
     return bool(path.strip("/"))
+
+
+def is_valid_azure_repo_url(url: str) -> bool:
+    url = _clean_url(url)
+    azure_patterns = [
+        r"^https://dev\.azure\.com/[^/]+/[^/]+/_git/[^/]+$",
+        r"^https://[a-zA-Z0-9-]+\.visualstudio\.com/[^/]+/_git/[^/]+$",
+    ]
+    return any(re.match(pattern, url, re.IGNORECASE) for pattern in azure_patterns)
 
 
 def _clean_url(url: str) -> str:
@@ -80,12 +90,9 @@ def build_authenticated_url(url: str, token: str | None, provider: str) -> str:
     if provider == "azure":
         # Azure DevOps uses Basic Auth with any username and PAT as password
         # Format: https://user:{pat}@dev.azure.com/org/project/_git/repo
-        authenticated = base.replace(
-            "https://dev.azure.com/",
-            f"https://SynapseIQ:{token}@dev.azure.com/",
-            1,
-        )
-        return authenticated + ".git"
+        parts = urlsplit(base)
+        authenticated_netloc = f"SynapseIQ:{quote(token, safe='')}@{parts.netloc}"
+        return urlunsplit((parts.scheme, authenticated_netloc, parts.path, parts.query, parts.fragment))
 
     return base + ".git"
 

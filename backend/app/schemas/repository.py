@@ -7,6 +7,8 @@ from pydantic import BaseModel, ConfigDict
 class RepositoryConnectRequest(BaseModel):
     url: str
     branch: str = "main"
+    provider: Optional[str] = None
+    source_type: Optional[str] = None
 
 
 class RepositoryResponse(BaseModel):

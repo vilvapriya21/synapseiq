@@ -60,6 +60,9 @@ function RepositoryOnboardPage() {
   const [azureStatus, setAzureStatus] = useState<"connected" | "disconnected" | "unknown">("unknown");
   const [azurePat, setAzurePat] = useState("");
   const [azurePatSaving, setAzurePatSaving] = useState(false);
+  const [azureRepoUrl, setAzureRepoUrl] = useState("");
+  const [azureBranch, setAzureBranch] = useState("main");
+  const [connectSuccess, setConnectSuccess] = useState("");
 
   const fetchRepositories = async () => {
     setLoading(true);
@@ -150,6 +153,7 @@ function RepositoryOnboardPage() {
   const handleConnect = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setConnectError("");
+    setConnectSuccess("");
 
     if (!url.startsWith("https://")) {
       setConnectError("Repository URL must start with https://");
@@ -162,6 +166,7 @@ function RepositoryOnboardPage() {
       setUrl("");
       setBranch("main");
       await fetchRepositories();
+      setConnectSuccess("Repository connected successfully.");
     } catch (err: unknown) {
       console.error("[RepositoryOnboard] Connect repository failed", err);
       const axiosError = err as { response?: { data?: { detail?: string } } };
@@ -173,6 +178,32 @@ function RepositoryOnboardPage() {
       } else {
         setConnectError(detail || "Unable to connect repository.");
       }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAzureConnect = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setConnectError("");
+    setConnectSuccess("");
+
+    if (!azureRepoUrl.startsWith("https://")) {
+      setConnectError("Repository URL must start with https://");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await connectRepository(azureRepoUrl, azureBranch || "main", "azure");
+      setAzureRepoUrl("");
+      setAzureBranch("main");
+      await fetchRepositories();
+      setConnectSuccess("Azure DevOps repository connected successfully.");
+    } catch (err: unknown) {
+      console.error("[RepositoryOnboard] Connect Azure repository failed", err);
+      const axiosError = err as { response?: { data?: { detail?: string } } };
+      setConnectError(axiosError?.response?.data?.detail || "Unable to connect Azure DevOps repository.");
     } finally {
       setSubmitting(false);
     }
@@ -243,11 +274,14 @@ function RepositoryOnboardPage() {
 
   const handleSaveAzurePat = async () => {
     if (!azurePat.trim()) return;
+    setConnectError("");
+    setConnectSuccess("");
     setAzurePatSaving(true);
     try {
       await apiClient.post(`/auth/azure/pat?pat=${encodeURIComponent(azurePat)}`);
       setAzureStatus("connected");
       setAzurePat("");
+      setConnectSuccess("Azure DevOps PAT saved.");
     } catch {
       setConnectError("Failed to save Azure PAT.");
     } finally {
@@ -539,7 +573,7 @@ function RepositoryOnboardPage() {
         ) : null}
 
         {provider === "azure" ? (
-          <div className={styles.providerPanel}>
+          <form className={styles.providerPanel} onSubmit={handleAzureConnect}>
             <div className={styles.cardHeader}>
               <div className={`${styles.iconBox} ${styles.uploadIcon}`}>
                 <SquareCode size={22} />
@@ -552,7 +586,7 @@ function RepositoryOnboardPage() {
 
             {azureStatus === "connected" ? (
               <div className={styles.connectedBanner}>
-                <span>&#10003; Azure DevOps connected</span>
+                <span>&#10003; Connected with PAT</span>
                 <button
                   className={styles.disconnectLink}
                   type="button"
@@ -566,28 +600,66 @@ function RepositoryOnboardPage() {
                 </button>
               </div>
             ) : azureStatus === "disconnected" ? (
+              <div className={styles.warningBanner}>
+                &#9888; Azure DevOps PAT not saved
+              </div>
+            ) : null}
+
+            <input
+              className={styles.input}
+              type="password"
+              placeholder="Paste your Azure DevOps Personal Access Token"
+              value={azurePat}
+              onChange={(event) => setAzurePat(event.target.value)}
+            />
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              onClick={handleSaveAzurePat}
+              disabled={azurePatSaving || !azurePat.trim()}
+            >
+              Save PAT
+            </button>
+            <p className={styles.helperText}>
+              Generate PAT from Azure DevOps &rarr; User Settings &rarr; Personal Access Tokens. Required scope: Code Read.
+            </p>
+            {azureStatus !== "connected" && connectError ? <p className={styles.error}>{connectError}</p> : null}
+
+            {azureStatus === "connected" ? (
               <>
-                <input
-                  className={styles.input}
-                  type="password"
-                  placeholder="Paste your Azure DevOps Personal Access Token"
-                  value={azurePat}
-                  onChange={(event) => setAzurePat(event.target.value)}
-                />
-                <button
-                  className={styles.secondaryButton}
-                  type="button"
-                  onClick={handleSaveAzurePat}
-                  disabled={azurePatSaving}
-                >
-                  Save PAT
-                </button>
+                <div className={styles.divider}>
+                  <span />
+                  <strong>connect an Azure repository</strong>
+                  <span />
+                </div>
+
+                <div className={styles.formGrid}>
+                  <input
+                    className={styles.input}
+                    type="text"
+                    placeholder="https://dev.azure.com/org/project/_git/repo"
+                    value={azureRepoUrl}
+                    onChange={(event) => setAzureRepoUrl(event.target.value)}
+                  />
+                  <input
+                    className={styles.input}
+                    type="text"
+                    placeholder="main"
+                    value={azureBranch}
+                    onChange={(event) => setAzureBranch(event.target.value)}
+                  />
+                </div>
                 <p className={styles.helperText}>
-                  Generate at dev.azure.com &rarr; User Settings &rarr; Personal Access Tokens. Needs Code (Read) scope.
+                  Also supported: https://org.visualstudio.com/project/_git/repo
                 </p>
+                {connectError ? <p className={styles.error}>{connectError}</p> : null}
+                {connectSuccess ? <p className={styles.success}>{connectSuccess}</p> : null}
+                <button className={styles.primaryButton} type="submit" disabled={submitting}>
+                  Connect Repository
+                </button>
               </>
             ) : null}
-          </div>
+          </form>
         ) : null}
 
         {provider === "upload" ? (

@@ -185,8 +185,16 @@ export interface ChecklistItemUpdate {
   order?: number;
 }
 
-export const connectRepository = async (url: string, branch: string): Promise<Repository> => {
-  const { data } = await apiClient.post<Repository>("/repositories/connect", { url, branch });
+export const connectRepository = async (
+  url: string,
+  branch: string,
+  provider?: string,
+): Promise<Repository> => {
+  const { data } = await apiClient.post<Repository>("/repositories/connect", {
+    url,
+    branch,
+    ...(provider ? { provider, source_type: provider } : {}),
+  });
   return data;
 };
 

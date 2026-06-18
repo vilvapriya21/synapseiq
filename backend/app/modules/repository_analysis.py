@@ -55,7 +55,7 @@ MAX_IMAGE_FILE_BYTES = 5_000_000
 REPOSITORY_STORAGE_DIR = Path("uploads") / "repositories"
 
 
-def clone_repository(clone_url: str, target_dir: Path, branch: str | None = None) -> None:
+def clone_repository(clone_url: str, target_dir: Path, branch: str | None = None, provider: str | None = None) -> None:
     command = ["git", "clone", "--depth=1", "--single-branch"]
     if branch:
         command.extend(["--branch", branch])
@@ -80,6 +80,9 @@ def clone_repository(clone_url: str, target_dir: Path, branch: str | None = None
         print(f"[ERROR] git clone failed return_code={exc.returncode}")
         print(f"[ERROR] git clone stdout={exc.stdout}")
         print(f"[ERROR] git clone stderr={stderr}")
+        if provider == "azure":
+            print("[ERROR] clone_reason=azure_clone_failed")
+            raise Exception("Unable to clone Azure DevOps repository. Check PAT permissions, repo URL, and branch.")
         if "Authentication failed" in stderr:
             print("[ERROR] clone_reason=authentication_failed")
             raise Exception("Authentication failed. Connect your GitHub account and try again.")
@@ -284,6 +287,8 @@ def analyze_repository(
                 "bitbucket": bitbucket_token,
             }
             token_for_provider = token_map.get(repository.provider)
+            if repository.provider == "azure" and not token_for_provider:
+                raise Exception("Please save Azure DevOps PAT before connecting a repository.")
             auth_url = build_authenticated_url(
                 repository.url,
                 token_for_provider,
@@ -291,7 +296,7 @@ def analyze_repository(
             )
             print(f"[AUTH] authenticated_url={mask_credentials(auth_url)} credentials_injected={'@' in auth_url.split('://', 1)[-1].split('/', 1)[0]}")
             print(f"[CLONE] before_clone repo_id={repo_id}")
-            clone_repository(auth_url, temp_dir / "repo", repository.branch)
+            clone_repository(auth_url, temp_dir / "repo", repository.branch, repository.provider)
             print(f"[CLONE] after_clone_success repo_id={repo_id}")
             root = temp_dir / "repo"
         elif repository.source_type == "upload":
