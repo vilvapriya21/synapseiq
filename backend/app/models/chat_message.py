@@ -9,10 +9,7 @@ from app.db.database import Base
 
 class ChatMessage(Base):
     """
-    A single message in the AI assistant conversation for a repository.
-    Shared, repo-wide thread -- all users with access to the repository
-    (the owning admin, or any learner assigned to any topic within it)
-    see and contribute to the same conversation history.
+    A private AI assistant conversation for one user within one repository.
     """
 
     __tablename__ = "chat_messages"

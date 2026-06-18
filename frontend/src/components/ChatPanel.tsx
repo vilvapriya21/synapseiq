@@ -82,12 +82,23 @@ function ChatPanel({ repoId }: ChatPanelProps) {
 
   return (
     <div className={styles.chatPanel}>
+      <div className={styles.header}>
+        <div>
+          <h2>AI Assistant</h2>
+          <p>Ask about this repository</p>
+        </div>
+        <span className={styles.statusDot} aria-hidden="true" />
+      </div>
+
       {error ? <div className={styles.errorBanner}>{error}</div> : null}
 
       <div className={styles.messageList} ref={messageListRef}>
         {loading ? <p className={styles.stateText}>Loading chat...</p> : null}
         {!loading && messages.length === 0 ? (
-          <p className={styles.stateText}>Ask a question about this repository.</p>
+          <div className={styles.emptyState}>
+            <strong>No messages yet</strong>
+            <span>Ask a question about files, modules, dependencies, or onboarding context.</span>
+          </div>
         ) : null}
         {messages.map((message, index) => (
           <div
@@ -101,7 +112,9 @@ function ChatPanel({ repoId }: ChatPanelProps) {
         ))}
         {sending ? (
           <div className={`${styles.messageRow} ${styles.assistantRow}`}>
-            <div className={`${styles.messageBubble} ${styles.assistantBubble}`}>thinking...</div>
+            <div className={`${styles.messageBubble} ${styles.assistantBubble}`}>
+              <span className={styles.thinkingDots}>Thinking...</span>
+            </div>
           </div>
         ) : null}
       </div>

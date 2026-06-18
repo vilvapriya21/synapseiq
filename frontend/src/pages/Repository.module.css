@@ -1,6 +1,6 @@
 .page {
   display: grid;
-  gap: 24px;
+  gap: 22px;
 }
 
 .headerCard,
@@ -8,7 +8,8 @@
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   background: #ffffff;
-  padding: 18px 20px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+  padding: 20px;
 }
 
 .headerCard {
@@ -77,8 +78,8 @@
 
 .detailGrid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 16px;
+  grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
+  gap: 20px;
   align-items: start;
 }
 
@@ -94,18 +95,21 @@
 
 .workspaceLayout {
   display: flex;
-  gap: 20px;
+  align-items: flex-start;
+  gap: 22px;
 }
 
 .workspaceMain {
   flex: 1;
   min-width: 0;
   display: grid;
-  gap: 24px;
+  gap: 22px;
 }
 
 .workspaceSidebar {
   flex-shrink: 0;
+  position: sticky;
+  top: 20px;
   width: 320px;
 }
 
@@ -499,6 +503,7 @@
   }
 
   .workspaceSidebar {
+    position: static;
     width: 100%;
   }
 }

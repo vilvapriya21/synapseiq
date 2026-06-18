@@ -1,9 +1,49 @@
 .chatPanel {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  height: min(720px, calc(100vh - 140px));
+  min-height: 520px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 12px;
+  border-bottom: 1px solid #eef2f7;
+  padding: 16px;
+}
+
+.header h2 {
+  margin: 0;
+  color: #07142f;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.header p {
+  margin: 3px 0 0;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.statusDot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 0 3px #dcfce7;
+  margin-top: 4px;
 }
 
 .errorBanner {
+  margin: 12px 14px 0;
   border: 1px solid #fecaca;
   border-radius: 8px;
   background: #fef2f2;
@@ -14,15 +54,14 @@
 
 .messageList {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 10px;
-  min-height: 320px;
-  max-height: 460px;
+  min-height: 0;
   overflow-y: auto;
-  border: 1px solid #edf1f6;
-  border-radius: 8px;
   background: #f8fafc;
-  padding: 12px;
+  padding: 14px;
+  scrollbar-width: thin;
 }
 
 .messageRow {
@@ -39,7 +78,7 @@
 }
 
 .messageBubble {
-  max-width: min(680px, 78%);
+  max-width: 86%;
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 13px;
@@ -51,12 +90,14 @@
 .userBubble {
   background: #1b4fd8;
   color: #ffffff;
+  border-bottom-right-radius: 3px;
 }
 
 .assistantBubble {
   border: 1px solid #e5e7eb;
   background: #ffffff;
   color: #111827;
+  border-bottom-left-radius: 3px;
 }
 
 .stateText {
@@ -65,10 +106,37 @@
   font-size: 13px;
 }
 
+.emptyState {
+  display: grid;
+  gap: 5px;
+  margin: auto;
+  max-width: 230px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.emptyState strong {
+  color: #111827;
+  font-size: 13px;
+}
+
+.emptyState span {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.thinkingDots {
+  color: #6b7280;
+  font-style: italic;
+}
+
 .inputRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
+  border-top: 1px solid #eef2f7;
+  background: #ffffff;
+  padding: 12px;
 }
 
 .input {
@@ -101,6 +169,11 @@
 }
 
 @media (max-width: 640px) {
+  .chatPanel {
+    height: 560px;
+    min-height: 460px;
+  }
+
   .messageBubble {
     max-width: 92%;
   }

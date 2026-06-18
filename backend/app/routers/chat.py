@@ -35,7 +35,10 @@ def get_chat_history(
 
     messages = db.scalars(
         select(ChatMessage)
-        .where(ChatMessage.repository_id == repo_id)
+        .where(
+            ChatMessage.repository_id == repo_id,
+            ChatMessage.user_id == current_user.id,
+        )
         .order_by(ChatMessage.created_at)
         .limit(HISTORY_LIMIT)
     ).all()
@@ -75,7 +78,10 @@ def post_chat_message(
 
     recent = db.scalars(
         select(ChatMessage)
-        .where(ChatMessage.repository_id == repo_id)
+        .where(
+            ChatMessage.repository_id == repo_id,
+            ChatMessage.user_id == current_user.id,
+        )
         .order_by(ChatMessage.created_at.desc())
         .limit(CONTEXT_TURNS_FOR_PROMPT)
     ).all()
