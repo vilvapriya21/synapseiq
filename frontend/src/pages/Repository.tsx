@@ -30,13 +30,12 @@ import { useAuthStore } from "../store/authStore";
 import { normalizeRole } from "../utils/roles";
 import styles from "./Repository.module.css";
 
-type TabKey = "file_tree" | "readme" | "dependencies" | "chat";
+type TabKey = "file_tree" | "readme" | "dependencies";
 
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "file_tree", label: "File Tree" },
   { key: "readme", label: "README" },
   { key: "dependencies", label: "Dependencies" },
-  { key: "chat", label: "Chat" },
 ];
 
 function getStatusClass(status: Repository["status"] | Repository["knowledge_base_status"]) {
@@ -331,10 +330,6 @@ function RepositoryPage() {
       );
     }
 
-    if (activeTab === "chat") {
-      return repoId ? <ChatPanel repoId={repoId} /> : null;
-    }
-
     return dependencyEntries.length > 0 ? (
       <div className={styles.dependencyList}>
         {dependencyEntries.map((entry) => (
@@ -388,8 +383,10 @@ function RepositoryPage() {
         </div>
       </section>
 
-      <section className={styles.detailGrid}>
-        <article className={styles.card}>
+      <div className={styles.workspaceLayout}>
+        <div className={styles.workspaceMain}>
+          <section className={styles.detailGrid}>
+            <article className={styles.card}>
           <div className={styles.cardHeader}>
             <h2>Knowledge Base</h2>
             <span className={`${styles.badge} ${getStatusClass(repository.knowledge_base_status)}`}>
@@ -423,11 +420,11 @@ function RepositoryPage() {
               </button>
             ))}
           </div>
-          {repository.knowledge_base_status === "ready" || activeTab === "chat" ? renderTabContent() : null}
-        </article>
+          {repository.knowledge_base_status === "ready" ? renderTabContent() : null}
+            </article>
 
-        <aside className={styles.sideColumn}>
-          <div className={styles.card}>
+            <aside className={styles.sideColumn}>
+              <div className={styles.card}>
             <div className={styles.cardHeader}>
               <h2>Repository Info</h2>
             </div>
@@ -452,11 +449,11 @@ function RepositoryPage() {
             <button className={styles.outlineButton} type="button" onClick={handleReanalyze} disabled={refreshing}>
               Re-analyze
             </button>
-          </div>
-        </aside>
-      </section>
+              </div>
+            </aside>
+          </section>
 
-      <section className={styles.card}>
+          <section className={styles.card}>
         <div className={styles.cardHeader}>
           <h2>KT Topics</h2>
           {role === "ADMIN" ? (
@@ -546,11 +543,11 @@ function RepositoryPage() {
             ))}
           </div>
         )}
-      </section>
+          </section>
 
-      {role === "ADMIN" ? (
-        <>
-          <section className={styles.card}>
+          {role === "ADMIN" ? (
+            <>
+              <section className={styles.card}>
             <div className={styles.cardHeader}>
               <h2>Contributors</h2>
               <button
@@ -587,9 +584,9 @@ function RepositoryPage() {
                 </tbody>
               </table>
             )}
-          </section>
+              </section>
 
-          <section className={styles.card}>
+              <section className={styles.card}>
             <h2>Assigned Learners</h2>
 
             <div className={styles.assignForm}>
@@ -645,9 +642,15 @@ function RepositoryPage() {
                 </tbody>
               </table>
             )}
-          </section>
-        </>
-      ) : null}
+              </section>
+            </>
+          ) : null}
+        </div>
+
+        <aside className={styles.workspaceSidebar}>
+          {repoId ? <ChatPanel repoId={repoId} /> : null}
+        </aside>
+      </div>
     </div>
   );
 }
