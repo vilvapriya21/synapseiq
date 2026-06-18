@@ -1,5 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import ChatPanel from "../components/ChatPanel";
+import KTChecklist from "../components/KTChecklist";
 import { EmptyState } from "../components/common";
 import { getUsers, type AdminUser } from "../services/adminService";
 import {
@@ -11,6 +13,7 @@ import {
   getContributors,
   getKTTopics,
   getKnowledgeBase,
+  getMyAssignments,
   getRepository,
   getTopicRecommendation,
   refreshRepository,
@@ -27,12 +30,13 @@ import { useAuthStore } from "../store/authStore";
 import { normalizeRole } from "../utils/roles";
 import styles from "./Repository.module.css";
 
-type TabKey = "file_tree" | "readme" | "dependencies";
+type TabKey = "file_tree" | "readme" | "dependencies" | "chat";
 
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "file_tree", label: "File Tree" },
   { key: "readme", label: "README" },
   { key: "dependencies", label: "Dependencies" },
+  { key: "chat", label: "Chat" },
 ];
 
 function getStatusClass(status: Repository["status"] | Repository["knowledge_base_status"]) {
@@ -82,6 +86,7 @@ function RepositoryPage() {
   const [topicDescription, setTopicDescription] = useState("");
   const [topicPaths, setTopicPaths] = useState("");
   const [recommendations, setRecommendations] = useState<Record<string, RecommendedContributor[]>>({});
+  const [expandedChecklistTopicIds, setExpandedChecklistTopicIds] = useState<Record<string, boolean>>({});
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [learners, setLearners] = useState<{ id: string; name: string; email: string }[]>([]);
   const [selectedTopicId, setSelectedTopicId] = useState("");
@@ -133,6 +138,29 @@ function RepositoryPage() {
     }
   };
 
+  const fetchLearnerTopics = async () => {
+    if (!repoId || role === "ADMIN") {
+      return;
+    }
+
+    try {
+      const rows = await getMyAssignments();
+      setTopics(
+        rows
+          .filter((assignment) => assignment.repository_id === repoId)
+          .map((assignment) => ({
+            id: assignment.kt_topic_id,
+            repository_id: assignment.repository_id,
+            title: assignment.kt_topic_title,
+            description: assignment.kt_topic_description,
+            created_at: assignment.assigned_at,
+          })),
+      );
+    } catch {
+      setTopics([]);
+    }
+  };
+
   const fetchRepositoryData = async () => {
     if (!repoId) {
       return;
@@ -157,6 +185,7 @@ function RepositoryPage() {
   useEffect(() => {
     fetchRepositoryData();
     fetchAdminData();
+    fetchLearnerTopics();
   }, [repoId, role]);
 
   useEffect(() => {
@@ -276,6 +305,10 @@ function RepositoryPage() {
     setAssignments(result.assignments);
   };
 
+  const toggleChecklist = (topicId: string) => {
+    setExpandedChecklistTopicIds((current) => ({ ...current, [topicId]: !current[topicId] }));
+  };
+
   const entries = knowledgeBase?.entries ?? [];
   const fileTreeEntry = findEntry(entries, "file_tree");
   const readmeEntry = findEntry(entries, "readme");
@@ -296,6 +329,10 @@ function RepositoryPage() {
       ) : (
         <p className={styles.muted}>Not found in this repository</p>
       );
+    }
+
+    if (activeTab === "chat") {
+      return repoId ? <ChatPanel repoId={repoId} /> : null;
     }
 
     return dependencyEntries.length > 0 ? (
@@ -374,23 +411,19 @@ function RepositoryPage() {
             </div>
           ) : null}
 
-          {repository.knowledge_base_status === "ready" ? (
-            <>
-              <div className={styles.tabBar}>
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.key}
-                    className={`${styles.tab} ${activeTab === tab.key ? styles.tabActive : ""}`}
-                    type="button"
-                    onClick={() => setActiveTab(tab.key)}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-              {renderTabContent()}
-            </>
-          ) : null}
+          <div className={styles.tabBar}>
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                className={`${styles.tab} ${activeTab === tab.key ? styles.tabActive : ""}`}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          {repository.knowledge_base_status === "ready" || activeTab === "chat" ? renderTabContent() : null}
         </article>
 
         <aside className={styles.sideColumn}>
@@ -421,6 +454,98 @@ function RepositoryPage() {
             </button>
           </div>
         </aside>
+      </section>
+
+      <section className={styles.card}>
+        <div className={styles.cardHeader}>
+          <h2>KT Topics</h2>
+          {role === "ADMIN" ? (
+            <button className={styles.primaryButton} onClick={() => setShowTopicForm(!showTopicForm)} type="button">
+              {showTopicForm ? "Cancel" : "+ Add Topic"}
+            </button>
+          ) : null}
+        </div>
+
+        {role === "ADMIN" && showTopicForm ? (
+          <form onSubmit={handleCreateTopic} className={styles.topicForm}>
+            <input
+              className={styles.input}
+              placeholder="Topic title (e.g. Payment Gateway Integration)"
+              value={topicTitle}
+              onChange={(event) => setTopicTitle(event.target.value)}
+              required
+            />
+            <input
+              className={styles.input}
+              placeholder="Description (optional)"
+              value={topicDescription}
+              onChange={(event) => setTopicDescription(event.target.value)}
+            />
+            <input
+              className={styles.input}
+              placeholder="Path patterns, comma-separated (e.g. src/payments,src/billing)"
+              value={topicPaths}
+              onChange={(event) => setTopicPaths(event.target.value)}
+            />
+            <button className={styles.primaryButton} type="submit">Create Topic</button>
+          </form>
+        ) : null}
+
+        {topics.length === 0 ? (
+          <p className={styles.emptyText}>
+            {role === "ADMIN"
+              ? "No KT topics yet. Add one to start organizing knowledge transfer."
+              : "No KT topics assigned yet."}
+          </p>
+        ) : (
+          <div className={styles.topicList}>
+            {topics.map((topic) => (
+              <div key={topic.id} className={styles.topicItem}>
+                <div>
+                  <strong>{topic.title}</strong>
+                  {topic.description ? <p className={styles.topicDescription}>{topic.description}</p> : null}
+                  {topic.path_patterns ? <span className={styles.pathTag}>{topic.path_patterns}</span> : null}
+                </div>
+                <div className={styles.topicActions}>
+                  <button className={styles.linkButton} onClick={() => toggleChecklist(topic.id)} type="button">
+                    {expandedChecklistTopicIds[topic.id] ? "Hide Checklist" : "View Checklist"}
+                  </button>
+                  {role === "ADMIN" ? (
+                    <>
+                      <button className={styles.linkButton} onClick={() => handleViewRecommendation(topic.id)} type="button">
+                        Recommend Person
+                      </button>
+                      <button className={styles.deleteButton} onClick={() => handleDeleteTopic(topic.id)} type="button">
+                        Remove
+                      </button>
+                    </>
+                  ) : null}
+                </div>
+                {recommendations[topic.id] ? (
+                  <div className={styles.recommendationBox}>
+                    {recommendations[topic.id].length === 0 ? (
+                      <p className={styles.emptyText}>
+                        No matching contributors found. Run "Analyze Contributors" first, or check the path patterns.
+                      </p>
+                    ) : (
+                      recommendations[topic.id].map((recommendation, index) => (
+                        <div key={`${recommendation.email}-${index}`} className={styles.recommendationRow}>
+                          <span>{recommendation.name} ({recommendation.email})</span>
+                          <span>
+                            {recommendation.relevant_file_matches} relevant files &middot; {recommendation.commit_count} total commits
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                ) : null}
+                {expandedChecklistTopicIds[topic.id] && repoId ? (
+                  <KTChecklist repoId={repoId} topicId={topic.id} isAdmin={role === "ADMIN"} />
+                ) : null}
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {role === "ADMIN" ? (
@@ -461,82 +586,6 @@ function RepositoryPage() {
                   ))}
                 </tbody>
               </table>
-            )}
-          </section>
-
-          <section className={styles.card}>
-            <div className={styles.cardHeader}>
-              <h2>KT Topics</h2>
-              <button className={styles.primaryButton} onClick={() => setShowTopicForm(!showTopicForm)} type="button">
-                {showTopicForm ? "Cancel" : "+ Add Topic"}
-              </button>
-            </div>
-
-            {showTopicForm ? (
-              <form onSubmit={handleCreateTopic} className={styles.topicForm}>
-                <input
-                  className={styles.input}
-                  placeholder="Topic title (e.g. Payment Gateway Integration)"
-                  value={topicTitle}
-                  onChange={(event) => setTopicTitle(event.target.value)}
-                  required
-                />
-                <input
-                  className={styles.input}
-                  placeholder="Description (optional)"
-                  value={topicDescription}
-                  onChange={(event) => setTopicDescription(event.target.value)}
-                />
-                <input
-                  className={styles.input}
-                  placeholder="Path patterns, comma-separated (e.g. src/payments,src/billing)"
-                  value={topicPaths}
-                  onChange={(event) => setTopicPaths(event.target.value)}
-                />
-                <button className={styles.primaryButton} type="submit">Create Topic</button>
-              </form>
-            ) : null}
-
-            {topics.length === 0 ? (
-              <p className={styles.emptyText}>No KT topics yet. Add one to start organizing knowledge transfer.</p>
-            ) : (
-              <div className={styles.topicList}>
-                {topics.map((topic) => (
-                  <div key={topic.id} className={styles.topicItem}>
-                    <div>
-                      <strong>{topic.title}</strong>
-                      {topic.description ? <p className={styles.topicDescription}>{topic.description}</p> : null}
-                      {topic.path_patterns ? <span className={styles.pathTag}>{topic.path_patterns}</span> : null}
-                    </div>
-                    <div className={styles.topicActions}>
-                      <button className={styles.linkButton} onClick={() => handleViewRecommendation(topic.id)} type="button">
-                        Recommend Person
-                      </button>
-                      <button className={styles.deleteButton} onClick={() => handleDeleteTopic(topic.id)} type="button">
-                        Remove
-                      </button>
-                    </div>
-                    {recommendations[topic.id] ? (
-                      <div className={styles.recommendationBox}>
-                        {recommendations[topic.id].length === 0 ? (
-                          <p className={styles.emptyText}>
-                            No matching contributors found. Run "Analyze Contributors" first, or check the path patterns.
-                          </p>
-                        ) : (
-                          recommendations[topic.id].map((recommendation, index) => (
-                            <div key={`${recommendation.email}-${index}`} className={styles.recommendationRow}>
-                              <span>{recommendation.name} ({recommendation.email})</span>
-                              <span>
-                                {recommendation.relevant_file_matches} relevant files &middot; {recommendation.commit_count} total commits
-                              </span>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
             )}
           </section>
 
