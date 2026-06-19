@@ -13,13 +13,13 @@
 .eyebrow {
   margin: 0 0 6px;
   color: var(--color-muted);
-  font-size: 14px;
+  font-size: var(--font-size-base);
 }
 
 .heading {
   margin: 0;
   color: var(--color-text);
-  font-size: 30px;
+  font-size: var(--font-size-3xl);
 }
 
 .scoreCard,
@@ -40,13 +40,13 @@
 .scoreCard span,
 .category span {
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
 }
 
 .scoreCard strong {
   color: var(--color-text);
-  font-size: 36px;
+  font-size: var(--font-size-3xl);
 }
 
 .panel {
@@ -61,7 +61,7 @@
 .panelHeader h2 {
   margin: 0;
   color: var(--color-text);
-  font-size: 18px;
+  font-size: var(--font-size-xl);
 }
 
 .categoryGrid,
@@ -87,7 +87,7 @@
 
 .category strong {
   color: var(--color-text);
-  font-size: 28px;
+  font-size: var(--font-size-2xl);
 }
 
 .track {
@@ -130,7 +130,7 @@
 
 .table th {
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   text-transform: uppercase;
 }
 

@@ -42,5 +42,5 @@
 
 .error {
   color: var(--color-danger);
-  font-size: 14px;
+  font-size: var(--font-size-base);
 }

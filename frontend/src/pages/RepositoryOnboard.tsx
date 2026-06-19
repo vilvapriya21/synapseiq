@@ -1,5 +1,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { CloudUpload, Search, SquareCode, Upload } from "lucide-react";
+import { CloudUpload, Search, Upload } from "lucide-react";
+import { SiBitbucket, SiGithub, SiGitlab } from "react-icons/si";
+import { VscAzureDevops } from "react-icons/vsc";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ENV } from "../constants/env";
 import { EmptyState, Loader } from "../components/common";
@@ -50,6 +52,49 @@ function formatProviderStatus(status: "unknown" | "connected" | "disconnected") 
   if (status === "connected") return "Connected";
   if (status === "disconnected") return "Not connected";
   return "Checking";
+}
+
+function getRepositoryProvider(repository: Repository) {
+  const source = `${repository.provider || repository.source_type || ""}`.toLowerCase();
+  if (source.includes("gitlab")) return "gitlab";
+  if (source.includes("bitbucket")) return "bitbucket";
+  if (source.includes("azure")) return "azure";
+  if (source.includes("github") || repository.source_type === "git") return "github";
+  return "upload";
+}
+
+function getRepositoryIcon(repository: Repository) {
+  const provider = getRepositoryProvider(repository);
+  switch (provider) {
+    case "gitlab":
+      return <SiGitlab size={19} />;
+    case "bitbucket":
+      return <SiBitbucket size={19} />;
+    case "azure":
+      return <VscAzureDevops size={19} />;
+    case "github":
+      return <SiGithub size={19} />;
+    case "upload":
+    default:
+      return <Upload size={19} />;
+  }
+}
+
+function getRepositoryIconClass(repository: Repository) {
+  const provider = getRepositoryProvider(repository);
+  switch (provider) {
+    case "gitlab":
+      return styles.repositoryIconGitlab;
+    case "bitbucket":
+      return styles.repositoryIconBitbucket;
+    case "azure":
+      return styles.repositoryIconAzure;
+    case "github":
+      return styles.repositoryIconGithub;
+    case "upload":
+    default:
+      return styles.repositoryIconUpload;
+  }
 }
 
 function RepositoryOnboardPage() {
@@ -335,7 +380,9 @@ function RepositoryOnboardPage() {
       header: "Repository",
       render: (repository) => (
         <div className={styles.repositoryIdentity}>
-          <span className={styles.repositoryIcon}><SquareCode size={19} /></span>
+          <span className={`${styles.repositoryIcon} ${getRepositoryIconClass(repository)}`}>
+            {getRepositoryIcon(repository)}
+          </span>
           <div>
             <div className={styles.repositoryName}>{repository.name}</div>
             <div className={styles.repositorySource}>{repository.provider || repository.source_type}</div>
@@ -438,7 +485,7 @@ function RepositoryOnboardPage() {
             type="button"
             onClick={() => setProvider("github")}
           >
-            <SquareCode size={30} />
+            <SiGithub size={30} />
             <strong>GitHub</strong>
             <span className={`${styles.connectionBadge} ${githubStatus === "connected" ? styles.connected : styles.notConnected}`}>
               {formatProviderStatus(githubStatus)}
@@ -450,7 +497,7 @@ function RepositoryOnboardPage() {
             type="button"
             onClick={() => setProvider("gitlab")}
           >
-            <span className={`${styles.providerMark} ${styles.gitlabMark}`}>GL</span>
+            <span className={`${styles.providerMark} ${styles.gitlabMark}`}><SiGitlab size={20} /></span>
             <strong>GitLab</strong>
             <span className={`${styles.connectionBadge} ${gitlabStatus === "connected" ? styles.connected : styles.notConnected}`}>
               {formatProviderStatus(gitlabStatus)}
@@ -462,7 +509,7 @@ function RepositoryOnboardPage() {
             type="button"
             onClick={() => setProvider("bitbucket")}
           >
-            <span className={`${styles.providerMark} ${styles.bitbucketMark}`}>BB</span>
+            <span className={`${styles.providerMark} ${styles.bitbucketMark}`}><SiBitbucket size={20} /></span>
             <strong>Bitbucket</strong>
             <span className={`${styles.connectionBadge} ${bitbucketStatus === "connected" ? styles.connected : styles.notConnected}`}>
               {formatProviderStatus(bitbucketStatus)}
@@ -474,7 +521,7 @@ function RepositoryOnboardPage() {
             type="button"
             onClick={() => setProvider("azure")}
           >
-            <span className={`${styles.providerMark} ${styles.azureMark}`}>AZ</span>
+            <span className={`${styles.providerMark} ${styles.azureMark}`}><VscAzureDevops size={20} /></span>
             <strong>Azure DevOps</strong>
             <span className={`${styles.connectionBadge} ${azureStatus === "connected" ? styles.patSaved : styles.notConnected}`}>
               {azureStatus === "connected" ? "PAT saved" : formatProviderStatus(azureStatus)}
@@ -497,7 +544,7 @@ function RepositoryOnboardPage() {
           <form className={styles.providerPanel} onSubmit={handleConnect}>
             <div className={styles.cardHeader}>
               <div className={`${styles.iconBox} ${styles.githubIcon}`}>
-                <SquareCode size={22} />
+                <SiGithub size={22} />
               </div>
               <div>
                 <h2>GitHub</h2>
@@ -572,8 +619,8 @@ type="text"
         {provider === "gitlab" ? (
           <form className={styles.providerPanel} onSubmit={handleConnect}>
             <div className={styles.cardHeader}>
-              <div className={`${styles.iconBox} ${styles.uploadIcon}`}>
-                <SquareCode size={22} />
+              <div className={`${styles.iconBox} ${styles.gitlabPanelIcon}`}>
+                <SiGitlab size={22} />
               </div>
               <div>
                 <h2>GitLab</h2>
@@ -648,8 +695,8 @@ type="text"
         {provider === "bitbucket" ? (
           <form className={styles.providerPanel} onSubmit={handleConnect}>
             <div className={styles.cardHeader}>
-              <div className={`${styles.iconBox} ${styles.uploadIcon}`}>
-                <SquareCode size={22} />
+              <div className={`${styles.iconBox} ${styles.bitbucketPanelIcon}`}>
+                <SiBitbucket size={22} />
               </div>
               <div>
                 <h2>Bitbucket</h2>
@@ -724,8 +771,8 @@ type="text"
         {provider === "azure" ? (
           <form className={styles.providerPanel} onSubmit={handleAzureConnect}>
             <div className={styles.cardHeader}>
-              <div className={`${styles.iconBox} ${styles.uploadIcon}`}>
-                <SquareCode size={22} />
+              <div className={`${styles.iconBox} ${styles.azurePanelIcon}`}>
+                <VscAzureDevops size={22} />
               </div>
               <div>
                 <h2>Azure DevOps</h2>
@@ -886,10 +933,19 @@ type="text"
             columns={repositoryColumns}
             data={filteredRepositories}
             emptyState={
-              <EmptyState
-                title="No repositories found"
-                description="Connected repositories will appear here after you add or upload one."
-              />
+              repositories.length === 0 ? (
+                <div className={styles.repositoryEmptyState}>
+                  <EmptyState
+                    title="No repositories found"
+                    description="Connected repositories will appear here after you add or upload one."
+                  />
+                </div>
+              ) : (
+                <EmptyState
+                  title="No repositories match your search."
+                  description="Try a different repository name, provider, branch, or language."
+                />
+              )
             }
             getRowKey={(repository) => repository.id}
             tableClassName={styles.table}

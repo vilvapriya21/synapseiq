@@ -29,7 +29,7 @@
 .table th {
   background: var(--color-bg-subtle);
   color: var(--color-text-secondary);
-  font-size: 14px;
+  font-size: var(--font-size-base);
   font-weight: 800;
 }
 

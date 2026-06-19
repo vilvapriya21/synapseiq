@@ -33,6 +33,7 @@
   --font-size-lg: 16px;
   --font-size-xl: 20px;
   --font-size-2xl: 28px;
+  --font-size-3xl: 32px;
   --transition-fast: 120ms ease;
   --transition-base: 200ms ease;
   color: var(--color-text);

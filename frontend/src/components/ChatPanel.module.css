@@ -23,14 +23,14 @@
 .header h2 {
   margin: 0;
   color: var(--color-text);
-  font-size: 18px;
+  font-size: var(--font-size-xl);
   font-weight: 800;
 }
 
 .header p {
   margin: 4px 0 0;
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .statusDot {
@@ -59,7 +59,7 @@
   color: var(--color-primary);
   cursor: pointer;
   padding: 0 12px;
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
   transition:
     background-color var(--transition-fast),
@@ -80,7 +80,7 @@
   background: var(--color-danger-soft);
   color: var(--color-danger);
   padding: 10px 12px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .messageList {
@@ -113,7 +113,7 @@
   max-width: 86%;
   border-radius: var(--radius-lg);
   padding: 11px 13px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: 1.55;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -137,14 +137,14 @@
   max-width: 86%;
   margin-top: 5px;
   color: var(--color-muted);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   font-style: italic;
 }
 
 .stateText {
   margin: auto;
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .emptyState {
@@ -158,11 +158,11 @@
 
 .emptyState strong {
   color: var(--color-text);
-  font-size: 14px;
+  font-size: var(--font-size-base);
 }
 
 .emptyState span {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: 1.45;
 }
 
@@ -188,7 +188,7 @@
   background: var(--color-surface);
   color: var(--color-text);
   padding: 0 12px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .sendButton {
@@ -199,7 +199,7 @@
   color: var(--color-surface);
   cursor: pointer;
   padding: 0 18px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
   transition:
     background-color var(--transition-fast),

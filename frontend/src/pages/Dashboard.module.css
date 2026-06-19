@@ -4,23 +4,47 @@
 }
 
 .hero {
+  position: relative;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: var(--space-5);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-primary-soft) 130%);
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+}
+
+.hero::before {
+  position: absolute;
+  top: -74px;
+  right: -58px;
+  width: 220px;
+  height: 220px;
+  border-radius: calc(var(--radius-lg) * 999);
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.18) 0%, rgba(14, 165, 233, 0.08) 42%, transparent 70%);
+  content: "";
+  pointer-events: none;
+}
+
+.hero > * {
+  position: relative;
+  z-index: 1;
 }
 
 .eyebrow {
   margin: 0 0 6px;
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
 }
 
 .heading {
   margin: 0;
   color: var(--color-text);
-  font-size: 32px;
+  font-size: var(--font-size-3xl);
   line-height: 1.12;
 }
 
@@ -58,19 +82,19 @@
 
 .statLabel {
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
 }
 
 .statValue {
   color: var(--color-text);
-  font-size: 34px;
+  font-size: var(--font-size-3xl);
   font-weight: 850;
 }
 
 .statHint {
   color: var(--color-success);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .panel {
@@ -85,7 +109,7 @@
 .panelHeader h2 {
   margin: 0;
   color: var(--color-text);
-  font-size: 18px;
+  font-size: var(--font-size-xl);
 }
 
 .assignmentGrid {
@@ -106,13 +130,13 @@
 .assignmentCard h3 {
   margin: 0;
   color: var(--color-text);
-  font-size: 16px;
+  font-size: var(--font-size-lg);
 }
 
 .assignmentCard p {
   margin: 0;
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: 1.45;
 }
 
@@ -126,7 +150,7 @@
   min-height: 26px;
   border-radius: calc(var(--radius-lg) * 999);
   padding: 0 10px;
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
 }
 
@@ -188,7 +212,7 @@
 .repository {
   margin: 4px 0 0;
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .tableWrap {
@@ -211,7 +235,7 @@
 
 .table th {
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
 }
 

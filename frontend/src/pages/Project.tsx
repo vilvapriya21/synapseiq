@@ -182,17 +182,26 @@ function ProjectPage() {
       {!isLoading && error && <EmptyState title="Unable to load repositories" description={error} />}
 
       {!isLoading && !error && filteredRepositories.length === 0 && (
-        <EmptyState
-          title={emptyMessage}
-          description="Repositories will appear here once they are connected and available."
-          action={
-            role === "ADMIN" ? (
-              <Button type="button" onClick={() => navigate(ROUTES.repositoryOnboard)}>
-                Connect Repository
-              </Button>
-            ) : null
-          }
-        />
+        repositories.length === 0 ? (
+          <div className={styles.repositoryEmptyState}>
+            <EmptyState
+              title={emptyMessage}
+              description="Repositories will appear here once they are connected and available."
+              action={
+                role === "ADMIN" ? (
+                  <Button type="button" onClick={() => navigate(ROUTES.repositoryOnboard)}>
+                    Connect Repository
+                  </Button>
+                ) : null
+              }
+            />
+          </div>
+        ) : (
+          <EmptyState
+            title="No repositories match your search."
+            description="Try a different repository name, provider, branch, or language."
+          />
+        )
       )}
 
       {!isLoading && !error && filteredRepositories.length > 0 && (

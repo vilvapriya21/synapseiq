@@ -13,7 +13,7 @@
 .eyebrow {
   margin: 0 0 6px;
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -21,7 +21,7 @@
 .heading {
   margin: 0;
   color: var(--color-text);
-  font-size: 30px;
+  font-size: var(--font-size-3xl);
   line-height: 1.15;
 }
 
@@ -29,7 +29,7 @@
   max-width: 620px;
   margin: 8px 0 0;
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: 1.55;
 }
 
@@ -60,14 +60,14 @@
 
 .sectionHeader {
   color: var(--color-text);
-  font-size: 18px;
+  font-size: var(--font-size-xl);
   font-weight: 700;
   margin: 0 0 14px;
 }
 
 .muted {
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .searchBox {
@@ -83,7 +83,7 @@
 
 .searchBox span {
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -105,7 +105,7 @@
 .count {
   margin: 0;
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -130,7 +130,7 @@
 .statCard span,
 .metaGrid span {
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -139,7 +139,7 @@
 .metaGrid strong {
   min-width: 0;
   color: var(--color-text);
-  font-size: 14px;
+  font-size: var(--font-size-base);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -177,14 +177,14 @@
 .repoMain h2 {
   margin: 0;
   color: var(--color-text);
-  font-size: 19px;
+  font-size: var(--font-size-xl);
 }
 
 .repoMain p,
 .cardFooter p {
   margin: 6px 0 0;
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   overflow-wrap: anywhere;
 }
 
@@ -194,7 +194,7 @@
   justify-content: center;
   border-radius: calc(var(--radius-lg) * 999);
   padding: 4px 11px;
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   text-transform: capitalize;
   white-space: nowrap;
@@ -282,7 +282,7 @@
 .stateCard h2 {
   margin: 0;
   color: var(--color-text);
-  font-size: 18px;
+  font-size: var(--font-size-xl);
   font-weight: 700;
 }
 

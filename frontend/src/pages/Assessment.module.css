@@ -13,13 +13,13 @@
 .eyebrow {
   margin: 0 0 6px;
   color: var(--color-muted);
-  font-size: 14px;
+  font-size: var(--font-size-base);
 }
 
 .heading {
   margin: 0;
   color: var(--color-text);
-  font-size: 30px;
+  font-size: var(--font-size-3xl);
 }
 
 .duration {
@@ -68,13 +68,13 @@
 .panelHeader h2 {
   margin: 0;
   color: var(--color-text);
-  font-size: 18px;
+  font-size: var(--font-size-xl);
 }
 
 .panelHeader p {
   margin: 4px 0 0;
   color: var(--color-muted);
-  font-size: 14px;
+  font-size: var(--font-size-base);
 }
 
 .panelIcon {
@@ -109,7 +109,7 @@
 
 .table th {
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -134,7 +134,7 @@
   background: var(--color-primary-soft);
   color: var(--color-primary);
   padding: 0 10px;
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
 }
 
@@ -151,7 +151,7 @@
 
 .progressHeader span {
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -167,13 +167,13 @@
   max-width: 860px;
   margin: 8px 0 0;
   color: var(--color-text);
-  font-size: 22px;
+  font-size: var(--font-size-xl);
   line-height: 1.35;
 }
 
 .questionCount {
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -259,7 +259,7 @@
 .scoreRing span {
   align-self: center;
   margin-top: -18px;
-  font-size: 42px;
+  font-size: var(--font-size-3xl);
   font-weight: 900;
 }
 
@@ -289,13 +289,13 @@
 
 .metric span {
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
 }
 
 .metric strong {
   color: var(--color-text);
-  font-size: 34px;
+  font-size: var(--font-size-3xl);
 }
 
 .confirmBody {

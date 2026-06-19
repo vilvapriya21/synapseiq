@@ -13,14 +13,14 @@
 .heading {
   margin: 0;
   color: var(--color-text);
-  font-size: 32px;
+  font-size: var(--font-size-3xl);
   line-height: 1.12;
 }
 
 .subtitle {
   margin: 8px 0 0;
   color: var(--color-muted);
-  font-size: 14px;
+  font-size: var(--font-size-base);
 }
 
 .card,
@@ -47,7 +47,7 @@
   background: var(--color-surface);
   color: var(--color-text);
   padding: 0 12px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .formActions {
@@ -63,7 +63,7 @@
   cursor: pointer;
   border-radius: var(--radius-md);
   padding: 0 16px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
 }
 
@@ -128,7 +128,7 @@
 .error {
   padding: 12px 14px;
   color: var(--color-danger);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .card {
@@ -138,7 +138,7 @@
 .state {
   padding: 18px 20px;
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .tableWrap {
@@ -161,13 +161,13 @@
 
 .table th {
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
 }
 
 .table td {
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .nameCell {
@@ -183,7 +183,7 @@
   min-height: 26px;
   border-radius: calc(var(--radius-lg) * 999);
   padding: 0 10px;
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   font-weight: 800;
   text-transform: capitalize;
 }
