@@ -77,6 +77,10 @@ export interface Contributor {
   name: string;
   email: string;
   commit_count: number;
+  files_touched?: number;
+  lines_added?: number;
+  lines_deleted?: number;
+  prs_authored?: number;
   top_files?: string;
 }
 
@@ -157,6 +161,15 @@ export interface ChatHistoryResponse {
 export interface ChatMessageResponse {
   user_message?: ChatMessage;
   assistant_message: ChatMessage;
+}
+
+export type ProviderAuthCode = "AUTH_REQUIRED" | "AUTH_INVALID";
+export type RepositoryProvider = "github" | "gitlab" | "bitbucket" | "azure";
+
+export interface ProviderAuthError {
+  code: ProviderAuthCode;
+  provider: RepositoryProvider;
+  message: string;
 }
 
 export interface ChecklistItem {

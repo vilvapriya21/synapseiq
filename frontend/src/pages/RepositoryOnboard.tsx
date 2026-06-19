@@ -13,6 +13,9 @@ import apiClient from "../services/api";
 import type { Repository } from "../services/repositoryService";
 import styles from "./RepositoryOnboard.module.css";
 
+const PENDING_REFRESH_REPO_KEY = "synapseiq.pendingRefreshRepoId";
+const PENDING_REFRESH_PROVIDER_KEY = "synapseiq.pendingRefreshProvider";
+
 function getStatusClass(status: Repository["status"]) {
   switch (status) {
     case "indexed":
@@ -100,9 +103,16 @@ function RepositoryOnboardPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
+    const connectedProvider = params.get("github") === "connected"
+      ? "github"
+      : params.get("gitlab") === "connected"
+        ? "gitlab"
+        : params.get("bitbucket") === "connected"
+          ? "bitbucket"
+          : null;
+
     if (params.get("github") === "connected") {
       setGithubStatus("connected");
-      window.history.replaceState({}, "", location.pathname);
     }
 
     if (params.get("gitlab") === "connected") {
@@ -113,6 +123,16 @@ function RepositoryOnboardPage() {
     if (params.get("bitbucket") === "connected") {
       setBitbucketStatus("connected");
       setProvider("bitbucket");
+    }
+
+    if (connectedProvider) {
+      const pendingRepoId = localStorage.getItem(PENDING_REFRESH_REPO_KEY);
+      const pendingProvider = localStorage.getItem(PENDING_REFRESH_PROVIDER_KEY);
+      window.history.replaceState({}, "", location.pathname);
+
+      if (pendingRepoId && pendingProvider === connectedProvider) {
+        navigate(`/repositories/${pendingRepoId}?retryRefresh=1`, { replace: true });
+      }
     }
   }, []);
 

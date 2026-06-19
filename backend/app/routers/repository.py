@@ -4,11 +4,12 @@ import json
 import mimetypes
 from pathlib import Path
 import shutil
+import subprocess
 from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
-from sqlalchemy import delete as sql_delete, select
+from sqlalchemy import delete as sql_delete, func, select
 from sqlalchemy.orm import Session as DbSession
 
 from app.core.security import get_current_user
@@ -22,7 +23,13 @@ from app.models.repository import Repository
 from app.models.repository_assignment import RepositoryAssignment
 from app.models.user import User
 from app.modules.contributor_analysis import analyze_contributors
-from app.modules.git_provider import detect_provider, extract_repo_name, is_valid_azure_repo_url, is_valid_git_url
+from app.modules.git_provider import (
+    build_authenticated_url,
+    detect_provider,
+    extract_repo_name,
+    is_valid_azure_repo_url,
+    is_valid_git_url,
+)
 from app.modules.repository_analysis import (
     IMAGE_FILE_EXTENSIONS,
     MAX_IMAGE_FILE_BYTES,
@@ -54,6 +61,31 @@ DOCUMENT_UPLOAD_DIR = Path("uploads") / "documents"
 MAX_DOCUMENT_UPLOAD_SIZE_BYTES = 100_000_000
 REPOSITORY_LEARNING_TOPIC_MARKER = "__repository_current_learning__"
 
+PROVIDER_LABELS = {
+    "github": "GitHub",
+    "gitlab": "GitLab",
+    "bitbucket": "Bitbucket",
+    "azure": "Azure DevOps",
+}
+
+AUTH_ERROR_MARKERS = (
+    "authentication failed",
+    "could not read username",
+    "could not read password",
+    "invalid username or password",
+    "invalid credentials",
+    "access denied",
+    "unauthorized",
+    "authorization failed",
+    "repository not found",
+    "authentication required",
+    "fatal: authentication",
+    "remote: invalid username or password",
+    "remote: HTTP Basic: Access denied",
+    "remote: You may not have access",
+    "TF401019",
+)
+
 
 def is_admin(user: User) -> bool:
     return user.role.lower() == "admin"
@@ -61,6 +93,78 @@ def is_admin(user: User) -> bool:
 
 def is_learner(user: User) -> bool:
     return user.role.lower() in {"learner", "user"}
+
+
+def get_provider_token(user: User, provider: str) -> str | None:
+    if provider == "github":
+        return user.github_access_token
+    if provider == "gitlab":
+        return user.gitlab_access_token
+    if provider == "bitbucket":
+        return user.bitbucket_access_token
+    if provider == "azure":
+        return user.azure_devops_token
+    return None
+
+
+def auth_error_detail(code: str, provider: str) -> dict[str, str]:
+    label = PROVIDER_LABELS.get(provider, provider.title())
+    if code == "AUTH_REQUIRED":
+        action = "refreshing this repository"
+    else:
+        action = "refreshing this repository. Please reconnect and try again"
+    return {
+        "code": code,
+        "provider": provider,
+        "message": f"{label} authentication required before {action}.",
+    }
+
+
+def is_auth_failure(output: str) -> bool:
+    output_lower = output.lower()
+    return any(marker.lower() in output_lower for marker in AUTH_ERROR_MARKERS)
+
+
+def validate_refresh_auth(repository: Repository, current_user: User) -> None:
+    if repository.source_type != "git":
+        return
+
+    provider = (repository.provider or detect_provider(repository.url or "")).lower()
+    if provider not in PROVIDER_LABELS:
+        return
+
+    token = get_provider_token(current_user, provider)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=auth_error_detail("AUTH_REQUIRED", provider),
+        )
+
+    authenticated_url = build_authenticated_url(repository.url or "", token, provider)
+    try:
+        subprocess.run(
+            ["git", "ls-remote", "--heads", authenticated_url],
+            check=True,
+            timeout=60,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        output = f"{exc.stdout or ''}\n{exc.stderr or ''}"
+        if is_auth_failure(output):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=auth_error_detail("AUTH_INVALID", provider),
+            ) from exc
+    except subprocess.TimeoutExpired as exc:
+        output = f"{exc.stdout or ''}\n{exc.stderr or ''}"
+        if is_auth_failure(output):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=auth_error_detail("AUTH_INVALID", provider),
+            ) from exc
+    except OSError:
+        return
 
 
 def get_repository_name_from_filename(filename: str) -> str:
@@ -350,6 +454,7 @@ def refresh_repository(
     current_user: User = Depends(get_current_user),
 ) -> Repository:
     repository = get_owned_repository(db, repo_id, current_user.id)
+    validate_refresh_auth(repository, current_user)
 
     repository.status = "pending"
     repository.error_message = None
@@ -574,7 +679,9 @@ def analyze_repository_contributors(
     contributors = db.scalars(
         select(Contributor)
         .where(Contributor.repository_id == repo_id)
-        .order_by(Contributor.commit_count.desc())
+        .order_by(
+            (func.coalesce(Contributor.commit_count, 0) + func.coalesce(Contributor.prs_authored, 0)).desc()
+        )
     ).all()
     return ContributorListResponse(
         repository_id=repo_id,
@@ -594,7 +701,9 @@ def get_contributors(
     contributors = db.scalars(
         select(Contributor)
         .where(Contributor.repository_id == repo_id)
-        .order_by(Contributor.commit_count.desc())
+        .order_by(
+            (func.coalesce(Contributor.commit_count, 0) + func.coalesce(Contributor.prs_authored, 0)).desc()
+        )
     ).all()
     return ContributorListResponse(
         repository_id=repo_id,

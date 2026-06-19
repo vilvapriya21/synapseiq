@@ -78,6 +78,10 @@ class ContributorResponse(BaseModel):
     name: str
     email: str
     commit_count: int
+    files_touched: Optional[int] = None
+    lines_added: Optional[int] = None
+    lines_deleted: Optional[int] = None
+    prs_authored: Optional[int] = None
     top_files: Optional[str]
 
     model_config = ConfigDict(from_attributes=True)

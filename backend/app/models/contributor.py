@@ -22,6 +22,10 @@ class Contributor(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False)
     commit_count: Mapped[int] = mapped_column(Integer, default=0)
+    files_touched: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    lines_added: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    lines_deleted: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    prs_authored: Mapped[int | None] = mapped_column(Integer, nullable=True)
     top_files: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     extracted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

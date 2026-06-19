@@ -1,9 +1,12 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import ChatPanel from "../components/ChatPanel";
 import KTChecklist from "../components/KTChecklist";
-import { EmptyState } from "../components/common";
+import { EmptyState, Modal } from "../components/common";
+import { ENV } from "../constants/env";
 import { getUsers, type AdminUser } from "../services/adminService";
+import apiClient from "../services/api";
 import {
   analyzeContributors,
   assignLearner,
@@ -28,12 +31,14 @@ import {
   type KnowledgeBaseEntry,
   type KnowledgeBaseResponse,
   type KTTopic,
+  type ProviderAuthError,
+  type RepositoryProvider,
   type Repository,
   type RepositoryFileResponse,
   type RepositoryUpload,
   type RecommendedContributor,
 } from "../services/repositoryService";
-import { useAuthStore } from "../store/authStore";
+import { ACCESS_TOKEN_KEY, SESSION_ACCESS_TOKEN_KEY, useAuthStore } from "../store/authStore";
 import { normalizeRole } from "../utils/roles";
 import styles from "./Repository.module.css";
 
@@ -51,6 +56,23 @@ const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "dependencies", label: "Dependencies" },
   { key: "uploads", label: "Uploads" },
 ];
+
+const PENDING_REFRESH_REPO_KEY = "synapseiq.pendingRefreshRepoId";
+const PENDING_REFRESH_PROVIDER_KEY = "synapseiq.pendingRefreshProvider";
+
+const providerReconnectTitle: Record<RepositoryProvider, string> = {
+  github: "Reconnect GitHub Account",
+  gitlab: "Reconnect GitLab Account",
+  bitbucket: "Reconnect Bitbucket Account",
+  azure: "Provide Azure DevOps PAT",
+};
+
+const providerLabels: Record<RepositoryProvider, string> = {
+  github: "GitHub",
+  gitlab: "GitLab",
+  bitbucket: "Bitbucket",
+  azure: "Azure DevOps",
+};
 
 function getStatusClass(status: Repository["status"] | Repository["knowledge_base_status"]) {
   switch (status) {
@@ -136,6 +158,41 @@ function formatFileSize(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatTopFiles(topFiles?: string) {
+  if (!topFiles) {
+    return "-";
+  }
+
+  return topFiles
+    .split(",")
+    .map((entry) => entry.split(":")[0])
+    .filter(Boolean)
+    .slice(0, 3)
+    .join(", ") || "-";
+}
+
+function getStoredAccessToken() {
+  return localStorage.getItem(ACCESS_TOKEN_KEY) || sessionStorage.getItem(SESSION_ACCESS_TOKEN_KEY) || "";
+}
+
+function getRefreshAuthError(error: unknown): ProviderAuthError | null {
+  if (!axios.isAxiosError(error)) {
+    return null;
+  }
+
+  const detail = error.response?.data?.detail;
+  if (
+    error.response?.status === 409 &&
+    detail &&
+    (detail.code === "AUTH_REQUIRED" || detail.code === "AUTH_INVALID") &&
+    ["github", "gitlab", "bitbucket", "azure"].includes(detail.provider)
+  ) {
+    return detail as ProviderAuthError;
+  }
+
+  return null;
+}
+
 function RepositoryPage() {
   const { repoId } = useParams();
   const navigate = useNavigate();
@@ -170,6 +227,11 @@ function RepositoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState("");
+  const [refreshAuthError, setRefreshAuthError] = useState<ProviderAuthError | null>(null);
+  const [azurePat, setAzurePat] = useState("");
+  const [azurePatError, setAzurePatError] = useState("");
+  const [savingAzurePat, setSavingAzurePat] = useState(false);
 
   const fetchAssignments = async () => {
     if (!repoId || role !== "ADMIN") {
@@ -287,13 +349,68 @@ function RepositoryPage() {
     }
 
     setRefreshing(true);
+    setRefreshError("");
     try {
       await refreshRepository(repoId);
+      setRefreshAuthError(null);
       await fetchRepositoryData();
+    } catch (err) {
+      const authError = getRefreshAuthError(err);
+      if (authError) {
+        setRefreshAuthError(authError);
+        return;
+      }
+      setRefreshError("Unable to refresh repository.");
     } finally {
       setRefreshing(false);
     }
   };
+
+  const handleProviderReconnect = () => {
+    if (!repoId || !refreshAuthError || refreshAuthError.provider === "azure") {
+      return;
+    }
+
+    const token = getStoredAccessToken();
+    localStorage.setItem(PENDING_REFRESH_REPO_KEY, repoId);
+    localStorage.setItem(PENDING_REFRESH_PROVIDER_KEY, refreshAuthError.provider);
+    window.location.href = `${ENV.apiBaseUrl}/auth/${refreshAuthError.provider}?token=${encodeURIComponent(token)}`;
+  };
+
+  const handleSaveAzurePatAndRetry = async () => {
+    if (!azurePat.trim()) {
+      return;
+    }
+
+    setSavingAzurePat(true);
+    setAzurePatError("");
+    try {
+      await apiClient.post(`/auth/azure/pat?pat=${encodeURIComponent(azurePat)}`);
+      setAzurePat("");
+      setRefreshAuthError(null);
+      await handleReanalyze();
+    } catch {
+      setAzurePatError("Failed to save Azure DevOps PAT.");
+    } finally {
+      setSavingAzurePat(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!repoId) {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("retryRefresh") !== "1") {
+      return;
+    }
+
+    window.history.replaceState({}, "", window.location.pathname);
+    localStorage.removeItem(PENDING_REFRESH_REPO_KEY);
+    localStorage.removeItem(PENDING_REFRESH_PROVIDER_KEY);
+    handleReanalyze();
+  }, [repoId]);
 
   const handleAnalyzeContributors = async () => {
     if (!repoId) {
@@ -739,7 +856,54 @@ function RepositoryPage() {
         <button className={styles.outlineButton} type="button" onClick={handleReanalyze} disabled={refreshing}>
           Re-analyze
         </button>
+        {refreshError ? <p className={styles.error}>{refreshError}</p> : null}
       </section>
+
+      <Modal
+        isOpen={Boolean(refreshAuthError)}
+        onClose={() => {
+          setRefreshAuthError(null);
+          setAzurePatError("");
+        }}
+        title={refreshAuthError ? providerReconnectTitle[refreshAuthError.provider] : "Reconnect Account"}
+      >
+        {refreshAuthError ? (
+          <div className={styles.authModalBody}>
+            <p>{refreshAuthError.message}</p>
+            {refreshAuthError.provider === "azure" ? (
+              <>
+                <input
+                  className={styles.input}
+                  onChange={(event) => setAzurePat(event.target.value)}
+                  placeholder="Paste your Azure DevOps Personal Access Token"
+                  type="password"
+                  value={azurePat}
+                />
+                <div className={styles.modalActions}>
+                  <button
+                    className={styles.primaryButton}
+                    disabled={savingAzurePat || !azurePat.trim()}
+                    onClick={handleSaveAzurePatAndRetry}
+                    type="button"
+                  >
+                    {savingAzurePat ? "Saving..." : "Save PAT and Retry"}
+                  </button>
+                </div>
+                {azurePatError ? <p className={styles.error}>{azurePatError}</p> : null}
+              </>
+            ) : (
+              <div className={styles.modalActions}>
+                <button className={styles.primaryButton} onClick={handleProviderReconnect} type="button">
+                  {providerReconnectTitle[refreshAuthError.provider]}
+                </button>
+                <span className={styles.muted}>
+                  Refresh will resume automatically after {providerLabels[refreshAuthError.provider]} reconnects.
+                </span>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </Modal>
 
       <div className={styles.workspaceLayout}>
         <main className={styles.workspaceMain}>
@@ -879,7 +1043,12 @@ function RepositoryPage() {
             <>
               <section className={styles.card}>
                 <div className={styles.cardHeader}>
-                  <h2>Contributors</h2>
+                  <div>
+                    <h2>Code Contributors</h2>
+                    <p className={styles.helperText}>
+                      Contributor analysis is based on commit authorship, not PR approvers.
+                    </p>
+                  </div>
                   <button
                     className={styles.secondaryButton}
                     onClick={handleAnalyzeContributors}
@@ -901,6 +1070,9 @@ function RepositoryPage() {
                         <th>Name</th>
                         <th>Email</th>
                         <th>Commits</th>
+                        <th>Files touched</th>
+                        <th>Top files</th>
+                        <th>PRs authored</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -909,6 +1081,9 @@ function RepositoryPage() {
                           <td>{contributor.name}</td>
                           <td>{contributor.email}</td>
                           <td>{contributor.commit_count}</td>
+                          <td>{contributor.files_touched ?? "-"}</td>
+                          <td>{formatTopFiles(contributor.top_files)}</td>
+                          <td>{contributor.prs_authored ?? "-"}</td>
                         </tr>
                       ))}
                     </tbody>
