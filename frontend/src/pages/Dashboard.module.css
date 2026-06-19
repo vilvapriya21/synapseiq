@@ -12,6 +12,51 @@
   background: var(--color-surface);
 }
 
+.banner {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: linear-gradient(135deg, var(--color-primary-soft) 0%, #FFFFFF 100%);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+}
+
+.bannerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.bannerTitle {
+  margin: 4px 0 0;
+  font-size: var(--font-size-3xl);
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.welcomeLabel {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+}
+
+.bannerStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.statTile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -37,19 +82,21 @@
 
 .statLabel {
   color: var(--color-muted);
-  font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .statValue {
   color: var(--color-text);
-  font-size: var(--font-size-3xl);
-  font-weight: 850;
+  font-size: var(--font-size-2xl);
+  font-weight: 800;
 }
 
 .statHint {
-  color: var(--color-success);
   font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 
 .panel {

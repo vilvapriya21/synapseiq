@@ -119,7 +119,6 @@ function DashboardLayout() {
       <div className={styles.content}>
         <header className={styles.header}>
           <div className={styles.profile}>
-            <span className={styles.avatar}>{initials}</span>
             <button type="button" className={styles.logout} onClick={handleLogout}>
               Sign out
             </button>

@@ -15,7 +15,13 @@
   gap: 22px;
   height: 100vh;
   border-right: 1px solid var(--color-border);
-  background: linear-gradient(165deg, var(--color-primary-soft) 0%, #FFFFFF 70%);
+  background: linear-gradient(
+    175deg,
+    #EEF4FF 0%,
+    #E6EEFF 35%,
+    #F3F0FF 70%,
+    #FAFBFF 100%
+  );
   padding: 26px 20px 18px;
   transition: padding 220ms ease;
 }

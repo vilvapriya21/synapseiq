@@ -239,10 +239,12 @@ function DashboardPage() {
 
   return (
     <div className={styles.page}>
-      <PageHero
-        eyebrow={`Welcome ${user?.name || "User"}`}
-        heading="Admin Dashboard"
-        action={
+      <div className={styles.banner}>
+        <div className={styles.bannerTop}>
+          <div>
+            <span className={styles.welcomeLabel}>WELCOME {user?.name || "User"}</span>
+            <h1 className={styles.bannerTitle}>Admin Dashboard</h1>
+          </div>
           <input
             className={styles.search}
             onChange={(event) => setSearch(event.target.value)}
@@ -250,18 +252,17 @@ function DashboardPage() {
             type="search"
             value={search}
           />
-        }
-      />
-
-      <section className={styles.stats}>
-        {adminStatLabels.map(([key, label, hint]) => (
-          <Card className={styles.statCard} key={key}>
-            <span className={styles.statLabel}>{label}</span>
-            <span className={styles.statValue}>{dashboard.stats[key] ?? 0}</span>
-            <span className={styles.statHint}>{hint}</span>
-          </Card>
-        ))}
-      </section>
+        </div>
+        <div className={styles.bannerStats}>
+          {adminStatLabels.map(([key, label, hint]) => (
+            <div className={styles.statTile} key={key}>
+              <span className={styles.statLabel}>{label}</span>
+              <span className={styles.statValue}>{dashboard.stats[key] ?? 0}</span>
+              <span className={styles.statHint}>{hint}</span>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <Card className={styles.panel}>
         <div className={styles.panelHeader}>
