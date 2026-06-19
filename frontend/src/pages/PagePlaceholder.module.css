@@ -5,13 +5,13 @@
 
 .heading {
   margin: 0;
-  color: #17212b;
+  color: var(--color-text);
   font-size: 28px;
 }
 
 .description {
   margin: 0;
-  color: #5d6b78;
+  color: var(--color-muted);
   max-width: 720px;
 }
 

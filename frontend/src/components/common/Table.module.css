@@ -1,8 +1,8 @@
 .wrapper {
   overflow-x: auto;
-  border: 1px solid #d8e0e7;
-  border-radius: 8px;
-  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
 }
 
 .table {
@@ -13,14 +13,22 @@
 .table th,
 .table td {
   padding: 12px 14px;
-  border-bottom: 1px solid #e6ebef;
+  border-bottom: 1px solid var(--color-border);
   text-align: left;
   white-space: nowrap;
 }
 
+.table tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+.table tbody tr:hover {
+  background: var(--color-bg-subtle);
+}
+
 .table th {
-  background: #f6f8fa;
-  color: #344554;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
   font-size: 14px;
   font-weight: 800;
 }

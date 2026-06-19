@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { EmptyState, Loader } from "./common";
 import {
   addChecklistItem,
   completeChecklistItem,
@@ -180,7 +181,7 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
   };
 
   if (loading) {
-    return <div className={styles.state}>Loading checklist...</div>;
+    return <Loader label="Loading checklist..." />;
   }
 
   return (
@@ -224,7 +225,10 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
       ) : null}
 
       {items.length === 0 ? (
-        <p className={styles.emptyText}>No checklist items yet. Click Regenerate to generate one.</p>
+        <EmptyState
+          title="No checklist items yet"
+          description="Click Regenerate to generate a checklist for this topic."
+        />
       ) : (
         <div className={styles.itemList}>
           {items.map((item) => (

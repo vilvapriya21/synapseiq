@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import ChatPanel from "../components/ChatPanel";
 import KTChecklist from "../components/KTChecklist";
 import { EmptyState, Modal } from "../components/common";
+import Loader from "../components/common/Loader";
 import { ENV } from "../constants/env";
 import { getUsers, type AdminUser } from "../services/adminService";
 import apiClient from "../services/api";
@@ -635,7 +636,7 @@ function RepositoryPage() {
     if (fileLoading) {
       return (
         <div className={styles.emptyPreview}>
-          <p>Loading {selectedFilePath}&hellip;</p>
+          <Loader label={`Loading ${selectedFilePath}...`} />
         </div>
       );
     }
@@ -651,7 +652,7 @@ function RepositoryPage() {
     if (!selectedFile) {
       return (
         <div className={styles.emptyPreview}>
-          <p>No preview available for {selectedFilePath}.</p>
+          <EmptyState title="No preview available" description={`${selectedFilePath} cannot be previewed.`} />
         </div>
       );
     }
@@ -732,7 +733,7 @@ function RepositoryPage() {
           </section>
         </div>
       ) : (
-        <p className={styles.muted}>No files matched your search.</p>
+        <EmptyState title="No files matched your search" description="Try a different file name or path." />
       );
     }
 
@@ -778,9 +779,9 @@ function RepositoryPage() {
           {uploadError ? <p className={styles.error}>{uploadError}</p> : null}
 
           {uploadsLoading ? (
-            <p className={styles.muted}>Loading uploaded files&hellip;</p>
+            <Loader label="Loading uploaded files..." />
           ) : uploads.length === 0 ? (
-            <p className={styles.emptyText}>No extra KT files uploaded yet.</p>
+            <EmptyState title="No uploaded KT files" description="Extra sheets, docs, images, and reference files will appear here." />
           ) : (
             <div className={styles.uploadList}>
               {uploads.map((upload) => (
@@ -813,7 +814,7 @@ function RepositoryPage() {
   };
 
   if (loading && !repository) {
-    return <div className={styles.state}>Loading repository&hellip;</div>;
+    return <div className={styles.state}><Loader label="Loading repository..." /></div>;
   }
 
   if (error || !repository) {
@@ -983,11 +984,14 @@ function RepositoryPage() {
             ) : null}
 
             {topics.length === 0 ? (
-              <p className={styles.emptyText}>
-                {role === "ADMIN"
-                  ? "No KT topics yet. Add one to start organizing knowledge transfer."
-                  : "No KT topics assigned yet."}
-              </p>
+              <EmptyState
+                title={role === "ADMIN" ? "No KT topics yet" : "No KT topics assigned yet"}
+                description={
+                  role === "ADMIN"
+                    ? "Add one to start organizing knowledge transfer."
+                    : "Assigned KT topics will appear here."
+                }
+              />
             ) : (
               <div className={styles.topicList}>
                 {topics.map((topic) => (
@@ -1015,9 +1019,10 @@ function RepositoryPage() {
                     {recommendations[topic.id] ? (
                       <div className={styles.recommendationBox}>
                         {recommendations[topic.id].length === 0 ? (
-                          <p className={styles.emptyText}>
-                            No matching contributors found. Run "Analyze Contributors" first, or check the path patterns.
-                          </p>
+                          <EmptyState
+                            title="No matching contributors found"
+                            description="Run Analyze Contributors first, or check the path patterns."
+                          />
                         ) : (
                           recommendations[topic.id].map((recommendation, index) => (
                             <div key={`${recommendation.email}-${index}`} className={styles.recommendationRow}>
@@ -1060,9 +1065,10 @@ function RepositoryPage() {
                 </div>
                 {contributorError ? <p className={styles.error}>{contributorError}</p> : null}
                 {contributors.length === 0 ? (
-                  <p className={styles.emptyText}>
-                    No contributor data yet. Click "Analyze Contributors" to extract commit history.
-                  </p>
+                  <EmptyState
+                    title="No contributor data yet"
+                    description="Click Analyze Contributors to extract commit history."
+                  />
                 ) : (
                   <table className={styles.table}>
                     <thead>
@@ -1110,7 +1116,7 @@ function RepositoryPage() {
                 {assignError ? <p className={styles.error}>{assignError}</p> : null}
 
                 {assignments.length === 0 ? (
-                  <p className={styles.emptyText}>No learners assigned yet.</p>
+                  <EmptyState title="No learners assigned yet" description="Assigned learners will appear here." />
                 ) : (
                   <table className={styles.table}>
                     <thead>

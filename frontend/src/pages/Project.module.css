@@ -38,7 +38,7 @@
 .connectButton {
   min-height: 40px;
   border-color: var(--color-primary) !important;
-  border-radius: 10px !important;
+  border-radius: var(--radius-md) !important;
   background: var(--color-primary) !important;
   padding: 0 16px !important;
   font-size: 14px !important;
@@ -59,7 +59,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--space-4);
   padding: 14px;
 }
 
@@ -69,7 +69,7 @@
   align-items: center;
   gap: 10px;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   padding: 0 13px;
 }
@@ -91,8 +91,20 @@
   font-size: 14px;
 }
 
+.searchField {
+  width: 100%;
+  display: block;
+}
+
+.searchInput {
+  min-height: 42px;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
 .searchBox input::placeholder {
-  color: #94A3B8;
+  color: var(--color-muted);
 }
 
 .count {
@@ -106,20 +118,20 @@
 .list {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .repoCard {
   display: grid;
   gap: 18px;
-  padding: 20px;
+  padding: var(--space-5);
   cursor: pointer;
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
 .repoCard:hover,
 .repoCard:focus-visible {
-  border-color: #BFDBFE;
+  border-color: var(--color-primary-soft-hover);
   box-shadow: 0 16px 34px rgba(37, 99, 235, 0.10);
   transform: translateY(-1px);
   outline: 0;
@@ -130,7 +142,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .repoMain h2 {
@@ -158,9 +170,9 @@
   min-width: 0;
   display: grid;
   gap: 5px;
-  border: 1px solid #EEF2F7;
-  border-radius: 10px;
-  background: #F8FAFC;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
   padding: 11px 12px;
 }
 
@@ -186,7 +198,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: calc(var(--radius-lg) * 999);
   padding: 0 11px;
   font-size: 12px;
   font-weight: 900;
@@ -195,8 +207,8 @@
 }
 
 .indexed {
-  background: #D1FAE5;
-  color: #047857;
+  background: var(--color-success-soft);
+  color: var(--color-success);
 }
 
 .indexing {
@@ -205,31 +217,43 @@
 }
 
 .error {
-  background: #FEE2E2;
-  color: #B91C1C;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 
 .pending {
-  background: #F1F5F9;
-  color: #475569;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
 }
 
 .cardFooter {
   align-items: center;
-  border-top: 1px solid #EEF2F7;
-  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-4);
 }
 
 .viewButton {
   min-height: 40px;
   border: 1px solid var(--color-primary);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-surface);
   cursor: pointer;
   padding: 0 16px;
   font-size: 14px;
   font-weight: 900;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.viewButton:hover,
+.viewButton:focus-visible {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 
 .stateCard {
@@ -237,7 +261,7 @@
   justify-items: start;
   gap: 14px;
   color: var(--color-muted);
-  padding: 24px;
+  padding: var(--space-5);
 }
 
 .stateCard h2 {
@@ -249,13 +273,13 @@
 .skeletonCard {
   display: grid;
   gap: 14px;
-  padding: 20px;
+  padding: var(--space-5);
 }
 
 .skeletonCard span {
   height: 18px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #EEF2F7 0%, #F8FAFC 45%, #EEF2F7 100%);
+  border-radius: calc(var(--radius-lg) * 999);
+  background: linear-gradient(90deg, var(--color-border) 0%, var(--color-bg) 45%, var(--color-border) 100%);
 }
 
 .skeletonCard span:first-child {

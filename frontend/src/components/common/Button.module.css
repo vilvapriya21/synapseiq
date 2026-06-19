@@ -5,11 +5,16 @@
   justify-content: center;
   gap: 8px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 0 16px;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .button:disabled {
@@ -19,7 +24,7 @@
 
 .primary {
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-surface);
 }
 
 .primary:hover {
@@ -29,7 +34,14 @@
 .secondary {
   background: var(--color-surface);
   border-color: var(--color-border);
-  color: #334155;
+  color: var(--color-text-secondary);
+}
+
+.secondary:hover,
+.secondary:focus-visible {
+  background: var(--color-bg-subtle);
+  border-color: var(--color-primary-soft-hover);
+  color: var(--color-primary);
 }
 
 .ghost {
@@ -37,8 +49,23 @@
   color: var(--color-primary);
 }
 
+.ghost:hover,
+.ghost:focus-visible {
+  background: var(--color-primary-soft);
+}
+
 .danger {
-  background: #ffffff;
-  border-color: #fecaca;
+  background: var(--color-surface);
+  border-color: var(--color-danger-soft);
   color: var(--color-danger);
+}
+
+.danger:hover,
+.danger:focus-visible {
+  background: var(--color-danger-soft);
+}
+
+.button:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
 }

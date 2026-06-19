@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Clock, Play, Send } from "lucide-react";
 import { useParams } from "react-router-dom";
-import { Button, EmptyState, Modal } from "../components/common";
+import { Button, EmptyState, Loader, Modal } from "../components/common";
 import { assessmentService } from "../services/assessmentService";
 import { useAssessmentStore } from "../store/assessmentStore";
 import { Assessment, AssessmentQuestion } from "../types";
@@ -149,11 +149,11 @@ function AssessmentPage() {
   };
 
   if (isLoading) {
-    return <div className={styles.state}>Loading assessments...</div>;
+    return <div className={styles.state}><Loader label="Loading assessments..." /></div>;
   }
 
   if (error) {
-    return <div className={styles.state}>{error}</div>;
+    return <EmptyState title="Unable to load assessments" description={error} />;
   }
 
   if (activeAssessment && result) {

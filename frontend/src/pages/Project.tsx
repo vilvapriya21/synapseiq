@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../components/common";
+import { Button, EmptyState, Loader } from "../components/common";
+import Card from "../components/common/Card";
+import Input from "../components/common/Input";
 import { ROUTES } from "../routes/routePaths";
 import {
   getAssignedRepositories,
@@ -159,11 +161,13 @@ function ProjectPage() {
         )}
       </section>
 
-      <section className={styles.toolbar} aria-label="Repository filters">
+      <Card className={styles.toolbar} aria-label="Repository filters">
         <div className={styles.searchBox}>
           <span aria-hidden="true">Search</span>
-          <input
+          <Input
             aria-label="Search repositories"
+            className={styles.searchInput}
+            fieldClassName={styles.searchField}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search repositories..."
@@ -171,31 +175,24 @@ function ProjectPage() {
           />
         </div>
         <p className={styles.count}>{formatCount(filteredRepositories.length, "repository")}</p>
-      </section>
+      </Card>
 
-      {isLoading && (
-        <div className={styles.list}>
-          {[0, 1, 2].map((item) => (
-            <article className={styles.skeletonCard} key={item}>
-              <span />
-              <span />
-              <span />
-            </article>
-          ))}
-        </div>
-      )}
+      {isLoading && <Loader label="Loading repositories..." />}
 
-      {!isLoading && error && <div className={styles.stateCard}>{error}</div>}
+      {!isLoading && error && <EmptyState title="Unable to load repositories" description={error} />}
 
       {!isLoading && !error && filteredRepositories.length === 0 && (
-        <div className={styles.stateCard}>
-          <h2>{emptyMessage}</h2>
-          {role === "ADMIN" && (
-            <Button type="button" onClick={() => navigate(ROUTES.repositoryOnboard)}>
-              Connect Repository
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          title={emptyMessage}
+          description="Repositories will appear here once they are connected and available."
+          action={
+            role === "ADMIN" ? (
+              <Button type="button" onClick={() => navigate(ROUTES.repositoryOnboard)}>
+                Connect Repository
+              </Button>
+            ) : null
+          }
+        />
       )}
 
       {!isLoading && !error && filteredRepositories.length > 0 && (
@@ -205,7 +202,7 @@ function ProjectPage() {
             const source = repository.provider || repository.source_type || "Repository";
 
             return (
-              <article
+              <Card
                 className={styles.repoCard}
                 key={repository.id}
                 onClick={() => openRepository(repository.id)}
@@ -270,7 +267,7 @@ function ProjectPage() {
                     View
                   </button>
                 </div>
-              </article>
+              </Card>
             );
           })}
         </section>

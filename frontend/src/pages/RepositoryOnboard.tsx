@@ -2,6 +2,9 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { CloudUpload, Search, SquareCode, Upload } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ENV } from "../constants/env";
+import { EmptyState, Loader } from "../components/common";
+import Input from "../components/common/Input";
+import Table, { type TableColumn } from "../components/common/Table";
 import {
   connectRepository,
   deleteRepository,
@@ -326,6 +329,92 @@ function RepositoryOnboardPage() {
     }
   };
 
+  const repositoryColumns: TableColumn<Repository>[] = [
+    {
+      key: "repository",
+      header: "Repository",
+      render: (repository) => (
+        <div className={styles.repositoryIdentity}>
+          <span className={styles.repositoryIcon}><SquareCode size={19} /></span>
+          <div>
+            <div className={styles.repositoryName}>{repository.name}</div>
+            <div className={styles.repositorySource}>{repository.provider || repository.source_type}</div>
+          </div>
+        </div>
+      ),
+    },
+    { key: "branch", header: "Branch", render: (repository) => repository.branch || "-" },
+    { key: "language", header: "Language", render: (repository) => repository.language || "-" },
+    { key: "module_count", header: "Modules" },
+    {
+      key: "status",
+      header: "Status",
+      render: (repository) => (
+        <>
+          <span className={`${styles.badge} ${getStatusClass(repository.status)}`}>
+            {repository.status === "indexing" ? (
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="12" height="12" style={{ marginRight: 6 }}>
+                <path
+                  d="M21 12a9 9 0 1 1-2.64-6.36"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeWidth="2"
+                />
+                <animateTransform
+                  attributeName="transform"
+                  dur="0.8s"
+                  from="0 12 12"
+                  repeatCount="indefinite"
+                  to="360 12 12"
+                  type="rotate"
+                />
+              </svg>
+            ) : null}
+            {repository.status}
+          </span>
+          {repository.status === "error" && repository.error_message ? (
+            <span title={repository.error_message}> &#9888;</span>
+          ) : null}
+          {getStatusReason(repository) ? (
+            <div className={styles.statusReason}>{getStatusReason(repository)}</div>
+          ) : null}
+        </>
+      ),
+    },
+    {
+      key: "action",
+      header: "Action",
+      render: (repository) => (
+        <>
+          <button
+            className={styles.viewButton}
+            type="button"
+            onClick={() => {
+              if (repository.status === "indexed") {
+                navigate(`/repositories/${repository.id}`);
+                return;
+              }
+
+              console.log(repository.id);
+            }}
+          >
+            Open Workspace
+          </button>
+          <button
+            className={styles.deleteButton}
+            type="button"
+            onClick={() => handleDelete(repository.id)}
+            disabled={deletingId === repository.id}
+            title="Remove repository"
+          >
+            {deletingId === repository.id ? "..." : "Remove"}
+          </button>
+        </>
+      ),
+    },
+  ];
+
   return (
     <div className={styles.page}>
       <header className={styles.hero}>
@@ -456,16 +545,16 @@ function RepositoryOnboardPage() {
             </div>
 
             <div className={styles.formGrid}>
-              <input
-                className={styles.input}
-                type="text"
+              <Input
+className={styles.input}
+type="text"
                 placeholder="https://github.com/org/repo"
                 value={url}
                 onChange={(event) => setUrl(event.target.value)}
               />
-              <input
-                className={styles.input}
-                type="text"
+              <Input
+className={styles.input}
+type="text"
                 placeholder="main"
                 value={branch}
                 onChange={(event) => setBranch(event.target.value)}
@@ -532,16 +621,16 @@ function RepositoryOnboardPage() {
             </div>
 
             <div className={styles.formGrid}>
-              <input
-                className={styles.input}
-                type="text"
+              <Input
+className={styles.input}
+type="text"
                 placeholder="https://gitlab.com/org/repo"
                 value={url}
                 onChange={(event) => setUrl(event.target.value)}
               />
-              <input
-                className={styles.input}
-                type="text"
+              <Input
+className={styles.input}
+type="text"
                 placeholder="main"
                 value={branch}
                 onChange={(event) => setBranch(event.target.value)}
@@ -608,16 +697,16 @@ function RepositoryOnboardPage() {
             </div>
 
             <div className={styles.formGrid}>
-              <input
-                className={styles.input}
-                type="text"
+              <Input
+className={styles.input}
+type="text"
                 placeholder="https://bitbucket.org/org/repo"
                 value={url}
                 onChange={(event) => setUrl(event.target.value)}
               />
-              <input
-                className={styles.input}
-                type="text"
+              <Input
+className={styles.input}
+type="text"
                 placeholder="main"
                 value={branch}
                 onChange={(event) => setBranch(event.target.value)}
@@ -665,9 +754,9 @@ function RepositoryOnboardPage() {
               </div>
             ) : null}
 
-            <input
-              className={styles.input}
-              type="password"
+            <Input
+className={styles.input}
+type="password"
               placeholder="Paste your Azure DevOps Personal Access Token"
               value={azurePat}
               onChange={(event) => setAzurePat(event.target.value)}
@@ -694,16 +783,16 @@ function RepositoryOnboardPage() {
                 </div>
 
                 <div className={styles.formGrid}>
-                  <input
-                    className={styles.input}
-                    type="text"
+                  <Input
+className={styles.input}
+type="text"
                     placeholder="https://dev.azure.com/org/project/_git/repo"
                     value={azureRepoUrl}
                     onChange={(event) => setAzureRepoUrl(event.target.value)}
                   />
-                  <input
-                    className={styles.input}
-                    type="text"
+                  <Input
+className={styles.input}
+type="text"
                     placeholder="main"
                     value={azureBranch}
                     onChange={(event) => setAzureBranch(event.target.value)}
@@ -774,16 +863,16 @@ function RepositoryOnboardPage() {
             <p>Repositories you have connected and indexed</p>
           </div>
           <div className={styles.repositoryTools}>
-            <label className={styles.repositorySearch}>
-              <Search size={16} />
-              <input
-                aria-label="Search connected repositories"
-                onChange={(event) => setRepoSearch(event.target.value)}
-                placeholder="Search repositories..."
-                type="search"
-                value={repoSearch}
-              />
-            </label>
+            <Input
+              aria-label="Search connected repositories"
+              className={styles.repositorySearchInput}
+              fieldClassName={styles.repositorySearch}
+              onChange={(event) => setRepoSearch(event.target.value)}
+              placeholder="Search repositories..."
+              startAdornment={<Search size={16} />}
+              type="search"
+              value={repoSearch}
+            />
             <button className={styles.outlineButton} type="button" onClick={handleRefreshAll} disabled={submitting}>
               Refresh All
             </button>
@@ -791,108 +880,21 @@ function RepositoryOnboardPage() {
         </div>
 
         {loading ? (
-          <div className={styles.loading}>Loading repositories&hellip;</div>
+          <Loader label="Loading repositories..." />
         ) : (
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Repository</th>
-                  <th>Branch</th>
-                  <th>Language</th>
-                  <th>Modules</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRepositories.map((repository) => (
-                  <tr key={repository.id}>
-                    <td>
-                      <div className={styles.repositoryIdentity}>
-                        <span className={styles.repositoryIcon}><SquareCode size={19} /></span>
-                        <div>
-                          <div className={styles.repositoryName}>{repository.name}</div>
-                          <div className={styles.repositorySource}>{repository.provider || repository.source_type}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{repository.branch || "-"}</td>
-                    <td>{repository.language || "-"}</td>
-                    <td>{repository.module_count}</td>
-                    <td>
-                      <span className={`${styles.badge} ${getStatusClass(repository.status)}`}>
-                        {repository.status === "indexing" ? (
-                          <svg
-                            aria-hidden="true"
-                            viewBox="0 0 24 24"
-                            width="12"
-                            height="12"
-                            style={{ marginRight: 6 }}
-                          >
-                            <path
-                              d="M21 12a9 9 0 1 1-2.64-6.36"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeLinecap="round"
-                              strokeWidth="2"
-                            />
-                            <animateTransform
-                              attributeName="transform"
-                              dur="0.8s"
-                              from="0 12 12"
-                              repeatCount="indefinite"
-                              to="360 12 12"
-                              type="rotate"
-                            />
-                          </svg>
-                        ) : null}
-                        {repository.status}
-                      </span>
-                      {repository.status === "error" && repository.error_message ? (
-                        <span title={repository.error_message}> &#9888;</span>
-                      ) : null}
-                      {getStatusReason(repository) ? (
-                        <div className={styles.statusReason}>{getStatusReason(repository)}</div>
-                      ) : null}
-                    </td>
-                    <td>
-                      <button
-                        className={styles.viewButton}
-                        type="button"
-                        onClick={() => {
-                          if (repository.status === "indexed") {
-                            navigate(`/repositories/${repository.id}`);
-                            return;
-                          }
-
-                          console.log(repository.id);
-                        }}
-                      >
-                        Open Workspace
-                      </button>
-                      <button
-                        className={styles.deleteButton}
-                        type="button"
-                        onClick={() => handleDelete(repository.id)}
-                        disabled={deletingId === repository.id}
-                        title="Remove repository"
-                      >
-                        {deletingId === repository.id ? "…" : "Remove"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {filteredRepositories.length === 0 ? (
-                  <tr>
-                    <td className={styles.emptyCell} colSpan={6}>
-                      No repositories matched your search.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+          <Table
+            columns={repositoryColumns}
+            data={filteredRepositories}
+            emptyState={
+              <EmptyState
+                title="No repositories found"
+                description="Connected repositories will appear here after you add or upload one."
+              />
+            }
+            getRowKey={(repository) => repository.id}
+            tableClassName={styles.table}
+            wrapperClassName={styles.tableWrap}
+          />
         )}
       </section>
     </div>

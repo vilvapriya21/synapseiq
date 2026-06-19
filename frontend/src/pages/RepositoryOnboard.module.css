@@ -1,6 +1,6 @@
 .page {
   display: grid;
-  gap: 24px;
+  gap: var(--space-5);
 }
 
 .hero,
@@ -17,7 +17,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 20px;
+  gap: var(--space-5);
   padding: 22px 24px;
 }
 
@@ -47,7 +47,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .connectCardHeader h2,
@@ -71,7 +71,7 @@
 .providerTabs {
   display: grid;
   grid-template-columns: repeat(5, minmax(150px, 1fr));
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .providerTab {
@@ -79,7 +79,7 @@
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
@@ -87,18 +87,18 @@
   cursor: pointer;
   padding: 18px;
   text-align: center;
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
 .providerTab:hover,
 .providerTabActive {
-  border-color: #BFDBFE;
+  border-color: var(--color-primary-soft-hover);
   box-shadow: 0 12px 26px rgba(37, 99, 235, 0.10);
   transform: translateY(-1px);
 }
 
 .providerTabActive {
-  background: linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%);
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-bg) 100%);
 }
 
 .providerTab strong {
@@ -106,7 +106,7 @@
 }
 
 .providerTab small {
-  color: #475569;
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -116,22 +116,22 @@
   place-items: center;
   width: 38px;
   height: 38px;
-  border-radius: 10px;
-  color: #ffffff;
+  border-radius: var(--radius-md);
+  color: var(--color-surface);
   font-size: 12px;
   font-weight: 900;
 }
 
 .gitlabMark {
-  background: #F97316;
+  background: var(--color-warning);
 }
 
 .bitbucketMark {
-  background: #2563EB;
+  background: var(--color-primary);
 }
 
 .azureMark {
-  background: #0EA5E9;
+  background: var(--color-secondary);
 }
 
 .connectionBadge,
@@ -140,7 +140,7 @@
   align-items: center;
   justify-content: center;
   min-height: 24px;
-  border-radius: 999px;
+  border-radius: calc(var(--radius-lg) * 999);
   padding: 0 10px;
   font-size: 12px;
   font-weight: 800;
@@ -149,8 +149,8 @@
 
 .connected,
 .badgeIndexed {
-  background: #D1FAE5;
-  color: #047857;
+  background: var(--color-success-soft);
+  color: var(--color-success);
 }
 
 .patSaved,
@@ -161,19 +161,19 @@
 
 .notConnected,
 .badgePending {
-  background: #F1F5F9;
-  color: #475569;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
 }
 
 .badgeError {
-  background: #FEE2E2;
-  color: #B91C1C;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 
 .providerPanel {
   display: grid;
-  gap: 16px;
-  padding: 20px;
+  gap: var(--space-4);
+  padding: var(--space-5);
 }
 
 .cardHeader {
@@ -189,12 +189,12 @@
   width: 44px;
   height: 44px;
   flex: 0 0 auto;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 
 .githubIcon {
-  background: #0F172A;
-  color: #ffffff;
+  background: var(--color-text);
+  color: var(--color-surface);
 }
 
 .uploadIcon {
@@ -209,7 +209,7 @@
 .viewButton,
 .deleteButton {
   min-height: 40px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   padding: 0 16px;
   font-size: 13px;
@@ -229,7 +229,7 @@
   width: 100%;
   border: 1px solid var(--color-primary);
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-surface);
 }
 
 .primaryButton:hover {
@@ -237,9 +237,9 @@
 }
 
 .deleteButton {
-  margin-left: 8px;
-  border: 1px solid #FECACA;
-  background: #FFFFFF;
+  margin-left: var(--space-2);
+  border: 1px solid var(--color-danger-soft);
+  background: var(--color-surface);
   color: var(--color-danger);
 }
 
@@ -248,23 +248,23 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  border-radius: 10px;
+  gap: var(--space-3);
+  border-radius: var(--radius-md);
   padding: 10px 12px;
   font-size: 13px;
   font-weight: 650;
 }
 
 .connectedBanner {
-  border: 1px solid #A7F3D0;
-  background: #ECFDF5;
-  color: #047857;
+  border: 1px solid var(--color-success-soft);
+  background: var(--color-success-soft);
+  color: var(--color-success);
 }
 
 .warningBanner {
-  border: 1px solid #FDE68A;
-  background: #FFFBEB;
-  color: #92400E;
+  border: 1px solid var(--color-warning-soft);
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
 }
 
 .disconnectLink,
@@ -299,7 +299,7 @@
 .formGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 180px;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .input,
@@ -307,7 +307,7 @@
   width: 100%;
   height: 42px;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   color: var(--color-text);
   padding: 0 12px;
@@ -329,17 +329,25 @@
   outline: 0;
 }
 
+.repositorySearchInput {
+  height: 40px;
+  min-height: 40px;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
 .dropZone {
   display: grid;
   place-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   min-height: 160px;
-  border: 1px dashed #CBD5E1;
+  border: 1px dashed var(--color-border);
   border-radius: var(--radius-md);
-  background: #F8FAFC;
+  background: var(--color-bg);
   color: var(--color-muted);
   text-align: center;
-  padding: 20px;
+  padding: var(--space-5);
 }
 
 .dropZone strong {
@@ -353,7 +361,7 @@
 
 .dropZoneActive {
   border-color: var(--color-primary);
-  background: #EFF6FF;
+  background: var(--color-primary-soft);
 }
 
 .hiddenInput {
@@ -368,7 +376,7 @@
 
 .success {
   margin: 0;
-  color: #047857;
+  color: var(--color-success);
   font-size: 13px;
 }
 
@@ -385,7 +393,7 @@
 .repositoryTools {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .loading {
@@ -406,7 +414,7 @@
 
 .table th,
 .table td {
-  border-bottom: 1px solid #EEF2F7;
+  border-bottom: 1px solid var(--color-border);
   padding: 16px 20px;
   text-align: left;
   vertical-align: middle;
@@ -419,20 +427,20 @@
 }
 
 .table td {
-  color: #334155;
+  color: var(--color-text-secondary);
   font-size: 13px;
 }
 
 .repositoryIdentity {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .repositoryIcon {
   width: 38px;
   height: 38px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--color-primary-soft);
   color: var(--color-primary);
 }
@@ -470,6 +478,51 @@
 .oauthButton:disabled {
   cursor: not-allowed;
   opacity: 0.65;
+}
+
+.oauthButton,
+.primaryButton,
+.secondaryButton,
+.outlineButton,
+.viewButton,
+.deleteButton,
+.disconnectLink,
+.linkButton {
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.secondaryButton:hover,
+.outlineButton:hover,
+.viewButton:hover,
+.oauthButton:hover,
+.secondaryButton:focus-visible,
+.outlineButton:focus-visible,
+.viewButton:focus-visible,
+.oauthButton:focus-visible {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary-soft-hover);
+}
+
+.primaryButton:hover,
+.primaryButton:focus-visible {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.deleteButton:hover,
+.deleteButton:focus-visible {
+  background: var(--color-danger-soft);
+}
+
+.disconnectLink:hover,
+.linkButton:hover,
+.disconnectLink:focus-visible,
+.linkButton:focus-visible {
+  color: var(--color-primary-hover);
 }
 
 @media (max-width: 1200px) {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { EmptyState } from "../components/common";
+import { EmptyState, Loader } from "../components/common";
 import { resultService } from "../services/resultService";
 import { useAuthStore } from "../store/authStore";
 import { ResultResponse } from "../types";
@@ -41,11 +41,16 @@ function ResultsPage() {
   }, [projectId, role]);
 
   if (isLoading) {
-    return <div className={styles.state}>Loading results...</div>;
+    return <div className={styles.state}><Loader label="Loading results..." /></div>;
   }
 
   if (error || !results) {
-    return <div className={styles.state}>{error || "No results available."}</div>;
+    return (
+      <EmptyState
+        title={error ? "Unable to load results" : "No results available"}
+        description={error || "Results will appear after an assessment is submitted."}
+      />
+    );
   }
 
   if (results.overallScore === null) {

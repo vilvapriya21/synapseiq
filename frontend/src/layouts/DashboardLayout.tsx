@@ -1,12 +1,8 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
-  Bell,
   ChevronDown,
   Home,
   Link2,
-  Search,
-  Settings,
-  Sparkles,
   Users,
   Workflow,
   type LucideIcon,
@@ -54,7 +50,7 @@ function DashboardLayout() {
       <aside className={styles.sidebar}>
         <div className={styles.brand}>
           <span className={styles.logo}>
-            <Sparkles size={21} />
+            <img alt="SynapseIQ" src="/synapse-logo.png" />
           </span>
           <div>
             <strong>SynapseIQ</strong>
@@ -76,11 +72,6 @@ function DashboardLayout() {
             );
           })}
         </nav>
-        <div className={styles.upgradeCard}>
-          <strong>Upgrade Plan</strong>
-          <span>Unlock deeper insights and team collaboration.</span>
-          <button type="button">Upgrade Now</button>
-        </div>
         <div className={styles.sidebarProfile}>
           <span className={styles.avatar}>{initials}</span>
           <div>
@@ -92,17 +83,7 @@ function DashboardLayout() {
       </aside>
       <div className={styles.content}>
         <header className={styles.header}>
-          <div className={styles.searchBox}>
-            <Search size={17} />
-            <input placeholder="Search repositories..." type="search" />
-          </div>
           <div className={styles.profile}>
-            <button className={styles.iconButton} type="button" aria-label="Notifications">
-              <Bell size={18} />
-            </button>
-            <button className={styles.iconButton} type="button" aria-label="Settings">
-              <Settings size={18} />
-            </button>
             <span className={styles.avatar}>{initials}</span>
             <button type="button" className={styles.logout} onClick={handleLogout}>
               Sign out

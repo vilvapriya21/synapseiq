@@ -17,9 +17,9 @@
   place-items: center;
   width: 44px;
   height: 44px;
-  border-radius: 10px;
-  background: #2454d6;
-  color: #ffffff;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-surface);
   font-size: 20px;
 }
 
@@ -30,48 +30,48 @@
 
 .brand h1 {
   margin: 0;
-  color: #07142f;
+  color: var(--color-text);
   font-size: 30px;
   line-height: 1;
 }
 
 .brand p {
   margin: 0;
-  color: #526178;
+  color: var(--color-muted);
 }
 
 .card {
   width: 100%;
-  border: 1px solid #dbe3ee;
-  border-radius: 8px;
-  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
   padding: 30px;
   box-shadow: 0 18px 45px rgb(7 20 47 / 8%);
 }
 
 .title {
   margin: 0 0 6px;
-  color: #07142f;
+  color: var(--color-text);
   font-size: 22px;
 }
 
 .subtitle {
   margin: 0 0 24px;
-  color: #526178;
+  color: var(--color-muted);
 }
 
 .form {
   display: grid;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .passwordGroup {
   display: grid;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .passwordLabel {
-  color: #344554;
+  color: var(--color-text-secondary);
   font-weight: 700;
 }
 
@@ -82,16 +82,16 @@
 .passwordInput {
   min-height: 56px;
   width: 100%;
-  border: 1px solid #c7d1da;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   padding: 0 52px 0 16px;
-  color: #17212b;
+  color: var(--color-text);
   font: inherit;
 }
 
 .passwordInput:focus {
-  border-color: #176b87;
-  outline: 3px solid #d9edf2;
+  border-color: var(--color-secondary);
+  outline: 3px solid var(--color-primary-soft);
 }
 
 .passwordInput::-ms-reveal,
@@ -108,22 +108,25 @@
   width: 36px;
   height: 36px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: transparent;
-  color: #6b7280;
+  color: var(--color-muted);
   cursor: pointer;
   transform: translateY(-50%);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .passwordToggle:hover,
 .passwordToggle:focus-visible {
-  color: #2454d6;
-  background: #eef3ff;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
 }
 
 .passwordHint {
   margin: 0;
-  color: #526178;
+  color: var(--color-muted);
   font-size: 13px;
   line-height: 1.4;
 }
@@ -138,18 +141,27 @@
 .remember {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  color: #526178;
+  gap: var(--space-2);
+  color: var(--color-muted);
   font-size: 14px;
 }
 
 .link {
   border: 0;
   background: transparent;
-  color: #2454d6;
+  color: var(--color-primary);
   padding: 0;
   cursor: pointer;
   font-weight: 700;
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.link:hover,
+.link:focus-visible {
+  color: var(--color-primary-hover);
+  background: var(--color-primary-soft);
 }
 
 .roleGrid {
@@ -160,39 +172,50 @@
 
 .roleButton {
   min-height: 60px;
-  border: 1px solid #dbe3ee;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #384760;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   cursor: pointer;
   font-weight: 700;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.roleButton:hover,
+.roleButton:focus-visible {
+  border-color: var(--color-primary-soft-hover);
+  background: var(--color-primary-soft);
 }
 
 .roleButtonActive {
-  border-color: #2454d6;
-  background: #2454d6;
-  color: #ffffff;
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-surface);
 }
 
 .message,
 .error {
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 12px 14px;
   font-size: 14px;
 }
 
 .message {
-  background: #eaf8f0;
-  color: #0c6b3f;
+  background: var(--color-success-soft);
+  color: var(--color-success);
 }
 
 .error {
-  background: #fff0f0;
-  color: #a4161a;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 
 .footer {
-  color: #526178;
+  color: var(--color-muted);
   text-align: center;
   font-size: 13px;
 }

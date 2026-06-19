@@ -9,7 +9,7 @@
   position: sticky;
   top: 0;
   display: grid;
-  grid-template-rows: auto 1fr auto auto;
+  grid-template-rows: auto 1fr auto;
   gap: 22px;
   height: 100vh;
   border-right: 1px solid var(--color-border);
@@ -20,7 +20,7 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   color: var(--color-text);
 }
 
@@ -32,7 +32,7 @@
 
 .brand span:not(.logo) {
   display: block;
-  margin-top: 4px;
+  margin-top: var(--space-1);
   color: var(--color-muted);
   font-size: 12px;
   font-weight: 600;
@@ -45,16 +45,22 @@
   width: 40px;
   height: 40px;
   flex: 0 0 auto;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--color-primary), #0EA5E9);
-  color: #ffffff;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: var(--color-surface);
   box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+}
+
+.logo img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 }
 
 .avatar {
   width: 38px;
   height: 38px;
-  border-radius: 999px;
+  border-radius: calc(var(--radius-lg) * 999);
   font-size: 13px;
   font-weight: 800;
 }
@@ -62,7 +68,7 @@
 .nav {
   display: grid;
   align-content: start;
-  gap: 8px;
+  gap: var(--space-2);
   padding-top: 18px;
 }
 
@@ -70,55 +76,25 @@
 .activeLink {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   min-height: 48px;
-  color: #334155;
+  color: var(--color-text-secondary);
   text-decoration: none;
   padding: 0 14px;
   border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 750;
-  transition: background-color 150ms ease, color 150ms ease;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .link:hover {
-  background: #F1F5F9;
+  background: var(--color-bg-subtle);
   color: var(--color-primary);
 }
 
 .activeLink {
   background: var(--color-primary-soft);
   color: var(--color-primary);
-}
-
-.upgradeCard {
-  display: grid;
-  gap: 10px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: #F8FAFC;
-  padding: 16px;
-}
-
-.upgradeCard strong {
-  color: var(--color-text);
-  font-size: 14px;
-}
-
-.upgradeCard span {
-  color: var(--color-muted);
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.upgradeCard button {
-  min-height: 38px;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-surface);
-  color: var(--color-primary);
-  cursor: pointer;
-  font-weight: 800;
 }
 
 .sidebarProfile {
@@ -161,57 +137,28 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 16px;
   padding: 0 32px;
   border-bottom: 1px solid var(--color-border);
   background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(12px);
 }
 
-.searchBox {
-  width: min(440px, 48vw);
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-surface);
-  color: var(--color-muted);
-  padding: 0 14px;
-}
-
-.searchBox input {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  outline: 0;
-  color: var(--color-text);
-  font-size: 14px;
-}
-
 .profile {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
-.iconButton,
 .logout {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 40px;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--color-surface);
-  color: #334155;
+  color: var(--color-text-secondary);
   cursor: pointer;
-}
-
-.iconButton {
-  width: 40px;
-  padding: 0;
 }
 
 .logout {
@@ -219,11 +166,24 @@
   padding: 0 14px;
   font-size: 13px;
   font-weight: 800;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.logout:hover,
+.logout:focus-visible {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary-soft-hover);
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 
 .main {
   min-width: 0;
-  padding: 32px;
+  padding: var(--space-6);
 }
 
 @media (max-width: 900px) {
@@ -239,7 +199,6 @@
     border-bottom: 1px solid var(--color-border);
   }
 
-  .upgradeCard,
   .sidebarProfile {
     display: none;
   }
@@ -250,12 +209,8 @@
   }
 
   .header {
-    justify-content: space-between;
+    justify-content: flex-end;
     padding: 16px 20px;
-  }
-
-  .searchBox {
-    width: 100%;
   }
 }
 
@@ -267,6 +222,6 @@
   }
 
   .main {
-    padding: 20px;
+    padding: var(--space-5);
   }
 }
