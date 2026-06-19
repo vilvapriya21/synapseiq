@@ -19,7 +19,7 @@
   width: 220px;
   height: 220px;
   border-radius: calc(var(--radius-lg) * 999);
-  background: radial-gradient(circle, rgba(109, 93, 246, 0.18) 0%, rgba(20, 184, 166, 0.08) 42%, transparent 70%);
+  background: radial-gradient(circle, rgba(47, 111, 237, 0.18) 0%, rgba(20, 184, 166, 0.08) 42%, transparent 70%);
   content: "";
   pointer-events: none;
 }

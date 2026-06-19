@@ -76,9 +76,9 @@ const providerLabels: Record<RepositoryProvider, string> = {
 };
 
 const topicAccentClasses = [
-  styles.topicAccentRose,
+  styles.topicAccentCobalt,
   styles.topicAccentMint,
-  styles.topicAccentLavender,
+  styles.topicAccentIndigo,
   styles.topicAccentSky,
   styles.topicAccentAmber,
 ];

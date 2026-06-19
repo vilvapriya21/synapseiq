@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { isAxiosError } from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button, Input } from "../components/common";
+import synapseLogo from "../assets/synapse-logo.svg";
 import { ROUTES } from "../routes/routePaths";
 import { authService } from "../services/authService";
 import { useAuthStore } from "../store/authStore";
@@ -199,7 +200,7 @@ function LoginPage() {
     <div className={styles.page}>
       <div className={styles.brand}>
         <span className={styles.brandMark}>
-          <img alt="" src="/synapse-logo.svg" />
+          <img alt="" src={synapseLogo} />
         </span>
         <h1>SynapseIQ</h1>
         <p>Code Intelligence & Knowledge Transfer</p>

@@ -1,27 +1,37 @@
 .shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-width, 260px) minmax(0, 1fr);
   background: var(--color-bg);
+  transition: grid-template-columns 220ms ease;
 }
 
 .sidebar {
   position: sticky;
   top: 0;
+  min-width: 0;
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 22px;
   height: 100vh;
   border-right: 1px solid var(--color-border);
-  background: linear-gradient(165deg, #FFFFFF 0%, var(--color-primary-soft) 100%);
+  background: linear-gradient(165deg, var(--color-primary-soft) 0%, #FFFFFF 70%);
   padding: 26px 20px 18px;
+  transition: padding 220ms ease;
 }
 
 .brand {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: var(--space-3);
   color: var(--color-text);
+}
+
+.brandText,
+.sidebarProfileText {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .brand strong {
@@ -31,8 +41,30 @@
   line-height: 1.1;
 }
 
-.brand span:not(.logo) {
+.brandNameText,
+.brandSubtitle,
+.linkLabel,
+.sidebarProfileText,
+.sidebarProfileChevron {
+  transition:
+    opacity 180ms ease,
+    width 220ms ease;
+}
+
+.brandNameText,
+.brandSubtitle {
   display: block;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.brandNameText {
+  width: 112px;
+}
+
+.brandSubtitle {
+  display: block;
+  width: 150px;
   margin-top: var(--space-1);
   color: var(--color-muted);
   font-size: 12px;
@@ -94,7 +126,9 @@
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast),
-    color var(--transition-fast);
+    color var(--transition-fast),
+    justify-content 220ms ease,
+    padding 220ms ease;
 }
 
 .link:hover {
@@ -104,12 +138,20 @@
 
 .activeLink {
   border-left-color: var(--color-primary);
-  background: var(--color-primary-soft);
+  background: var(--color-primary-soft-hover);
   color: var(--color-primary-hover);
   font-weight: 700;
 }
 
+.linkLabel {
+  display: inline-block;
+  width: 170px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 .sidebarProfile {
+  min-width: 0;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -119,24 +161,96 @@
   padding-top: 18px;
 }
 
-.sidebarProfile strong,
-.sidebarProfile span {
+.sidebarProfileText strong,
+.sidebarProfileText span {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.sidebarProfile strong {
+.sidebarProfileText strong {
   color: var(--color-text);
   font-size: 13px;
 }
 
-.sidebarProfile span {
+.sidebarProfileText span {
   margin-top: 3px;
   color: var(--color-muted);
   font-size: 12px;
   text-transform: capitalize;
+}
+
+.sidebarProfileText {
+  width: 148px;
+}
+
+.sidebarProfileChevron {
+  width: 16px;
+  flex: 0 0 auto;
+}
+
+.sidebarToggle {
+  position: absolute;
+  top: 34px;
+  right: -13px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius-lg) * 999);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.sidebarToggle:hover,
+.sidebarToggle:focus-visible {
+  border-color: var(--color-primary-soft-hover);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+  outline: 0;
+}
+
+.collapsed {
+  padding-right: 12px;
+  padding-left: 12px;
+}
+
+.collapsed .brand {
+  justify-content: center;
+}
+
+.collapsed .brandText,
+.collapsed .brandNameText,
+.collapsed .brandSubtitle,
+.collapsed .linkLabel,
+.collapsed .sidebarProfileText,
+.collapsed .sidebarProfileChevron {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.collapsed .link,
+.collapsed .activeLink {
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+}
+
+.collapsed .sidebarProfile {
+  grid-template-columns: 1fr;
+  justify-items: center;
 }
 
 .content {
@@ -210,6 +324,43 @@
     grid-template-rows: auto auto;
     border-right: 0;
     border-bottom: 1px solid var(--color-border);
+    padding: 26px 20px 18px;
+  }
+
+  .sidebarToggle {
+    display: none;
+  }
+
+  .collapsed .brand {
+    justify-content: flex-start;
+  }
+
+  .collapsed .brandText,
+  .collapsed .brandNameText,
+  .collapsed .brandSubtitle,
+  .collapsed .linkLabel {
+    width: revert;
+    opacity: 1;
+    overflow: hidden;
+  }
+
+  .collapsed .brandNameText {
+    width: 112px;
+  }
+
+  .collapsed .brandSubtitle {
+    width: 150px;
+  }
+
+  .collapsed .link,
+  .collapsed .activeLink {
+    justify-content: flex-start;
+    gap: var(--space-3);
+    padding: 0 14px 0 11px;
+  }
+
+  .collapsed .linkLabel {
+    width: 170px;
   }
 
   .sidebarProfile {

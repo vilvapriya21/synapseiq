@@ -752,10 +752,10 @@
 
 .topicForm { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-4); }
 .topicList { display: flex; flex-direction: column; gap: var(--space-3); }
-.topicItem { border: 1px solid var(--color-border); border-left: 4px solid var(--accent-rose); border-radius: var(--radius-sm); padding: var(--space-3); }
-.topicAccentRose { border-left-color: var(--accent-rose); }
+.topicItem { border: 1px solid var(--color-border); border-left: 4px solid var(--accent-cobalt); border-radius: var(--radius-sm); padding: var(--space-3); }
+.topicAccentCobalt { border-left-color: var(--accent-cobalt); }
 .topicAccentMint { border-left-color: var(--accent-mint); }
-.topicAccentLavender { border-left-color: var(--accent-lavender); }
+.topicAccentIndigo { border-left-color: var(--accent-indigo); }
 .topicAccentSky { border-left-color: var(--accent-sky); }
 .topicAccentAmber { border-left-color: var(--accent-amber); }
 .topicDescription { color: var(--color-muted); font-size: var(--font-size-sm); margin: 4px 0; }

@@ -71,7 +71,7 @@
 .providerTab:hover,
 .providerTabActive {
   border-color: var(--color-primary-soft-hover);
-  box-shadow: 0 12px 26px rgba(109, 93, 246, 0.10);
+  box-shadow: 0 12px 26px rgba(47, 111, 237, 0.10);
   transform: translateY(-1px);
 }
 
@@ -98,7 +98,7 @@
 }
 
 .githubMark {
-  background: var(--accent-lavender-soft);
+  background: var(--accent-indigo-soft);
   color: var(--color-text);
 }
 
@@ -176,7 +176,7 @@
 }
 
 .githubIcon {
-  background: var(--accent-lavender-soft);
+  background: var(--accent-indigo-soft);
   color: var(--color-text);
 }
 
@@ -442,7 +442,7 @@
 }
 
 .repositoryIconGithub {
-  background: var(--accent-lavender-soft);
+  background: var(--accent-indigo-soft);
   color: var(--color-text);
 }
 
@@ -560,7 +560,7 @@
   position: absolute;
   inset: -34px;
   z-index: 0;
-  background-image: url("/auth-knowledge-bg.png");
+  background-image: url("../assets/auth-knowledge-bg.png");
   background-position: center;
   background-repeat: no-repeat;
   background-size: min(620px, 88vw) auto;

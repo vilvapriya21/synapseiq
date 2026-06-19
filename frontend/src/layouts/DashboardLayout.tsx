@@ -1,6 +1,9 @@
+import { type CSSProperties, useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Home,
   Link2,
   Users,
@@ -8,10 +11,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ROUTES } from "../routes/routePaths";
+import synapseLogo from "../assets/synapse-logo.svg";
 import { useAuthStore } from "../store/authStore";
 import { UserRole } from "../types";
 import { normalizeRole } from "../utils/roles";
 import styles from "./DashboardLayout.module.css";
+
+const SIDEBAR_COLLAPSED_KEY = "synapseiq:sidebar-collapsed";
 
 const navigation: Array<{ label: string; roles: UserRole[]; to: string }> = [
   { label: "Dashboard", roles: ["ADMIN", "LEARNER"], to: ROUTES.dashboard },
@@ -28,11 +34,26 @@ const navIcons: Record<string, LucideIcon> = {
 };
 
 function DashboardLayout() {
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
   const role = normalizeRole(user?.roles[0]);
   const visibleNavigation = navigation.filter((item) => item.roles.includes(role));
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
+    } catch {
+      // Ignore storage failures; the visual toggle should still work for this session.
+    }
+  }, [collapsed]);
 
   const handleLogout = () => {
     logout();
@@ -46,17 +67,30 @@ function DashboardLayout() {
     .toUpperCase();
 
   return (
-    <div className={styles.shell}>
-      <aside className={styles.sidebar}>
+    <div
+      className={styles.shell}
+      style={{ "--sidebar-width": collapsed ? "76px" : "260px" } as CSSProperties}
+    >
+      <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ""}`}>
         <div className={styles.brand}>
           <span className={styles.logo}>
-            <img alt="SynapseIQ" src="/synapse-logo.png" />
+            <img alt="SynapseIQ" src={synapseLogo} />
           </span>
-          <div>
-            <strong>SynapseIQ</strong>
-            <span>AI Knowledge Platform</span>
+          <div className={styles.brandText}>
+            <strong>
+              <span className={styles.brandNameText}>SynapseIQ</span>
+            </strong>
+            <span className={styles.brandSubtitle}>AI Knowledge Platform</span>
           </div>
         </div>
+        <button
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className={styles.sidebarToggle}
+          type="button"
+          onClick={() => setCollapsed((current) => !current)}
+        >
+          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        </button>
         <nav className={styles.nav}>
           {visibleNavigation.map((item) => {
             const Icon = navIcons[item.label] || Home;
@@ -65,20 +99,21 @@ function DashboardLayout() {
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) => (isActive ? styles.activeLink : styles.link)}
+                title={item.label}
               >
                 <Icon size={18} />
-                {item.label}
+                <span className={styles.linkLabel}>{item.label}</span>
               </NavLink>
             );
           })}
         </nav>
         <div className={styles.sidebarProfile}>
           <span className={styles.avatar}>{initials}</span>
-          <div>
+          <div className={styles.sidebarProfileText}>
             <strong>{user?.name || "Workspace User"}</strong>
             <span>{role}</span>
           </div>
-          <ChevronDown size={16} />
+          <ChevronDown className={styles.sidebarProfileChevron} size={16} />
         </div>
       </aside>
       <div className={styles.content}>

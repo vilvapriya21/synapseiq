@@ -14,7 +14,7 @@
   position: fixed;
   inset: 0;
   z-index: 0;
-  background-image: url("/auth-knowledge-bg.png");
+  background-image: url("../assets/auth-knowledge-bg.png");
   background-position: center 44%;
   background-repeat: no-repeat;
   background-size: min(980px, 92vw) auto;
