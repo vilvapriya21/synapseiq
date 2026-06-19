@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
-import { CloudUpload, SquareCode } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { CloudUpload, Search, SquareCode, Upload } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ENV } from "../constants/env";
 import {
@@ -43,6 +43,12 @@ function getStatusReason(repository: Repository) {
   return "";
 }
 
+function formatProviderStatus(status: "unknown" | "connected" | "disconnected") {
+  if (status === "connected") return "Connected";
+  if (status === "disconnected") return "Not connected";
+  return "Checking";
+}
+
 function RepositoryOnboardPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
@@ -56,6 +62,7 @@ function RepositoryOnboardPage() {
   const [uploadError, setUploadError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [provider, setProvider] = useState<"github" | "gitlab" | "bitbucket" | "azure" | "upload">("github");
+  const [repoSearch, setRepoSearch] = useState("");
   const [githubStatus, setGithubStatus] = useState<"unknown" | "connected" | "disconnected">("unknown");
   const [gitlabStatus, setGitlabStatus] = useState<"connected" | "disconnected" | "unknown">("unknown");
   const [bitbucketStatus, setBitbucketStatus] = useState<"connected" | "disconnected" | "unknown">("unknown");
@@ -66,6 +73,16 @@ function RepositoryOnboardPage() {
   const [azureRepoUrl, setAzureRepoUrl] = useState("");
   const [azureBranch, setAzureBranch] = useState("main");
   const [connectSuccess, setConnectSuccess] = useState("");
+
+  const filteredRepositories = useMemo(() => {
+    const query = repoSearch.trim().toLowerCase();
+    if (!query) return repositories;
+    return repositories.filter((repository) =>
+      [repository.name, repository.source_type, repository.provider, repository.branch, repository.language]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query)),
+    );
+  }, [repoSearch, repositories]);
 
   const fetchRepositories = async () => {
     setLoading(true);
@@ -332,35 +349,58 @@ function RepositoryOnboardPage() {
             type="button"
             onClick={() => setProvider("github")}
           >
-            GitHub
+            <SquareCode size={30} />
+            <strong>GitHub</strong>
+            <span className={`${styles.connectionBadge} ${githubStatus === "connected" ? styles.connected : styles.notConnected}`}>
+              {formatProviderStatus(githubStatus)}
+            </span>
+            <small>Private repos {githubStatus === "connected" ? "enabled" : "disabled"}</small>
           </button>
           <button
             className={`${styles.providerTab} ${provider === "gitlab" ? styles.providerTabActive : ""}`}
             type="button"
             onClick={() => setProvider("gitlab")}
           >
-            GitLab
+            <span className={`${styles.providerMark} ${styles.gitlabMark}`}>GL</span>
+            <strong>GitLab</strong>
+            <span className={`${styles.connectionBadge} ${gitlabStatus === "connected" ? styles.connected : styles.notConnected}`}>
+              {formatProviderStatus(gitlabStatus)}
+            </span>
+            <small>Private repos {gitlabStatus === "connected" ? "enabled" : "disabled"}</small>
           </button>
           <button
             className={`${styles.providerTab} ${provider === "bitbucket" ? styles.providerTabActive : ""}`}
             type="button"
             onClick={() => setProvider("bitbucket")}
           >
-            Bitbucket
+            <span className={`${styles.providerMark} ${styles.bitbucketMark}`}>BB</span>
+            <strong>Bitbucket</strong>
+            <span className={`${styles.connectionBadge} ${bitbucketStatus === "connected" ? styles.connected : styles.notConnected}`}>
+              {formatProviderStatus(bitbucketStatus)}
+            </span>
+            <small>Private repos {bitbucketStatus === "connected" ? "enabled" : "disabled"}</small>
           </button>
           <button
             className={`${styles.providerTab} ${provider === "azure" ? styles.providerTabActive : ""}`}
             type="button"
             onClick={() => setProvider("azure")}
           >
-            Azure DevOps
+            <span className={`${styles.providerMark} ${styles.azureMark}`}>AZ</span>
+            <strong>Azure DevOps</strong>
+            <span className={`${styles.connectionBadge} ${azureStatus === "connected" ? styles.patSaved : styles.notConnected}`}>
+              {azureStatus === "connected" ? "PAT saved" : formatProviderStatus(azureStatus)}
+            </span>
+            <small>Private repos {azureStatus === "connected" ? "enabled" : "disabled"}</small>
           </button>
           <button
             className={`${styles.providerTab} ${provider === "upload" ? styles.providerTabActive : ""}`}
             type="button"
             onClick={() => setProvider("upload")}
           >
-            Upload ZIP
+            <Upload size={30} />
+            <strong>Upload ZIP</strong>
+            <span className={`${styles.connectionBadge} ${styles.notConnected}`}>Local archive</span>
+            <small>Use a local ZIP archive</small>
           </button>
         </div>
 
@@ -729,10 +769,25 @@ function RepositoryOnboardPage() {
 
       <section className={styles.repositoryCard}>
         <div className={styles.repositoryHeader}>
-          <h2>Connected Repositories</h2>
-          <button className={styles.outlineButton} type="button" onClick={handleRefreshAll} disabled={submitting}>
-            &#8634; Refresh All
-          </button>
+          <div>
+            <h2>Connected Repositories</h2>
+            <p>Repositories you have connected and indexed</p>
+          </div>
+          <div className={styles.repositoryTools}>
+            <label className={styles.repositorySearch}>
+              <Search size={16} />
+              <input
+                aria-label="Search connected repositories"
+                onChange={(event) => setRepoSearch(event.target.value)}
+                placeholder="Search repositories..."
+                type="search"
+                value={repoSearch}
+              />
+            </label>
+            <button className={styles.outlineButton} type="button" onClick={handleRefreshAll} disabled={submitting}>
+              Refresh All
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -751,11 +806,16 @@ function RepositoryOnboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {repositories.map((repository) => (
+                {filteredRepositories.map((repository) => (
                   <tr key={repository.id}>
                     <td>
-                      <div className={styles.repositoryName}>{repository.name}</div>
-                      <div className={styles.repositorySource}>{repository.source_type}</div>
+                      <div className={styles.repositoryIdentity}>
+                        <span className={styles.repositoryIcon}><SquareCode size={19} /></span>
+                        <div>
+                          <div className={styles.repositoryName}>{repository.name}</div>
+                          <div className={styles.repositorySource}>{repository.provider || repository.source_type}</div>
+                        </div>
+                      </div>
                     </td>
                     <td>{repository.branch || "-"}</td>
                     <td>{repository.language || "-"}</td>
@@ -809,7 +869,7 @@ function RepositoryOnboardPage() {
                           console.log(repository.id);
                         }}
                       >
-                        View
+                        Open Workspace
                       </button>
                       <button
                         className={styles.deleteButton}
@@ -823,6 +883,13 @@ function RepositoryOnboardPage() {
                     </td>
                   </tr>
                 ))}
+                {filteredRepositories.length === 0 ? (
+                  <tr>
+                    <td className={styles.emptyCell} colSpan={6}>
+                      No repositories matched your search.
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>

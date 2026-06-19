@@ -8,11 +8,12 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 18px;
+  padding: 0;
 }
 
 .eyebrow {
   margin: 0 0 6px;
-  color: #64748b;
+  color: var(--color-muted);
   font-size: 13px;
   font-weight: 800;
   text-transform: uppercase;
@@ -20,16 +21,38 @@
 
 .heading {
   margin: 0;
-  color: #0f172a;
-  font-size: 30px;
-  line-height: 1.15;
+  color: var(--color-text);
+  font-size: 32px;
+  line-height: 1.12;
+  font-weight: 800;
 }
 
 .subtitle {
   max-width: 620px;
   margin: 8px 0 0;
-  color: #526178;
+  color: var(--color-muted);
+  font-size: 14px;
   line-height: 1.55;
+}
+
+.connectButton {
+  min-height: 40px;
+  border-color: var(--color-primary) !important;
+  border-radius: 10px !important;
+  background: var(--color-primary) !important;
+  padding: 0 16px !important;
+  font-size: 14px !important;
+  white-space: nowrap;
+}
+
+.toolbar,
+.repoCard,
+.stateCard,
+.skeletonCard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .toolbar {
@@ -37,26 +60,22 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  border: 1px solid #e1e7ef;
-  border-radius: 8px;
-  background: #ffffff;
   padding: 14px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
 }
 
 .searchBox {
-  min-width: min(420px, 100%);
+  width: min(440px, 100%);
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 1px solid #cfd8e6;
-  border-radius: 8px;
-  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
   padding: 0 13px;
 }
 
 .searchBox span {
-  color: #64748b;
+  color: var(--color-muted);
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
@@ -68,17 +87,17 @@
   border: 0;
   outline: 0;
   background: transparent;
-  color: #17212b;
-  font: inherit;
+  color: var(--color-text);
+  font-size: 14px;
 }
 
 .searchBox input::placeholder {
-  color: #94a3b8;
+  color: #94A3B8;
 }
 
 .count {
   margin: 0;
-  color: #526178;
+  color: var(--color-muted);
   font-size: 14px;
   font-weight: 800;
   white-space: nowrap;
@@ -86,16 +105,8 @@
 
 .list {
   display: grid;
-  gap: 14px;
-}
-
-.repoCard,
-.stateCard,
-.skeletonCard {
-  border: 1px solid #e1e7ef;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+  grid-template-columns: 1fr;
+  gap: 16px;
 }
 
 .repoCard {
@@ -108,8 +119,8 @@
 
 .repoCard:hover,
 .repoCard:focus-visible {
-  border-color: #9fb4d2;
-  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.1);
+  border-color: #BFDBFE;
+  box-shadow: 0 16px 34px rgba(37, 99, 235, 0.10);
   transform: translateY(-1px);
   outline: 0;
 }
@@ -124,34 +135,37 @@
 
 .repoMain h2 {
   margin: 0;
-  color: #0f172a;
+  color: var(--color-text);
   font-size: 19px;
+  font-weight: 800;
 }
 
 .repoMain p,
 .cardFooter p {
   margin: 6px 0 0;
-  color: #64748b;
+  color: var(--color-muted);
+  font-size: 14px;
   overflow-wrap: anywhere;
 }
 
 .metaGrid {
   display: grid;
-  grid-template-columns: 1.1fr 0.8fr 0.9fr 0.7fr 0.7fr 1.1fr 0.9fr;
-  gap: 12px;
+  grid-template-columns: 1.25fr 0.9fr 1fr 0.8fr 0.8fr 1.25fr 1fr;
+  gap: 10px;
 }
 
 .metaGrid div {
   min-width: 0;
   display: grid;
   gap: 5px;
-  border-radius: 8px;
-  background: #f8fafc;
+  border: 1px solid #EEF2F7;
+  border-radius: 10px;
+  background: #F8FAFC;
   padding: 11px 12px;
 }
 
 .metaGrid span {
-  color: #64748b;
+  color: var(--color-muted);
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
@@ -159,8 +173,9 @@
 
 .metaGrid strong {
   min-width: 0;
-  color: #17212b;
+  color: var(--color-text);
   font-size: 14px;
+  font-weight: 800;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -180,57 +195,54 @@
 }
 
 .indexed {
-  background: #dcfce7;
-  color: #166534;
+  background: #D1FAE5;
+  color: #047857;
 }
 
 .indexing {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }
 
 .error {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: #FEE2E2;
+  color: #B91C1C;
 }
 
 .pending {
-  background: #e5e7eb;
+  background: #F1F5F9;
   color: #475569;
 }
 
 .cardFooter {
   align-items: center;
-  border-top: 1px solid #edf1f6;
+  border-top: 1px solid #EEF2F7;
   padding-top: 16px;
 }
 
 .viewButton {
-  min-height: 38px;
-  border: 1px solid #1d4ed8;
-  border-radius: 8px;
-  background: #1d4ed8;
+  min-height: 40px;
+  border: 1px solid var(--color-primary);
+  border-radius: 10px;
+  background: var(--color-primary);
   color: #ffffff;
   cursor: pointer;
   padding: 0 16px;
+  font-size: 14px;
   font-weight: 900;
-}
-
-.viewButton:hover {
-  background: #1e40af;
 }
 
 .stateCard {
   display: grid;
   justify-items: start;
   gap: 14px;
-  color: #526178;
+  color: var(--color-muted);
   padding: 24px;
 }
 
 .stateCard h2 {
   margin: 0;
-  color: #0f172a;
+  color: var(--color-text);
   font-size: 18px;
 }
 
@@ -243,7 +255,7 @@
 .skeletonCard span {
   height: 18px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #eef2f7 0%, #f8fafc 45%, #eef2f7 100%);
+  background: linear-gradient(90deg, #EEF2F7 0%, #F8FAFC 45%, #EEF2F7 100%);
 }
 
 .skeletonCard span:first-child {
@@ -258,9 +270,15 @@
   width: 52%;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1280px) {
   .metaGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .metaGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -273,20 +291,13 @@
     flex-direction: column;
   }
 
-  .searchBox {
-    min-width: 0;
-    width: 100%;
-  }
-
-  .count {
-    white-space: normal;
-  }
-
   .metaGrid {
     grid-template-columns: 1fr;
   }
 
-  .viewButton {
+  .searchBox,
+  .viewButton,
+  .connectButton {
     width: 100%;
   }
 }

@@ -153,7 +153,7 @@ function ProjectPage() {
           </p>
         </div>
         {role === "ADMIN" && (
-          <Button type="button" onClick={() => navigate(ROUTES.repositoryOnboard)}>
+          <Button className={styles.connectButton} type="button" onClick={() => navigate(ROUTES.repositoryOnboard)}>
             Connect Repository
           </Button>
         )}

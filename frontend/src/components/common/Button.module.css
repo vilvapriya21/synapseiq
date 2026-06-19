@@ -5,7 +5,7 @@
   justify-content: center;
   gap: 8px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 0 16px;
   font: inherit;
   font-weight: 700;
@@ -18,22 +18,27 @@
 }
 
 .primary {
-  background: #176b87;
+  background: var(--color-primary);
   color: #ffffff;
 }
 
+.primary:hover {
+  background: var(--color-primary-hover);
+}
+
 .secondary {
-  background: #ffffff;
-  border-color: #c7d1da;
-  color: #243341;
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: #334155;
 }
 
 .ghost {
   background: transparent;
-  color: #176b87;
+  color: var(--color-primary);
 }
 
 .danger {
-  background: #b42318;
-  color: #ffffff;
+  background: #ffffff;
+  border-color: #fecaca;
+  color: var(--color-danger);
 }

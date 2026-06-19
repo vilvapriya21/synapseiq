@@ -80,6 +80,10 @@ function ChatPanel({ repoId }: ChatPanelProps) {
     }
   };
 
+  const applySuggestion = (question: string) => {
+    setInput(question);
+  };
+
   return (
     <div className={styles.chatPanel}>
       <div className={styles.header}>
@@ -91,6 +95,14 @@ function ChatPanel({ repoId }: ChatPanelProps) {
       </div>
 
       {error ? <div className={styles.errorBanner}>{error}</div> : null}
+
+      <div className={styles.suggestions}>
+        {["Summarize this repository", "What modules matter most?", "Create onboarding bullets"].map((question) => (
+          <button key={question} type="button" onClick={() => applySuggestion(question)}>
+            {question}
+          </button>
+        ))}
+      </div>
 
       <div className={styles.messageList} ref={messageListRef}>
         {loading ? <p className={styles.stateText}>Loading chat...</p> : null}
