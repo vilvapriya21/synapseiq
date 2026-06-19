@@ -1,11 +1,17 @@
 def parse_path_patterns(path_patterns: str | None) -> list[str]:
     if not path_patterns:
         return []
-    return [pattern.strip() for pattern in path_patterns.split(",") if pattern.strip()]
+    return [pattern.strip().replace("\\", "/").strip("/") for pattern in path_patterns.split(",") if pattern.strip()]
 
 
 def path_matches_patterns(path: str, patterns: list[str]) -> bool:
-    return any(path.startswith(pattern) for pattern in patterns)
+    normalized_path = path.replace("\\", "/").strip("/")
+    return any(
+        normalized_path == pattern
+        or normalized_path.startswith(f"{pattern}/")
+        or f"/{pattern}/" in f"/{normalized_path}/"
+        for pattern in patterns
+    )
 
 
 def count_matching_paths(paths: list[str], patterns: list[str]) -> int:

@@ -6,6 +6,7 @@ import { getUsers, type AdminUser } from "../services/adminService";
 import {
   assessmentService,
   type AssessmentFull,
+  type AssessmentQuestionResponse,
   type GeneratedQuestion,
 } from "../services/assessmentService";
 import styles from "./AssessmentBuilder.module.css";
@@ -42,6 +43,23 @@ function validateQuestions(questions: GeneratedQuestion[]) {
   }, {});
 }
 
+function isAssessmentFull(value: unknown): value is AssessmentFull {
+  return Boolean(value && typeof value === "object" && "created_at" in value);
+}
+
+function toGeneratedQuestion(question: AssessmentQuestionResponse): GeneratedQuestion {
+  return {
+    question_text: question.question_text,
+    question_type: question.question_type,
+    options: question.options.map((option) => ({
+      label: option.label,
+      is_correct: option.is_correct,
+    })),
+    explanation: question.explanation || "",
+    difficulty: question.difficulty,
+  };
+}
+
 function AssessmentBuilder() {
   const { repoId, topicId } = useParams();
   const navigate = useNavigate();
@@ -69,6 +87,30 @@ function AssessmentBuilder() {
       })
       .catch(() => setError("Unable to load learners."));
   }, []);
+
+  useEffect(() => {
+    if (!topicId) return;
+
+    let isMounted = true;
+    assessmentService
+      .getByTopic(topicId)
+      .then((assessment) => {
+        if (!isMounted || !assessment || !isAssessmentFull(assessment)) return;
+        setTitle(assessment.title);
+        setDurationMinutes(assessment.duration_minutes);
+        setSelectedLearnerId(assessment.assigned_to || "");
+        setQuestions(assessment.questions.map(toGeneratedQuestion));
+        setSavedAssessment(assessment);
+        setStep("review");
+      })
+      .catch(() => {
+        if (isMounted) setError("Unable to load saved assessment.");
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [topicId]);
 
   const selectedLearner = useMemo(
     () => learners.find((learner) => learner.id === selectedLearnerId),

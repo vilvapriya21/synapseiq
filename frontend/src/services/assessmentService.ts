@@ -111,6 +111,8 @@ export const assessmentService = {
     const { data } = await apiClient.post("/assessment/generate-questions", {
       kt_topic_id: ktTopicId,
       num_questions: numQuestions,
+    }, {
+      timeout: 300000,
     });
     return data;
   },

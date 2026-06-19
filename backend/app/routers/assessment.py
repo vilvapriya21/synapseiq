@@ -311,12 +311,12 @@ def list_active_assessments(
     return results
 
 
-@router.get("/by-topic/{kt_topic_id}")
+@router.get("/by-topic/{kt_topic_id}", response_model=AssessmentResponse | AssessmentLearnerView | None)
 def get_assessment_by_topic(
     kt_topic_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> AssessmentResponse | AssessmentLearnerView | None:
     topic = db.get(KTTopic, kt_topic_id)
     if topic is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found")
@@ -325,6 +325,8 @@ def get_assessment_by_topic(
     if current_user.role.lower() == "admin":
         get_owned_repository(db, topic.repository_id, current_user.id)
         assessment = db.scalar(select(Assessment).where(Assessment.kt_topic_id == kt_topic_id))
+        if assessment is None:
+            return None
         include_correct = True
     else:
         if not is_learner(current_user):

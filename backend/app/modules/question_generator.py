@@ -45,6 +45,19 @@ def extract_json_array(content: str) -> str:
     return text[start : end + 1]
 
 
+def parse_generated_questions_json(content: str) -> list[dict]:
+    try:
+        parsed = json.loads(strip_markdown_fences(content))
+    except json.JSONDecodeError:
+        parsed = json.loads(extract_json_array(content))
+
+    if isinstance(parsed, list):
+        return [item for item in parsed if isinstance(item, dict)]
+    if isinstance(parsed, dict) and isinstance(parsed.get("questions"), list):
+        return [item for item in parsed["questions"] if isinstance(item, dict)]
+    raise AssessmentGenerationError("The AI model returned an unexpected response format.")
+
+
 def build_code_context(entries: list[KnowledgeBase]) -> str:
     chunks: list[str] = []
     remaining = MAX_CONTEXT_CHARS
@@ -71,11 +84,12 @@ def generate_assessment_questions(
     Returns a list of dicts matching the generated question schema.
     """
     try:
-        entries = db.scalars(
+        repository_entries = db.scalars(
             select(KnowledgeBase)
             .where(KnowledgeBase.repository_id == topic.repository_id)
             .order_by(KnowledgeBase.created_at)
         ).all()
+        entries = list(repository_entries)
 
         patterns = parse_path_patterns(topic.path_patterns)
         if patterns:
@@ -86,9 +100,17 @@ def generate_assessment_questions(
             ]
 
         if not entries:
-            raise AssessmentGenerationError(
-                "No knowledge-base content matched this KT topic. Build the knowledge base or check the topic path patterns."
-            )
+            if repository_entries:
+                logger.warning(
+                    "No knowledge-base entries matched kt_topic_id=%s path_patterns=%s; falling back to repository context",
+                    topic.id,
+                    topic.path_patterns,
+                )
+                entries = list(repository_entries)
+            else:
+                raise AssessmentGenerationError(
+                    "No knowledge-base content is available for this repository. Build the knowledge base before generating questions."
+                )
 
         code_context = build_code_context(list(entries))
         system_prompt = (
@@ -138,7 +160,7 @@ Schema:
             max_tokens = max(2048, batch_size * TOKENS_PER_QUESTION)
             response = llm.complete(system_prompt, user_prompt, max_tokens=max_tokens)
             try:
-                parsed_batch = json.loads(extract_json_array(response))
+                parsed_batch = parse_generated_questions_json(response)
             except json.JSONDecodeError as exc:
                 logger.warning(
                     "Assessment generation returned invalid JSON for kt_topic_id=%s batch=%s: %s",
@@ -149,14 +171,7 @@ Schema:
                 raise AssessmentGenerationError(
                     "The AI model returned invalid JSON. Try fewer questions or retry generation."
                 ) from exc
-            if not isinstance(parsed_batch, list):
-                logger.warning(
-                    "Assessment generation returned non-list JSON for kt_topic_id=%s batch=%s",
-                    topic.id,
-                    offset // MAX_BATCH_QUESTIONS + 1,
-                )
-                raise AssessmentGenerationError("The AI model returned an unexpected response format.")
-            parsed_items.extend(item for item in parsed_batch if isinstance(item, dict))
+            parsed_items.extend(parsed_batch)
     except AssessmentGenerationError:
         raise
     except LLMError as exc:

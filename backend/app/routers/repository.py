@@ -610,11 +610,12 @@ def create_assignment(
     existing = db.scalar(
         select(RepositoryAssignment).where(
             RepositoryAssignment.repository_id == repo_id,
+            RepositoryAssignment.kt_topic_id == topic.id,
             RepositoryAssignment.learner_id == payload.learner_id,
         )
     )
     if existing is not None:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Learner already assigned to this repository")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Learner already assigned to this KT topic")
 
     assignment = RepositoryAssignment(
         repository_id=repo_id,
