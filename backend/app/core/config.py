@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     groq_model: str = Field(default="llama-3.3-70b-versatile")
     ollama_base_url: str = Field(default="http://localhost:11434")
     ollama_model: str = Field(default="llama3.1")
+    ollama_timeout_seconds: float = Field(default=300)
     backend_cors_origins: list[AnyHttpUrl] | list[str] = ["http://localhost:5173"]
 
     @field_validator("database_url")

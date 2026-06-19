@@ -1,27 +1,29 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { ScoreSummary } from "../types";
+import { AttemptResult } from "../services/assessmentService";
 
 interface AssessmentAttemptState {
   answers: Record<string, string[]>;
   assessmentId: string | null;
+  attemptId: string | null;
   currentQuestionIndex: number;
   lockedQuestionIds: string[];
   projectId: string | null;
   remainingSeconds: number;
-  result: ScoreSummary | null;
+  result: AttemptResult | null;
   submitted: boolean;
-  startAttempt: (projectId: string, assessmentId: string, durationSeconds: number) => void;
+  startAttempt: (attemptId: string, assessmentId: string, durationSeconds: number) => void;
   setAnswer: (questionId: string, answers: string[]) => void;
   lockAndAdvance: (questionId: string, nextIndex: number) => void;
   tick: () => void;
-  setResult: (result: ScoreSummary) => void;
+  setResult: (result: AttemptResult) => void;
   resetAttempt: () => void;
 }
 
 const initialAttempt = {
   answers: {},
   assessmentId: null,
+  attemptId: null,
   currentQuestionIndex: 0,
   lockedQuestionIds: [],
   projectId: null,
@@ -34,11 +36,11 @@ export const useAssessmentStore = create<AssessmentAttemptState>()(
   persist(
     (set) => ({
       ...initialAttempt,
-      startAttempt: (projectId, assessmentId, durationSeconds) =>
+      startAttempt: (attemptId, assessmentId, durationSeconds) =>
         set((state) => {
           const sameActiveAttempt =
-            state.projectId === projectId &&
             state.assessmentId === assessmentId &&
+            state.attemptId === attemptId &&
             !state.submitted &&
             state.remainingSeconds > 0;
 
@@ -48,8 +50,8 @@ export const useAssessmentStore = create<AssessmentAttemptState>()(
 
           return {
             ...initialAttempt,
-            projectId,
             assessmentId,
+            attemptId,
             remainingSeconds: durationSeconds,
           };
         }),

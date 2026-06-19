@@ -16,20 +16,22 @@ from app.models.assessment import (
     AssessmentQuestion,
 )
 from app.models.kt_topic import KTTopic
-from app.models.repository_assignment import RepositoryAssignment
+from app.models.repository import Repository
 from app.models.user import User
 from app.modules.llm_client import LLMProvider
-from app.modules.question_generator import generate_assessment_questions
+from app.modules.question_generator import AssessmentGenerationError, generate_assessment_questions
 from app.routers.admin import require_admin
-from app.routers.kt_topic import get_accessible_topic, is_learner
+from app.routers.kt_topic import is_learner
 from app.routers.repository import get_owned_repository
 from app.schemas.assessment import (
     AssessmentLearnerView,
+    AssessmentListItem,
     AssessmentOptionLearnerView,
     AssessmentOptionResponse,
     AssessmentQuestionLearnerView,
     AssessmentQuestionResponse,
     AssessmentResponse,
+    AssignAssessmentRequest,
     AttemptResultResponse,
     GenerateQuestionsRequest,
     GenerateQuestionsResponse,
@@ -130,6 +132,7 @@ def _assessment_response(
             title=assessment.title,
             duration_minutes=assessment.duration_minutes,
             created_at=assessment.created_at,
+            assigned_to=assessment.assigned_to,
             questions=serialized_questions,
         )
 
@@ -149,6 +152,13 @@ def _get_assessment_or_404(db: Session, assessment_id: str) -> Assessment:
     return assessment
 
 
+def _require_assigned_learner(assessment: Assessment, current_user: User) -> None:
+    if not is_learner(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Learner access required")
+    if assessment.assigned_to != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Assessment is not assigned to this learner")
+
+
 @router.post("/generate-questions", response_model=GenerateQuestionsResponse)
 def generate_questions(
     payload: GenerateQuestionsRequest,
@@ -161,11 +171,17 @@ def generate_questions(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
 
     get_owned_repository(db, topic.repository_id, current_user.id)
-    generated = generate_assessment_questions(topic, payload.num_questions, db, llm)
+    try:
+        generated = generate_assessment_questions(topic, payload.num_questions, db, llm)
+    except AssessmentGenerationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc
     if not generated:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="AI generation failed — please retry",
+            detail="AI generation failed. Please retry.",
         )
 
     return GenerateQuestionsResponse(
@@ -209,6 +225,7 @@ def save_assessment(
         title=payload.title.strip(),
         duration_minutes=payload.duration_minutes,
         created_by=current_user.id,
+        assigned_to=payload.assigned_to,
     )
     db.add(assessment)
     db.commit()
@@ -247,6 +264,53 @@ def save_assessment(
     return cast(AssessmentResponse, _assessment_response(db, assessment, include_correct=True))
 
 
+@router.get("/active", response_model=list[AssessmentListItem])
+def list_active_assessments(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[AssessmentListItem]:
+    if current_user.role.lower() == "admin":
+        assessments = db.scalars(
+            select(Assessment).where(Assessment.created_by == current_user.id)
+        ).all()
+    else:
+        assessments = db.scalars(
+            select(Assessment).where(Assessment.assigned_to == current_user.id)
+        ).all()
+
+    results = []
+    for assessment in assessments:
+        topic = db.get(KTTopic, assessment.kt_topic_id)
+        repo = db.get(Repository, assessment.repository_id)
+        has_submitted = False
+        if current_user.role.lower() != "admin":
+            submitted_attempt = db.scalar(
+                select(AssessmentAttempt).where(
+                    AssessmentAttempt.assessment_id == assessment.id,
+                    AssessmentAttempt.learner_id == current_user.id,
+                    AssessmentAttempt.submitted_at.isnot(None),
+                )
+            )
+            has_submitted = submitted_attempt is not None
+
+        results.append(
+            AssessmentListItem(
+                id=assessment.id,
+                kt_topic_id=assessment.kt_topic_id,
+                repository_id=assessment.repository_id,
+                title=assessment.title,
+                duration_minutes=assessment.duration_minutes,
+                created_at=assessment.created_at,
+                assigned_to=assessment.assigned_to,
+                kt_topic_title=topic.title if topic else "",
+                repository_name=repo.name if repo else "",
+                has_submitted=has_submitted,
+            )
+        )
+
+    return results
+
+
 @router.get("/by-topic/{kt_topic_id}")
 def get_assessment_by_topic(
     kt_topic_id: str,
@@ -257,28 +321,47 @@ def get_assessment_by_topic(
     if topic is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found")
 
+    assessment = None
     if current_user.role.lower() == "admin":
         get_owned_repository(db, topic.repository_id, current_user.id)
+        assessment = db.scalar(select(Assessment).where(Assessment.kt_topic_id == kt_topic_id))
         include_correct = True
     else:
         if not is_learner(current_user):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-        assignment = db.scalar(
-            select(RepositoryAssignment).where(
-                RepositoryAssignment.repository_id == topic.repository_id,
-                RepositoryAssignment.kt_topic_id == kt_topic_id,
-                RepositoryAssignment.learner_id == current_user.id,
+        assessment = db.scalar(
+            select(Assessment).where(
+                Assessment.kt_topic_id == kt_topic_id,
+                Assessment.assigned_to == current_user.id,
             )
         )
-        if assignment is None:
+        if assessment is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found")
         include_correct = False
 
-    assessment = db.scalar(select(Assessment).where(Assessment.kt_topic_id == kt_topic_id))
     if assessment is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found")
 
     return _assessment_response(db, assessment, include_correct=include_correct)
+
+
+@router.patch("/{assessment_id}/assign", response_model=AssessmentResponse)
+def assign_assessment(
+    assessment_id: str,
+    payload: AssignAssessmentRequest,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> AssessmentResponse:
+    assessment = _get_assessment_or_404(db, assessment_id)
+    get_owned_repository(db, assessment.repository_id, current_user.id)
+    learner = db.get(User, payload.assigned_to)
+    if learner is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Learner not found")
+
+    assessment.assigned_to = payload.assigned_to
+    db.commit()
+    db.refresh(assessment)
+    return cast(AssessmentResponse, _assessment_response(db, assessment, include_correct=True))
 
 
 @router.post("/{assessment_id}/start")
@@ -288,9 +371,7 @@ def start_attempt(
     db: Session = Depends(get_db),
 ):
     assessment = _get_assessment_or_404(db, assessment_id)
-    topic = get_accessible_topic(db, assessment.repository_id, assessment.kt_topic_id, current_user)
-    if not is_learner(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Learner access required")
+    _require_assigned_learner(assessment, current_user)
 
     attempt = AssessmentAttempt(
         assessment_id=assessment.id,
@@ -314,8 +395,7 @@ def submit_attempt(
     db: Session = Depends(get_db),
 ):
     assessment = _get_assessment_or_404(db, assessment_id)
-    if not is_learner(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Learner access required")
+    _require_assigned_learner(assessment, current_user)
 
     attempt = db.scalar(
         select(AssessmentAttempt).where(
@@ -396,8 +476,7 @@ def get_my_result(
     db: Session = Depends(get_db),
 ):
     assessment = _get_assessment_or_404(db, assessment_id)
-    if not is_learner(current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Learner access required")
+    _require_assigned_learner(assessment, current_user)
 
     attempt = db.scalar(
         select(AssessmentAttempt)

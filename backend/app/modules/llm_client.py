@@ -59,7 +59,8 @@ class OllamaProvider:
         }
 
         try:
-            response = httpx.post(url, json=payload, timeout=120)
+            timeout = httpx.Timeout(settings.ollama_timeout_seconds, connect=10)
+            response = httpx.post(url, json=payload, timeout=timeout)
         except httpx.ConnectError as exc:
             raise LLMError(f"Could not reach Ollama at {url}. Is it running?") from exc
         except httpx.HTTPError as exc:

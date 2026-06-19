@@ -11,7 +11,13 @@ from app.utils.path_matching import parse_path_patterns, path_matches_patterns
 
 logger = logging.getLogger(__name__)
 
-MAX_CONTEXT_CHARS = 12000
+MAX_CONTEXT_CHARS = 8000
+MAX_BATCH_QUESTIONS = 5
+TOKENS_PER_QUESTION = 850
+
+
+class AssessmentGenerationError(Exception):
+    """Raised when assessment question generation cannot produce valid questions."""
 
 
 def strip_markdown_fences(content: str) -> str:
@@ -25,6 +31,18 @@ def strip_markdown_fences(content: str) -> str:
     if lines and lines[-1].strip() == "```":
         lines = lines[:-1]
     return "\n".join(lines).strip()
+
+
+def extract_json_array(content: str) -> str:
+    text = strip_markdown_fences(content)
+    if text.startswith("[") and text.endswith("]"):
+        return text
+
+    start = text.find("[")
+    end = text.rfind("]")
+    if start == -1 or end == -1 or end <= start:
+        return text
+    return text[start : end + 1]
 
 
 def build_code_context(entries: list[KnowledgeBase]) -> str:
@@ -67,19 +85,29 @@ def generate_assessment_questions(
                 if entry.file_path and path_matches_patterns(entry.file_path, patterns)
             ]
 
+        if not entries:
+            raise AssessmentGenerationError(
+                "No knowledge-base content matched this KT topic. Build the knowledge base or check the topic path patterns."
+            )
+
         code_context = build_code_context(list(entries))
         system_prompt = (
             "You are an expert technical trainer creating rigorous multiple-choice "
             "assessments for software engineering teams."
         )
-        user_prompt = f"""
+        parsed_items: list[dict] = []
+
+        for offset in range(0, num_questions, MAX_BATCH_QUESTIONS):
+            batch_size = min(MAX_BATCH_QUESTIONS, num_questions - offset)
+            user_prompt = f"""
 Topic: {topic.title}
 Description: {topic.description or 'N/A'}
 
 Code context from the repository:
 {code_context}
 
-Generate exactly {num_questions} multiple-choice questions to assess a learner's understanding of this KT topic.
+Generate exactly {batch_size} multiple-choice questions to assess a learner's understanding of this KT topic.
+This is batch {offset // MAX_BATCH_QUESTIONS + 1}; avoid repeating question ideas from earlier batches.
 
 Rules:
 - Each question must have exactly 4 options (labeled as short answer strings, not A/B/C/D).
@@ -107,26 +135,41 @@ Schema:
 ]
 """
 
-        response = llm.complete(system_prompt, user_prompt)
+            max_tokens = max(2048, batch_size * TOKENS_PER_QUESTION)
+            response = llm.complete(system_prompt, user_prompt, max_tokens=max_tokens)
+            try:
+                parsed_batch = json.loads(extract_json_array(response))
+            except json.JSONDecodeError as exc:
+                logger.warning(
+                    "Assessment generation returned invalid JSON for kt_topic_id=%s batch=%s: %s",
+                    topic.id,
+                    offset // MAX_BATCH_QUESTIONS + 1,
+                    exc,
+                )
+                raise AssessmentGenerationError(
+                    "The AI model returned invalid JSON. Try fewer questions or retry generation."
+                ) from exc
+            if not isinstance(parsed_batch, list):
+                logger.warning(
+                    "Assessment generation returned non-list JSON for kt_topic_id=%s batch=%s",
+                    topic.id,
+                    offset // MAX_BATCH_QUESTIONS + 1,
+                )
+                raise AssessmentGenerationError("The AI model returned an unexpected response format.")
+            parsed_items.extend(item for item in parsed_batch if isinstance(item, dict))
+    except AssessmentGenerationError:
+        raise
     except LLMError as exc:
         logger.warning("Assessment generation LLM call failed for kt_topic_id=%s: %s", topic.id, exc)
-        return []
+        raise AssessmentGenerationError(
+            "The AI model did not respond in time. Try fewer questions, restart Ollama, or increase OLLAMA_TIMEOUT_SECONDS."
+        ) from exc
     except Exception:
         logger.exception("Assessment generation failed before parsing for kt_topic_id=%s", topic.id)
-        return []
-
-    try:
-        parsed = json.loads(strip_markdown_fences(response))
-    except json.JSONDecodeError:
-        logger.warning("Assessment generation returned invalid JSON for kt_topic_id=%s", topic.id)
-        return []
-
-    if not isinstance(parsed, list):
-        logger.warning("Assessment generation returned non-list JSON for kt_topic_id=%s", topic.id)
-        return []
+        raise AssessmentGenerationError("Assessment generation failed before the AI response could be parsed.")
 
     results: list[dict] = []
-    for item in parsed[:num_questions]:
+    for item in parsed_items[:num_questions]:
         if not isinstance(item, dict):
             continue
         question_text = item.get("question_text")
@@ -167,5 +210,10 @@ Schema:
                     "difficulty": difficulty,
                 }
             )
+
+    if not results:
+        raise AssessmentGenerationError(
+            "The AI response did not contain valid questions. Try fewer questions or improve the topic knowledge-base content."
+        )
 
     return results[:num_questions]

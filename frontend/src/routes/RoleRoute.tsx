@@ -9,7 +9,8 @@ interface RoleRouteProps {
 }
 
 function RoleRoute({ allowedRoles }: RoleRouteProps) {
-  const roles = useAuthStore((state) => state.user?.roles ?? []);
+  const user = useAuthStore((state) => state.user);
+  const roles = user?.role ? [user.role] : user?.roles ?? [];
   const isAllowed = hasAllowedRole(roles, allowedRoles);
 
   if (!isAllowed) {

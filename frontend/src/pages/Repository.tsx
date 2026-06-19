@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import ChatPanel from "../components/ChatPanel";
 import KTChecklist from "../components/KTChecklist";
 import { EmptyState } from "../components/common";
+import { ROUTES } from "../routes/routePaths";
 import { getUsers, type AdminUser } from "../services/adminService";
 import {
   analyzeContributors,
@@ -140,7 +141,7 @@ function RepositoryPage() {
   const { repoId } = useParams();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const role = normalizeRole(user?.roles[0]);
+  const role = normalizeRole(user?.role ?? user?.roles?.[0]);
   const [repository, setRepository] = useState<Repository | null>(null);
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBaseResponse | null>(null);
   const [contributors, setContributors] = useState<Contributor[]>([]);
@@ -843,6 +844,19 @@ function RepositoryPage() {
                         <>
                           <button className={styles.linkButton} onClick={() => handleViewRecommendation(topic.id)} type="button">
                             Recommend Person
+                          </button>
+                          <button
+                            className={styles.linkButton}
+                            onClick={() =>
+                              navigate(
+                                ROUTES.assessmentBuild
+                                  .replace(":repoId", repoId || "")
+                                  .replace(":topicId", topic.id),
+                              )
+                            }
+                            type="button"
+                          >
+                            Manage Assessment
                           </button>
                           <button className={styles.deleteButton} onClick={() => handleDeleteTopic(topic.id)} type="button">
                             Remove

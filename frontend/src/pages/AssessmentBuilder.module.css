@@ -1,0 +1,193 @@
+.page {
+  display: grid;
+  gap: 24px;
+}
+
+.hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: #64718a;
+  font-size: 14px;
+}
+
+.heading {
+  margin: 0;
+  color: #07142f;
+  font-size: 30px;
+}
+
+.panel {
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.panelHeader {
+  padding: 20px 22px;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.panelHeader h2,
+.donePanel h2 {
+  margin: 0;
+  color: #07142f;
+  font-size: 18px;
+}
+
+.panelHeader p {
+  margin: 4px 0 0;
+  color: #64718a;
+  font-size: 14px;
+}
+
+.configForm,
+.reviewList,
+.donePanel {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+}
+
+.configForm label {
+  display: grid;
+  gap: 8px;
+  color: #344554;
+  font-weight: 800;
+}
+
+.configForm input,
+.configForm select,
+.questionCard textarea,
+.optionRow input[type="text"],
+.optionRow input:not([type]) {
+  min-height: 42px;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.questionCard {
+  display: grid;
+  gap: 14px;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  padding: 18px;
+}
+
+.questionHeader,
+.cardActions,
+.footerActions,
+.optionRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.questionHeader {
+  justify-content: space-between;
+}
+
+.options {
+  display: grid;
+  gap: 10px;
+}
+
+.optionRow {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+}
+
+.optionRow input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #176b87;
+}
+
+.difficultyBadge,
+.typeBadge,
+.primaryButton,
+.secondaryButton,
+.iconButton {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.difficultyBadge,
+.typeBadge {
+  border: 0;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.difficultyBadge {
+  background: #eef3ff;
+  color: #2454d6;
+}
+
+.typeBadge {
+  background: #e8f7ed;
+  color: #176b3a;
+}
+
+.primaryButton,
+.secondaryButton,
+.iconButton {
+  border: 1px solid #cfd8e6;
+  padding: 0 12px;
+}
+
+.primaryButton {
+  background: #176b87;
+  color: #ffffff;
+}
+
+.secondaryButton,
+.iconButton {
+  background: #ffffff;
+  color: #176b87;
+}
+
+.iconButton {
+  width: 38px;
+  padding: 0;
+}
+
+.footerActions {
+  justify-content: flex-end;
+  padding: 0 22px 22px;
+}
+
+.error,
+.state {
+  color: #b13a21;
+}
+
+.state {
+  border: 1px solid #f3c4ba;
+  border-radius: 8px;
+  background: #fff8f6;
+  padding: 14px 16px;
+}
+
+@media (max-width: 760px) {
+  .hero,
+  .questionHeader,
+  .footerActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

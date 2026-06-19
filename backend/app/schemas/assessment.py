@@ -31,6 +31,11 @@ class SaveAssessmentRequest(BaseModel):
     title: str
     duration_minutes: int = Field(ge=1, le=180)
     questions: List[GeneratedQuestion]
+    assigned_to: str | None = None
+
+
+class AssignAssessmentRequest(BaseModel):
+    assigned_to: str
 
 
 class AssessmentOptionResponse(BaseModel):
@@ -56,7 +61,21 @@ class AssessmentResponse(BaseModel):
     title: str
     duration_minutes: int
     created_at: datetime
+    assigned_to: str | None = None
     questions: List[AssessmentQuestionResponse]
+
+
+class AssessmentListItem(BaseModel):
+    id: str
+    kt_topic_id: str
+    repository_id: str
+    title: str
+    duration_minutes: int
+    created_at: datetime
+    assigned_to: str | None
+    kt_topic_title: str
+    repository_name: str
+    has_submitted: bool
 
 
 class AssessmentOptionLearnerView(BaseModel):

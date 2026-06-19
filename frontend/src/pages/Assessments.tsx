@@ -2,27 +2,25 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { EmptyState } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
-import { dashboardService, DashboardResponse } from "../services/dashboardService";
-import { getAssignedRepositories, Repository } from "../services/repositoryService";
+import { getUsers } from "../services/adminService";
+import { assessmentService, type AssessmentListItem } from "../services/assessmentService";
 import { useAuthStore } from "../store/authStore";
 import { normalizeRole } from "../utils/roles";
 import styles from "./Assessment.module.css";
 
-interface AssessmentRow {
-  id: string;
-  name: string;
-  repository: string;
-  language: string;
-  status: string;
-  knowledgeBaseStatus: string;
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 function AssessmentsPage() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const role = normalizeRole(user?.roles[0]);
-  const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
-  const [assignedRepositories, setAssignedRepositories] = useState<Repository[]>([]);
+  const role = normalizeRole(user?.role ?? user?.roles?.[0]);
+  const [assessments, setAssessments] = useState<AssessmentListItem[]>([]);
+  const [learnerNames, setLearnerNames] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -30,21 +28,21 @@ function AssessmentsPage() {
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
+    setError("");
 
-    const request = role === "LEARNER" ? getAssignedRepositories() : dashboardService.getDashboard();
-
-    request
-      .then((data) => {
-        if (isMounted) {
-          if (role === "LEARNER") {
-            setAssignedRepositories((data as { repositories: Repository[] }).repositories);
-            setDashboard(null);
-          } else {
-            setDashboard(data as DashboardResponse);
-            setAssignedRepositories([]);
-          }
-          setError("");
-        }
+    Promise.all([
+      assessmentService.listActive(),
+      role === "ADMIN" ? getUsers().catch(() => []) : Promise.resolve([]),
+    ])
+      .then(([rows, users]) => {
+        if (!isMounted) return;
+        setAssessments(rows);
+        setLearnerNames(
+          users.reduce<Record<string, string>>((lookup, learner) => {
+            lookup[learner.id] = `${learner.name} (${learner.email})`;
+            return lookup;
+          }, {}),
+        );
       })
       .catch(() => {
         if (isMounted) setError("Assessments could not be loaded.");
@@ -58,40 +56,23 @@ function AssessmentsPage() {
     };
   }, [role]);
 
-  const projects = useMemo(() => {
+  const filteredAssessments = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const allProjects: AssessmentRow[] = role === "LEARNER"
-      ? assignedRepositories.map((repository) => ({
-          id: repository.id,
-          name: repository.name,
-          repository: repository.url || `upload/${repository.name}`,
-          language: repository.language || "Unknown",
-          status: repository.status,
-          knowledgeBaseStatus: repository.knowledge_base_status || "none",
-        }))
-      : (dashboard?.projects ?? []).map((project) => ({
-          id: project.id,
-          name: project.name,
-          repository: project.repository,
-          language: project.language,
-          status: project.status,
-          knowledgeBaseStatus: project.knowledge_base_status,
-        }));
-    if (!query) return allProjects;
-    return allProjects.filter(
-      (project) =>
-        project.name.toLowerCase().includes(query) ||
-        project.repository.toLowerCase().includes(query) ||
-        project.language.toLowerCase().includes(query),
+    if (!query) return assessments;
+    return assessments.filter(
+      (assessment) =>
+        assessment.title.toLowerCase().includes(query) ||
+        assessment.kt_topic_title.toLowerCase().includes(query) ||
+        assessment.repository_name.toLowerCase().includes(query),
     );
-  }, [assignedRepositories, dashboard?.projects, role, search]);
+  }, [assessments, search]);
 
   if (isLoading) {
     return <div className={styles.state}>Loading assessments...</div>;
   }
 
   if (error) {
-    return <div className={styles.state}>{error || "No assessment data available."}</div>;
+    return <div className={styles.state}>{error}</div>;
   }
 
   return (
@@ -99,12 +80,12 @@ function AssessmentsPage() {
       <section className={styles.hero}>
         <div>
           <p className={styles.eyebrow}>{role === "ADMIN" ? "Assessment Management" : "Assigned Assessments"}</p>
-          <h1 className={styles.heading}>Assessment</h1>
+          <h1 className={styles.heading}>{role === "ADMIN" ? "Active Assessments" : "My Assessments"}</h1>
         </div>
         <input
           className={styles.search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search projects"
+          placeholder="Search assessments"
           type="search"
           value={search}
         />
@@ -113,43 +94,63 @@ function AssessmentsPage() {
       <section className={styles.panel}>
         <div className={styles.panelHeader}>
           <div>
-            <h2>Project Assessments</h2>
-            <p>Select a project to view or take its assessment.</p>
+            <h2>{role === "ADMIN" ? "Active Assessments" : "My Assessments"}</h2>
+            <p>{filteredAssessments.length} assessments matched</p>
           </div>
         </div>
-        {projects.length === 0 ? (
-          <EmptyState title="No assessments available" description="No projects are currently available for assessment." />
+        {filteredAssessments.length === 0 ? (
+          <EmptyState title="No assessments available" description="Assessments will appear here after they are created and assigned." />
         ) : (
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Project Name</th>
+                  <th>Title</th>
+                  <th>KT Topic</th>
                   <th>Repository</th>
-                  <th>Language</th>
+                  {role === "ADMIN" ? <th>Assigned To</th> : null}
+                  <th>Duration</th>
+                  <th>Created At</th>
                   <th>Status</th>
-                  <th>KB Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {projects.map((project) => (
-                  <tr key={project.id}>
+                {filteredAssessments.map((assessment) => (
+                  <tr key={assessment.id}>
+                    <td><div className={styles.assessmentName}>{assessment.title}</div></td>
+                    <td>{assessment.kt_topic_title || "-"}</td>
+                    <td>{assessment.repository_name || "-"}</td>
+                    {role === "ADMIN" ? <td>{assessment.assigned_to ? learnerNames[assessment.assigned_to] || assessment.assigned_to : "Unassigned"}</td> : null}
+                    <td>{assessment.duration_minutes} min</td>
+                    <td>{formatDate(assessment.created_at)}</td>
+                    <td>{assessment.assigned_to === null && role === "ADMIN" ? "Unassigned" : assessment.has_submitted ? "Submitted" : "Pending"}</td>
                     <td>
-                      <div className={styles.assessmentName}>{project.name}</div>
-                    </td>
-                    <td>{project.repository}</td>
-                    <td>{project.language}</td>
-                    <td>{project.status}</td>
-                    <td>{project.knowledgeBaseStatus}</td>
-                    <td>
-                      <button
-                        className={styles.action}
-                        onClick={() => navigate(ROUTES.projectAssessment.replace(":projectId", project.id))}
-                        type="button"
-                      >
-                        Open Assessment
-                      </button>
+                      {role === "ADMIN" ? (
+                        <button
+                          className={styles.action}
+                          onClick={() => navigate(ROUTES.assessmentResults.replace(":assessmentId", assessment.id))}
+                          type="button"
+                        >
+                          View Results
+                        </button>
+                      ) : assessment.has_submitted ? (
+                        <button
+                          className={styles.action}
+                          onClick={() => navigate(ROUTES.assessmentMyResult.replace(":assessmentId", assessment.id))}
+                          type="button"
+                        >
+                          View My Result
+                        </button>
+                      ) : (
+                        <button
+                          className={styles.action}
+                          onClick={() => navigate(ROUTES.assessmentTake.replace(":assessmentId", assessment.id))}
+                          type="button"
+                        >
+                          Start Assessment
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

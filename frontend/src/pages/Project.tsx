@@ -16,7 +16,7 @@ const assignmentStatuses: AssignmentStatus[] = ["Assigned", "In Progress", "Comp
 function ProjectPage() {
   const { projectId = "alpha-payments" } = useParams();
   const navigate = useNavigate();
-  const role = normalizeRole(useAuthStore((state) => state.user?.roles[0]));
+  const role = normalizeRole(useAuthStore((state) => state.user?.role ?? state.user?.roles?.[0]));
   const [workspace, setWorkspace] = useState<WorkspaceResponse | null>(null);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("Overview");
   const [checklistFilter, setChecklistFilter] = useState<ChecklistStatus | "All">("All");
@@ -123,7 +123,7 @@ function ProjectPage() {
         </div>
         <div className={styles.actions}>
           {role === "LEARNER" && (
-            <Button type="button" onClick={() => navigate(ROUTES.projectAssessment.replace(":projectId", projectId))}>
+            <Button type="button" onClick={() => navigate(ROUTES.assessments)}>
               Take Assessment
             </Button>
           )}
