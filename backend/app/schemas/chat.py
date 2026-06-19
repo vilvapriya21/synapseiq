@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ChatMessageItem(BaseModel):
@@ -8,6 +8,7 @@ class ChatMessageItem(BaseModel):
     role: str
     content: str
     created_at: datetime
+    sources: list[str] = Field(default_factory=list)
     model_config = ConfigDict(from_attributes=True)
 
 

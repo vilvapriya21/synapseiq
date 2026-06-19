@@ -146,6 +146,7 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   created_at?: string;
+  sources?: string[];
 }
 
 export interface ChatHistoryResponse {

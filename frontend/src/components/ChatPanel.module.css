@@ -100,6 +100,13 @@
   border-bottom-left-radius: 3px;
 }
 
+.sources {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #6b7280;
+  font-style: italic;
+}
+
 .stateText {
   margin: auto;
   color: #9ca3af;
