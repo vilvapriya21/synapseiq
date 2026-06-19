@@ -8,13 +8,15 @@ from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
-from sqlalchemy import select
+from sqlalchemy import delete as sql_delete, select
 from sqlalchemy.orm import Session as DbSession
 
 from app.core.security import get_current_user
 from app.db.session import get_db
+from app.models.chat_message import ChatMessage
 from app.models.contributor import Contributor
 from app.models.knowledge_base import KnowledgeBase
+from app.models.kt_checklist import KTChecklistItem, KTChecklistProgress
 from app.models.kt_topic import KTTopic
 from app.models.repository import Repository
 from app.models.repository_assignment import RepositoryAssignment
@@ -723,11 +725,16 @@ def delete_repository(
     if document_path.exists():
         shutil.rmtree(document_path)
 
-    from sqlalchemy import delete as sql_delete
-    from app.models.knowledge_base import KnowledgeBase
+    topic_ids = select(KTTopic.id).where(KTTopic.repository_id == repo_id)
+    checklist_item_ids = select(KTChecklistItem.id).where(KTChecklistItem.kt_topic_id.in_(topic_ids))
 
-    db.execute(sql_delete(Contributor).where(Contributor.repository_id == repo_id))
+    db.execute(sql_delete(ChatMessage).where(ChatMessage.repository_id == repo_id))
     db.execute(sql_delete(KnowledgeBase).where(KnowledgeBase.repository_id == repo_id))
+    db.execute(sql_delete(KTChecklistProgress).where(KTChecklistProgress.checklist_item_id.in_(checklist_item_ids)))
+    db.execute(sql_delete(KTChecklistItem).where(KTChecklistItem.kt_topic_id.in_(topic_ids)))
+    db.execute(sql_delete(RepositoryAssignment).where(RepositoryAssignment.repository_id == repo_id))
+    db.execute(sql_delete(KTTopic).where(KTTopic.repository_id == repo_id))
+    db.execute(sql_delete(Contributor).where(Contributor.repository_id == repo_id))
 
     db.delete(repository)
     db.commit()
