@@ -2,6 +2,7 @@ export const ROUTES = {
   login: "/login",
   dashboard: "/dashboard",
   adminUsers: "/admin/users",
+  projectWorkspace: "/workspace",
   repositories: "/repositories",
   repositoryOnboard: "/repositories/onboard",
   repository: "/repositories/:repoId",

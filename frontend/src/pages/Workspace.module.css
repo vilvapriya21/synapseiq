@@ -28,8 +28,21 @@
 .subtitle {
   max-width: 620px;
   margin: 8px 0 0;
-  color: #526178;
+  color: #64748b;
+  font-size: 13px;
   line-height: 1.55;
+}
+
+.toolbar,
+.section,
+.repoCard,
+.stateCard,
+.skeletonCard {
+  border: 1px solid #e1e7ef;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  padding: 18px 20px;
 }
 
 .toolbar {
@@ -37,11 +50,24 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  border: 1px solid #e1e7ef;
-  border-radius: 8px;
-  background: #ffffff;
   padding: 14px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.section {
+  display: grid;
+  gap: 14px;
+}
+
+.sectionHeader {
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 14px;
+}
+
+.muted {
+  color: #64748b;
+  font-size: 13px;
 }
 
 .searchBox {
@@ -78,9 +104,44 @@
 
 .count {
   margin: 0;
-  color: #526178;
-  font-size: 14px;
+  color: #64748b;
+  font-size: 13px;
   font-weight: 800;
+  white-space: nowrap;
+}
+
+.statsGrid,
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.statCard,
+.metaGrid div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 11px 12px;
+}
+
+.statCard span,
+.metaGrid span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.statCard strong,
+.metaGrid strong {
+  min-width: 0;
+  color: #17212b;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -89,19 +150,9 @@
   gap: 14px;
 }
 
-.repoCard,
-.stateCard,
-.skeletonCard {
-  border: 1px solid #e1e7ef;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
-}
-
 .repoCard {
   display: grid;
   gap: 18px;
-  padding: 20px;
   cursor: pointer;
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
@@ -115,7 +166,8 @@
 }
 
 .repoMain,
-.cardFooter {
+.cardFooter,
+.actions {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -132,49 +184,18 @@
 .cardFooter p {
   margin: 6px 0 0;
   color: #64748b;
+  font-size: 13px;
   overflow-wrap: anywhere;
 }
 
-.metaGrid {
-  display: grid;
-  grid-template-columns: 1.1fr 0.8fr 0.9fr 0.7fr 0.7fr 1.1fr 0.9fr;
-  gap: 12px;
-}
-
-.metaGrid div {
-  min-width: 0;
-  display: grid;
-  gap: 5px;
-  border-radius: 8px;
-  background: #f8fafc;
-  padding: 11px 12px;
-}
-
-.metaGrid span {
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.metaGrid strong {
-  min-width: 0;
-  color: #17212b;
-  font-size: 14px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .badge {
-  min-height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  padding: 0 11px;
+  padding: 4px 11px;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 700;
   text-transform: capitalize;
   white-space: nowrap;
 }
@@ -205,6 +226,7 @@
   padding-top: 16px;
 }
 
+.primaryButton,
 .viewButton {
   min-height: 38px;
   border: 1px solid #1d4ed8;
@@ -216,28 +238,39 @@
   font-weight: 900;
 }
 
+.primaryButton:hover,
 .viewButton:hover {
   background: #1e40af;
+}
+
+.secondaryButton {
+  min-height: 38px;
+  border: 1px solid #cfd8e6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #17212b;
+  cursor: pointer;
+  padding: 0 16px;
+  font-weight: 900;
 }
 
 .stateCard {
   display: grid;
   justify-items: start;
   gap: 14px;
-  color: #526178;
-  padding: 24px;
+  color: #64748b;
 }
 
 .stateCard h2 {
   margin: 0;
   color: #0f172a;
   font-size: 18px;
+  font-weight: 700;
 }
 
 .skeletonCard {
   display: grid;
   gap: 14px;
-  padding: 20px;
 }
 
 .skeletonCard span {
@@ -258,17 +291,12 @@
   width: 52%;
 }
 
-@media (max-width: 1100px) {
-  .metaGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 760px) {
   .hero,
   .toolbar,
   .repoMain,
-  .cardFooter {
+  .cardFooter,
+  .actions {
     align-items: stretch;
     flex-direction: column;
   }
@@ -282,10 +310,8 @@
     white-space: normal;
   }
 
-  .metaGrid {
-    grid-template-columns: 1fr;
-  }
-
+  .primaryButton,
+  .secondaryButton,
   .viewButton {
     width: 100%;
   }

@@ -127,6 +127,13 @@
   font-size: 18px;
 }
 
+.helperText {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -797,6 +804,24 @@
   margin: 0;
   color: #dc2626;
   font-size: 13px;
+}
+
+.authModalBody {
+  display: grid;
+  gap: 14px;
+}
+
+.authModalBody p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.modalActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .state {

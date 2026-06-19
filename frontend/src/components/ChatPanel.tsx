@@ -108,6 +108,11 @@ function ChatPanel({ repoId }: ChatPanelProps) {
             <div className={`${styles.messageBubble} ${message.role === "user" ? styles.userBubble : styles.assistantBubble}`}>
               {message.content}
             </div>
+            {message.role === "assistant" && message.sources?.length ? (
+              <div className={styles.sources}>
+                Sources: {message.sources.join(", ")}
+              </div>
+            ) : null}
           </div>
         ))}
         {sending ? (

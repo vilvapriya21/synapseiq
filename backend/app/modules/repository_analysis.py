@@ -6,6 +6,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+from typing import Callable
 import zipfile
 
 from sqlalchemy.orm import Session
@@ -55,7 +56,7 @@ MAX_IMAGE_FILE_BYTES = 5_000_000
 REPOSITORY_STORAGE_DIR = Path("uploads") / "repositories"
 
 
-def clone_repository(clone_url: str, target_dir: Path, branch: str | None = None) -> None:
+def clone_repository(clone_url: str, target_dir: Path, branch: str | None = None, provider: str | None = None) -> None:
     command = ["git", "clone", "--depth=1", "--single-branch"]
     if branch:
         command.extend(["--branch", branch])
@@ -80,6 +81,9 @@ def clone_repository(clone_url: str, target_dir: Path, branch: str | None = None
         print(f"[ERROR] git clone failed return_code={exc.returncode}")
         print(f"[ERROR] git clone stdout={exc.stdout}")
         print(f"[ERROR] git clone stderr={stderr}")
+        if provider == "azure":
+            print("[ERROR] clone_reason=azure_clone_failed")
+            raise Exception("Unable to clone Azure DevOps repository. Check PAT permissions, repo URL, and branch.")
         if "Authentication failed" in stderr:
             print("[ERROR] clone_reason=authentication_failed")
             raise Exception("Authentication failed. Connect your GitHub account and try again.")
@@ -188,6 +192,103 @@ def extract_python_signatures(file_path: Path) -> str:
     return "\n".join(signatures)[:4000]
 
 
+def extract_csharp_signatures(file_path: Path) -> str:
+    try:
+        source = file_path.read_text(encoding="utf-8", errors="ignore")
+        class_pattern = r"^\s*(?:public|private|internal|protected)?\s*(?:static\s+|abstract\s+|sealed\s+|partial\s+)*(?:class|interface|record|struct)\s+\w+[^\{]*"
+        method_pattern = r"^\s*(?:public|private|internal|protected)\s+(?:static\s+|async\s+|virtual\s+|override\s+)*[\w<>\[\],\.\?]+\s+\w+\s*\([^)]*\)\s*\{?"
+        property_pattern = r"^\s*(?:public|private|internal|protected)\s+[\w<>\[\],\.\?]+\s+\w+\s*\{\s*get;"
+        matches = (
+            re.findall(class_pattern, source, re.MULTILINE)
+            + re.findall(method_pattern, source, re.MULTILINE)
+            + re.findall(property_pattern, source, re.MULTILINE)
+        )
+        signatures = [match.strip().rstrip("{").strip() for match in matches]
+        return "\n".join(signatures)[:4000]
+    except Exception:
+        return ""
+
+
+def classify_aspnet_role(file_path: Path, content: str) -> str | None:
+    try:
+        if file_path.name.endswith("Controller.cs") and (
+            "ControllerBase" in content or ": Controller" in content
+        ):
+            return "controller"
+        if "DbContext" in content and "class" in content:
+            return "dbcontext"
+        if "Models" in file_path.parts or "Models" in str(file_path):
+            return "model"
+        if file_path.suffix == ".cshtml":
+            return "view"
+        return None
+    except Exception:
+        return None
+
+
+def extract_dart_signatures(file_path: Path) -> str:
+    try:
+        source = file_path.read_text(encoding="utf-8", errors="ignore")
+        class_pattern = r"^\s*(abstract\s+)?class\s+\w+[^\{]*"
+        method_pattern = r"^\s*(?:@override\s+)?(?:Future<[\w<>]+>|void|int|String|bool|double|var|dynamic|Widget)\s+\w+\s*\([^)]*\)\s*(?:async\s*)?\{?"
+        class_matches = [
+            match[0] for match in re.findall(f"({class_pattern})", source, re.MULTILINE)
+        ]
+        matches = class_matches + re.findall(
+            method_pattern, source, re.MULTILINE
+        )
+        signatures = [match.strip().rstrip("{").strip() for match in matches]
+        return "\n".join(signatures)[:4000]
+    except Exception:
+        return ""
+
+
+def extract_js_ts_signatures(file_path: Path) -> str:
+    try:
+        source = file_path.read_text(encoding="utf-8", errors="ignore")
+        function_pattern = r"^\s*(?:export\s+)?(?:async\s+)?function\s+\w+\s*\([^)]*\)"
+        arrow_const_pattern = r"^\s*(?:export\s+)?const\s+\w+\s*=\s*(?:async\s*)?\([^)]*\)\s*(?::\s*\w+\s*)?=>"
+        class_pattern = r"^\s*(?:export\s+)?(?:default\s+)?class\s+\w+[^\{]*"
+        interface_pattern = r"^\s*(?:export\s+)?interface\s+\w+[^\{]*"
+        react_component_pattern = r"^\s*(?:export\s+)?const\s+\w+\s*:\s*(?:React\.)?(?:FC|FunctionComponent)<[^>]+>\s*=\s*(?:async\s*)?\([^)]*\)\s*(?::\s*(?:JSX\.Element|React\.Element|ReactNode|Element)\s*)?=>"
+        matches = (
+            re.findall(function_pattern, source, re.MULTILINE)
+            + re.findall(arrow_const_pattern, source, re.MULTILINE)
+            + re.findall(class_pattern, source, re.MULTILINE)
+            + re.findall(interface_pattern, source, re.MULTILINE)
+            + re.findall(react_component_pattern, source, re.MULTILINE)
+        )
+        signatures = [match.strip() for match in matches]
+        return "\n".join(signatures)[:4000]
+    except Exception:
+        return ""
+
+
+def extract_java_kotlin_signatures(file_path: Path) -> str:
+    try:
+        source = file_path.read_text(encoding="utf-8", errors="ignore")
+        class_pattern = r"^\s*(?:public\s+|private\s+|internal\s+)?(?:abstract\s+|open\s+|data\s+|sealed\s+)?(?:class|interface|object)\s+\w+[^\{]*"
+        method_pattern = r"^\s*(?:public\s+|private\s+|protected\s+|internal\s+|fun\s+|override\s+)+[\w<>\[\],?\s]*?\b\w+\s*\([^)]*\)\s*(?::\s*[\w<>\[\],?]+\s*)?\{?"
+        matches = re.findall(class_pattern, source, re.MULTILINE) + re.findall(
+            method_pattern, source, re.MULTILINE
+        )
+        signatures = [match.strip() for match in matches]
+        return "\n".join(signatures)[:4000]
+    except Exception:
+        return ""
+
+
+SIGNATURE_EXTRACTORS: dict[str, tuple[Callable[[Path], str], tuple[str, ...]]] = {
+    "Python": (extract_python_signatures, (".py",)),
+    "C#": (extract_csharp_signatures, (".cs",)),
+    "Dart": (extract_dart_signatures, (".dart",)),
+    "JavaScript": (extract_js_ts_signatures, (".js", ".jsx")),
+    "TypeScript": (extract_js_ts_signatures, (".ts", ".tsx")),
+    "Java": (extract_java_kotlin_signatures, (".java",)),
+    "Kotlin": (extract_java_kotlin_signatures, (".kt",)),
+}
+
+
 def build_knowledge_base(repository: Repository, root: Path, file_paths: list[Path], db: Session) -> None:
     try:
         print(f"[KNOWLEDGE_BASE] building repository_id={repository.id} root={root} files={len(file_paths)}")
@@ -224,20 +325,35 @@ def build_knowledge_base(repository: Repository, root: Path, file_paths: list[Pa
                 )
             )
 
-        if repository.language == "Python":
-            python_files = [file_path for file_path in file_paths if file_path.suffix.lower() == ".py"][:50]
-            for file_path in python_files:
-                sigs = extract_python_signatures(file_path)
-                if sigs:
-                    db.add(
-                        KnowledgeBase(
-                            repository_id=repository.id,
-                            entry_type="module_summary",
-                            file_path=str(file_path.relative_to(root)),
-                            content=sigs,
-                            language="Python",
-                        )
+        extractor_entry = SIGNATURE_EXTRACTORS.get(repository.language)
+        if extractor_entry:
+            extractor_fn, extensions = extractor_entry
+            matching_files = [
+                file_path for file_path in file_paths
+                if file_path.suffix.lower() in extensions
+            ][:50]
+            for file_path in matching_files:
+                sigs = extractor_fn(file_path)
+                if not sigs:
+                    continue
+                content = sigs
+                if repository.language == "C#":
+                    try:
+                        raw_text = file_path.read_text(encoding="utf-8", errors="ignore")
+                        role = classify_aspnet_role(file_path, raw_text)
+                        if role:
+                            content = f"[{role.upper()}]\n{sigs}"
+                    except Exception:
+                        pass
+                db.add(
+                    KnowledgeBase(
+                        repository_id=repository.id,
+                        entry_type="module_summary",
+                        file_path=str(file_path.relative_to(root)),
+                        content=content,
+                        language=repository.language,
                     )
+                )
 
         repository.knowledge_base_status = "ready"
         db.commit()
@@ -284,6 +400,8 @@ def analyze_repository(
                 "bitbucket": bitbucket_token,
             }
             token_for_provider = token_map.get(repository.provider)
+            if repository.provider == "azure" and not token_for_provider:
+                raise Exception("Please save Azure DevOps PAT before connecting a repository.")
             auth_url = build_authenticated_url(
                 repository.url,
                 token_for_provider,
@@ -291,7 +409,7 @@ def analyze_repository(
             )
             print(f"[AUTH] authenticated_url={mask_credentials(auth_url)} credentials_injected={'@' in auth_url.split('://', 1)[-1].split('/', 1)[0]}")
             print(f"[CLONE] before_clone repo_id={repo_id}")
-            clone_repository(auth_url, temp_dir / "repo", repository.branch)
+            clone_repository(auth_url, temp_dir / "repo", repository.branch, repository.provider)
             print(f"[CLONE] after_clone_success repo_id={repo_id}")
             root = temp_dir / "repo"
         elif repository.source_type == "upload":

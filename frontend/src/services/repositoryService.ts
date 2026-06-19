@@ -77,6 +77,10 @@ export interface Contributor {
   name: string;
   email: string;
   commit_count: number;
+  files_touched?: number;
+  lines_added?: number;
+  lines_deleted?: number;
+  prs_authored?: number;
   top_files?: string;
 }
 
@@ -146,6 +150,7 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   created_at?: string;
+  sources?: string[];
 }
 
 export interface ChatHistoryResponse {
@@ -156,6 +161,15 @@ export interface ChatHistoryResponse {
 export interface ChatMessageResponse {
   user_message?: ChatMessage;
   assistant_message: ChatMessage;
+}
+
+export type ProviderAuthCode = "AUTH_REQUIRED" | "AUTH_INVALID";
+export type RepositoryProvider = "github" | "gitlab" | "bitbucket" | "azure";
+
+export interface ProviderAuthError {
+  code: ProviderAuthCode;
+  provider: RepositoryProvider;
+  message: string;
 }
 
 export interface ChecklistItem {
@@ -185,8 +199,16 @@ export interface ChecklistItemUpdate {
   order?: number;
 }
 
-export const connectRepository = async (url: string, branch: string): Promise<Repository> => {
-  const { data } = await apiClient.post<Repository>("/repositories/connect", { url, branch });
+export const connectRepository = async (
+  url: string,
+  branch: string,
+  provider?: string,
+): Promise<Repository> => {
+  const { data } = await apiClient.post<Repository>("/repositories/connect", {
+    url,
+    branch,
+    ...(provider ? { provider, source_type: provider } : {}),
+  });
   return data;
 };
 

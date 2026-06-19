@@ -322,6 +322,12 @@
   font-size: 13px;
 }
 
+.success {
+  margin: 0;
+  color: #15803d;
+  font-size: 13px;
+}
+
 .repositoryCard {
   overflow: hidden;
   padding: 0;
