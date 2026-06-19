@@ -3,26 +3,6 @@
   gap: var(--space-5);
 }
 
-.hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-5);
-}
-
-.heading {
-  margin: 0;
-  color: var(--color-text);
-  font-size: var(--font-size-3xl);
-  line-height: 1.12;
-}
-
-.subtitle {
-  margin: 8px 0 0;
-  color: var(--color-muted);
-  font-size: var(--font-size-base);
-}
-
 .card,
 .formCard,
 .error {
@@ -210,7 +190,6 @@
 }
 
 @media (max-width: 760px) {
-  .hero,
   .formActions {
     align-items: stretch;
     flex-direction: column;

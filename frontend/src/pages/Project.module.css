@@ -3,38 +3,6 @@
   gap: 22px;
 }
 
-.hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 0;
-}
-
-.eyebrow {
-  margin: 0 0 6px;
-  color: var(--color-muted);
-  font-size: var(--font-size-sm);
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.heading {
-  margin: 0;
-  color: var(--color-text);
-  font-size: var(--font-size-3xl);
-  line-height: 1.12;
-  font-weight: 800;
-}
-
-.subtitle {
-  max-width: 620px;
-  margin: 8px 0 0;
-  color: var(--color-muted);
-  font-size: var(--font-size-base);
-  line-height: 1.55;
-}
-
 .connectButton {
   min-height: 40px;
   border-color: var(--color-primary) !important;
@@ -132,7 +100,7 @@
 .repoCard:hover,
 .repoCard:focus-visible {
   border-color: var(--color-primary-soft-hover);
-  box-shadow: 0 16px 34px rgba(37, 99, 235, 0.10);
+  box-shadow: 0 16px 34px rgba(109, 93, 246, 0.10);
   transform: translateY(-1px);
   outline: 0;
 }
@@ -347,7 +315,6 @@
 }
 
 @media (max-width: 760px) {
-  .hero,
   .toolbar,
   .repoMain,
   .cardFooter {

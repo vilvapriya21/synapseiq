@@ -3,18 +3,12 @@
   gap: 22px;
 }
 
-.headerCard,
 .card {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-card);
   padding: var(--space-5);
-}
-
-.headerCard {
-  display: grid;
-  gap: 14px;
 }
 
 .backButton {
@@ -28,30 +22,12 @@
   padding: 0;
 }
 
-.headerMain {
+.headerActions {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: var(--space-4);
-}
-
-.headerMain h1 {
-  margin: 0;
-  color: var(--color-text);
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
-}
-
-.repoUrl {
-  display: inline-block;
-  margin-top: var(--space-1);
-  color: var(--color-muted);
-  font-size: var(--font-size-sm);
-  text-decoration: none;
-}
-
-.repoUrl:hover {
-  text-decoration: underline;
 }
 
 .stats {
@@ -776,7 +752,12 @@
 
 .topicForm { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-4); }
 .topicList { display: flex; flex-direction: column; gap: var(--space-3); }
-.topicItem { border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: var(--space-3); }
+.topicItem { border: 1px solid var(--color-border); border-left: 4px solid var(--accent-rose); border-radius: var(--radius-sm); padding: var(--space-3); }
+.topicAccentRose { border-left-color: var(--accent-rose); }
+.topicAccentMint { border-left-color: var(--accent-mint); }
+.topicAccentLavender { border-left-color: var(--accent-lavender); }
+.topicAccentSky { border-left-color: var(--accent-sky); }
+.topicAccentAmber { border-left-color: var(--accent-amber); }
 .topicDescription { color: var(--color-muted); font-size: var(--font-size-sm); margin: 4px 0; }
 .pathTag { background: var(--color-bg-subtle); border-radius: var(--radius-sm); color: var(--color-muted); font-size: var(--font-size-xs); padding: 2px 6px; }
 .topicActions { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
@@ -917,11 +898,6 @@
 }
 
 @media (max-width: 640px) {
-  .headerMain {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .fileWorkspace {
     grid-template-columns: 1fr;
   }

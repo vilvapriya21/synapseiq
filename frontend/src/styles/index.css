@@ -1,10 +1,11 @@
 :root {
   --color-bg: #F8FAFC;
   --color-surface: #FFFFFF;
-  --color-primary: #2563EB;
-  --color-primary-hover: #1D4ED8;
-  --color-primary-soft: #DBEAFE;
-  --color-secondary: #0EA5E9;
+  --color-primary: #6D5DF6;
+  --color-primary-hover: #5B4BD9;
+  --color-primary-soft: #ECE9FE;
+  --color-primary-soft-hover: #D9D3FD;
+  --color-secondary: #14B8A6;
   --color-text: #0F172A;
   --color-text-secondary: #475569;
   --color-muted: #64748B;
@@ -13,10 +14,19 @@
   --color-success: #10B981;
   --color-warning: #F59E0B;
   --color-danger: #EF4444;
-  --color-primary-soft-hover: #BFDBFE;
   --color-success-soft: #D1FAE5;
   --color-warning-soft: #FEF3C7;
   --color-danger-soft: #FEE2E2;
+  --accent-rose: #F472B6;
+  --accent-rose-soft: #FCE7F3;
+  --accent-mint: #2DD4BF;
+  --accent-mint-soft: #CCFBF1;
+  --accent-lavender: #A78BFA;
+  --accent-lavender-soft: #EDE9FE;
+  --accent-sky: #38BDF8;
+  --accent-sky-soft: #E0F2FE;
+  --accent-amber: #FBBF24;
+  --accent-amber-soft: #FEF3C7;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
@@ -79,6 +89,6 @@ input:focus,
 textarea:focus,
 select:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+  box-shadow: 0 0 0 3px rgba(109, 93, 246, 0.14);
   outline: 0;
 }

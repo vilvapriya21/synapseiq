@@ -6,7 +6,7 @@ import {
   getUsers,
   updateUserRole,
 } from "../services/adminService";
-import { EmptyState } from "../components/common";
+import { EmptyState, PageHero } from "../components/common";
 import Input from "../components/common/Input";
 import Loader from "../components/common/Loader";
 import Table, { type TableColumn } from "../components/common/Table";
@@ -157,15 +157,16 @@ function AdminUsersPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.hero}>
-        <div>
-          <h1 className={styles.heading}>User Management</h1>
-          <p className={styles.subtitle}>Create accounts and manage access roles</p>
-        </div>
-        <button className={styles.primaryButton} type="button" onClick={() => setShowCreateForm(true)}>
-          Add User
-        </button>
-      </header>
+      <PageHero
+        eyebrow="ADMIN"
+        heading="User Management"
+        subtitle="Create accounts and manage access roles"
+        action={
+          <button className={styles.primaryButton} type="button" onClick={() => setShowCreateForm(true)}>
+            Add User
+          </button>
+        }
+      />
 
       {showCreateForm ? (
         <form className={styles.formCard} onSubmit={handleCreate}>

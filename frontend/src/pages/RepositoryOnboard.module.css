@@ -3,7 +3,6 @@
   gap: var(--space-5);
 }
 
-.hero,
 .connectCard,
 .providerPanel,
 .repositoryCard {
@@ -11,27 +10,6 @@
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-card);
-}
-
-.hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-5);
-  padding: 22px 24px;
-}
-
-.heading {
-  margin: 0;
-  color: var(--color-text);
-  font-size: var(--font-size-3xl);
-  line-height: 1.12;
-}
-
-.subtitle {
-  margin: 8px 0 0;
-  color: var(--color-muted);
-  font-size: var(--font-size-base);
 }
 
 .connectCard {
@@ -93,7 +71,7 @@
 .providerTab:hover,
 .providerTabActive {
   border-color: var(--color-primary-soft-hover);
-  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.10);
+  box-shadow: 0 12px 26px rgba(109, 93, 246, 0.10);
   transform: translateY(-1px);
 }
 
@@ -119,18 +97,23 @@
   border-radius: var(--radius-md);
 }
 
+.githubMark {
+  background: var(--accent-lavender-soft);
+  color: var(--color-text);
+}
+
 .gitlabMark {
-  background: #fff3e8;
+  background: var(--accent-amber-soft);
   color: #fc6d26;
 }
 
 .bitbucketMark {
-  background: #e6f0ff;
+  background: var(--accent-sky-soft);
   color: #0052cc;
 }
 
 .azureMark {
-  background: #e6f4ff;
+  background: var(--accent-mint-soft);
   color: #0078d4;
 }
 
@@ -193,22 +176,22 @@
 }
 
 .githubIcon {
-  background: var(--color-text);
-  color: var(--color-surface);
+  background: var(--accent-lavender-soft);
+  color: var(--color-text);
 }
 
 .gitlabPanelIcon {
-  background: #fff3e8;
+  background: var(--accent-amber-soft);
   color: #fc6d26;
 }
 
 .bitbucketPanelIcon {
-  background: #e6f0ff;
+  background: var(--accent-sky-soft);
   color: #0052cc;
 }
 
 .azurePanelIcon {
-  background: #e6f4ff;
+  background: var(--accent-mint-soft);
   color: #0078d4;
 }
 
@@ -459,22 +442,22 @@
 }
 
 .repositoryIconGithub {
-  background: var(--color-text);
-  color: var(--color-surface);
+  background: var(--accent-lavender-soft);
+  color: var(--color-text);
 }
 
 .repositoryIconGitlab {
-  background: #fff3e8;
+  background: var(--accent-amber-soft);
   color: #fc6d26;
 }
 
 .repositoryIconBitbucket {
-  background: #e6f0ff;
+  background: var(--accent-sky-soft);
   color: #0052cc;
 }
 
 .repositoryIconAzure {
-  background: #e6f4ff;
+  background: var(--accent-mint-soft);
   color: #0078d4;
 }
 
@@ -610,7 +593,6 @@
 }
 
 @media (max-width: 760px) {
-  .hero,
   .connectCardHeader,
   .repositoryHeader,
   .repositoryTools,

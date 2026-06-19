@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Clock, Play, Send } from "lucide-react";
 import { useParams } from "react-router-dom";
-import { Button, EmptyState, Loader, Modal } from "../components/common";
+import { Button, EmptyState, Loader, Modal, PageHero } from "../components/common";
 import { assessmentService } from "../services/assessmentService";
 import { useAssessmentStore } from "../store/assessmentStore";
 import { Assessment, AssessmentQuestion } from "../types";
@@ -159,15 +159,15 @@ function AssessmentPage() {
   if (activeAssessment && result) {
     return (
       <div className={styles.page}>
-        <section className={styles.hero}>
-          <div>
-            <p className={styles.eyebrow}>Project {projectId}</p>
-            <h1 className={styles.heading}>Assessment Result</h1>
-          </div>
-          <Button type="button" variant="secondary" onClick={resetAttempt}>
-            Back to Assessments
-          </Button>
-        </section>
+        <PageHero
+          eyebrow={`Project ${projectId}`}
+          heading="Assessment Result"
+          action={
+            <Button type="button" variant="secondary" onClick={resetAttempt}>
+              Back to Assessments
+            </Button>
+          }
+        />
         <section className={styles.resultPanel}>
           <div className={styles.scoreRing}>
             <span>{result.scorePercentage}%</span>
@@ -195,16 +195,16 @@ function AssessmentPage() {
   if (activeAssessment && currentQuestion) {
     return (
       <div className={styles.page}>
-        <section className={styles.hero}>
-          <div>
-            <p className={styles.eyebrow}>{activeAssessment.type === "manual" ? "Manual Assessment" : "AI Generated Assessment"}</p>
-            <h1 className={styles.heading}>{activeAssessment.name}</h1>
-          </div>
-          <div className={styles.timer}>
-            <Clock size={16} />
-            {formatTime(remainingSeconds)}
-          </div>
-        </section>
+        <PageHero
+          eyebrow={activeAssessment.type === "manual" ? "Manual Assessment" : "AI Generated Assessment"}
+          heading={activeAssessment.name}
+          action={
+            <div className={styles.timer}>
+              <Clock size={16} />
+              {formatTime(remainingSeconds)}
+            </div>
+          }
+        />
 
         <section className={styles.attemptPanel}>
           <div className={styles.progressHeader}>
@@ -273,12 +273,7 @@ function AssessmentPage() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
-        <div>
-          <p className={styles.eyebrow}>Project {projectId}</p>
-          <h1 className={styles.heading}>Assessments</h1>
-        </div>
-      </section>
+      <PageHero eyebrow={`Project ${projectId}`} heading="Assessments" />
 
       <section className={styles.panel}>
         <div className={styles.panelHeader}>

@@ -4,7 +4,7 @@ import { SiBitbucket, SiGithub, SiGitlab } from "react-icons/si";
 import { VscAzureDevops } from "react-icons/vsc";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ENV } from "../constants/env";
-import { EmptyState, Loader } from "../components/common";
+import { EmptyState, Loader, PageHero } from "../components/common";
 import Input from "../components/common/Input";
 import Table, { type TableColumn } from "../components/common/Table";
 import {
@@ -464,12 +464,11 @@ function RepositoryOnboardPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.hero}>
-        <div>
-          <h1 className={styles.heading}>Repository Onboarding</h1>
-          <p className={styles.subtitle}>Connect source code repositories to begin knowledge extraction</p>
-        </div>
-      </header>
+      <PageHero
+        eyebrow="Repositories"
+        heading="Repository Onboarding"
+        subtitle="Connect source code repositories to begin knowledge extraction"
+      />
 
       <section className={styles.connectCard}>
         <div className={styles.connectCardHeader}>
@@ -485,7 +484,7 @@ function RepositoryOnboardPage() {
             type="button"
             onClick={() => setProvider("github")}
           >
-            <SiGithub size={30} />
+            <span className={`${styles.providerMark} ${styles.githubMark}`}><SiGithub size={20} /></span>
             <strong>GitHub</strong>
             <span className={`${styles.connectionBadge} ${githubStatus === "connected" ? styles.connected : styles.notConnected}`}>
               {formatProviderStatus(githubStatus)}

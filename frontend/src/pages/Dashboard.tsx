@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, EmptyState } from "../components/common";
+import { Button, EmptyState, PageHero } from "../components/common";
 import Card from "../components/common/Card";
 import Loader from "../components/common/Loader";
 import { ROUTES } from "../routes/routePaths";
@@ -120,19 +120,19 @@ function DashboardPage() {
 
     return (
       <div className={styles.page}>
-        <section className={styles.hero}>
-          <div>
-            <p className={styles.eyebrow}>Welcome {user?.name || "User"}</p>
-            <h1 className={styles.heading}>Learner Dashboard</h1>
-          </div>
-          <input
-            className={styles.search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search repositories"
-            type="search"
-            value={search}
-          />
-        </section>
+        <PageHero
+          eyebrow={`Welcome ${user?.name || "User"}`}
+          heading="Learner Dashboard"
+          action={
+            <input
+              className={styles.search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search repositories"
+              type="search"
+              value={search}
+            />
+          }
+        />
 
         <section className={styles.stats}>
           <Card className={styles.statCard}>
@@ -239,19 +239,19 @@ function DashboardPage() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
-        <div>
-          <p className={styles.eyebrow}>Welcome {user?.name || "User"}</p>
-          <h1 className={styles.heading}>Admin Dashboard</h1>
-        </div>
-        <input
-          className={styles.search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search repositories"
-          type="search"
-          value={search}
-        />
-      </section>
+      <PageHero
+        eyebrow={`Welcome ${user?.name || "User"}`}
+        heading="Admin Dashboard"
+        action={
+          <input
+            className={styles.search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search repositories"
+            type="search"
+            value={search}
+          />
+        }
+      />
 
       <section className={styles.stats}>
         {adminStatLabels.map(([key, label, hint]) => (

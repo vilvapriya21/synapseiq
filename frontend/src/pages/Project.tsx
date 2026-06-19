@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, EmptyState, Loader } from "../components/common";
+import { Button, EmptyState, Loader, PageHero } from "../components/common";
 import Card from "../components/common/Card";
 import Input from "../components/common/Input";
 import { ROUTES } from "../routes/routePaths";
@@ -144,22 +144,22 @@ function ProjectPage() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
-        <div>
-          <p className={styles.eyebrow}>Repositories</p>
-          <h1 className={styles.heading}>Project Workspace</h1>
-          <p className={styles.subtitle}>
-            {role === "ADMIN"
-              ? "View and manage connected codebases."
-              : "Open repositories assigned to you for knowledge transfer."}
-          </p>
-        </div>
-        {role === "ADMIN" && (
-          <Button className={styles.connectButton} type="button" onClick={() => navigate(ROUTES.repositoryOnboard)}>
-            Connect Repository
-          </Button>
-        )}
-      </section>
+      <PageHero
+        eyebrow="REPOSITORIES"
+        heading="Project Workspace"
+        subtitle={
+          role === "ADMIN"
+            ? "View and manage connected codebases."
+            : "Open repositories assigned to you for knowledge transfer."
+        }
+        action={
+          role === "ADMIN" ? (
+            <Button className={styles.connectButton} type="button" onClick={() => navigate(ROUTES.repositoryOnboard)}>
+              Connect Repository
+            </Button>
+          ) : null
+        }
+      />
 
       <Card className={styles.toolbar} aria-label="Repository filters">
         <div className={styles.searchBox}>

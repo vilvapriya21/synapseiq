@@ -3,25 +3,6 @@
   gap: var(--space-5);
 }
 
-.hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
-.eyebrow {
-  margin: 0 0 6px;
-  color: var(--color-muted);
-  font-size: var(--font-size-base);
-}
-
-.heading {
-  margin: 0;
-  color: var(--color-text);
-  font-size: var(--font-size-3xl);
-}
-
 .duration {
   min-height: 36px;
   display: inline-flex;
@@ -324,7 +305,6 @@
 }
 
 @media (max-width: 840px) {
-  .hero,
   .questionHeader,
   .navigation {
     align-items: stretch;

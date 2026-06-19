@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import ChatPanel from "../components/ChatPanel";
 import KTChecklist from "../components/KTChecklist";
-import { EmptyState, Modal } from "../components/common";
+import { EmptyState, Modal, PageHero } from "../components/common";
 import Loader from "../components/common/Loader";
 import { ENV } from "../constants/env";
 import { getUsers, type AdminUser } from "../services/adminService";
@@ -74,6 +74,18 @@ const providerLabels: Record<RepositoryProvider, string> = {
   bitbucket: "Bitbucket",
   azure: "Azure DevOps",
 };
+
+const topicAccentClasses = [
+  styles.topicAccentRose,
+  styles.topicAccentMint,
+  styles.topicAccentLavender,
+  styles.topicAccentSky,
+  styles.topicAccentAmber,
+];
+
+function getTopicAccentClass(index: number) {
+  return topicAccentClasses[index % topicAccentClasses.length];
+}
 
 function getStatusClass(status: Repository["status"] | Repository["knowledge_base_status"]) {
   switch (status) {
@@ -823,42 +835,37 @@ function RepositoryPage() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.headerCard}>
-        <button
-          className={styles.backButton}
-          type="button"
-          onClick={() => navigate(role === "LEARNER" ? "/dashboard" : "/repositories")}
-        >
-          &#8592; Repositories
-        </button>
-        <div className={styles.headerMain}>
-          <div>
-            <h1>{repository.name}</h1>
-            {repository.url ? (
-              <a className={styles.repoUrl} href={repository.url} rel="noreferrer" target="_blank">
-                {repository.url}
-              </a>
-            ) : (
-              <span className={styles.repoUrl}>Local upload</span>
-            )}
+      <PageHero
+        eyebrow="Repository"
+        heading={repository.name}
+        subtitle={repository.url || "Local upload"}
+        action={
+          <div className={styles.headerActions}>
+            <button
+              className={styles.backButton}
+              type="button"
+              onClick={() => navigate(role === "LEARNER" ? "/dashboard" : "/repositories")}
+            >
+              &#8592; Repositories
+            </button>
+            <span className={`${styles.badge} ${getStatusClass(repository.status)}`}>{repository.status}</span>
+            <button className={styles.outlineButton} type="button" onClick={handleReanalyze} disabled={refreshing}>
+              Re-analyze
+            </button>
           </div>
-          <span className={`${styles.badge} ${getStatusClass(repository.status)}`}>{repository.status}</span>
-        </div>
-        <div className={styles.stats}>
-          <span className={`${styles.statChip} ${styles.providerChip}`}>{repository.provider || "local"}</span>
-          <span className={styles.statChip}>Language: {repository.language || "-"}</span>
-          <span className={styles.statChip}>Modules: {repository.module_count}</span>
-          <span className={styles.statChip}>Files: {repository.file_count}</span>
-          <span className={styles.statChip}>Branch: {repository.branch || "-"}</span>
-          <span className={styles.statChip}>Source: {repository.source_type}</span>
-          <span className={styles.statChip}>KB Entries: {knowledgeBase?.total ?? 0}</span>
-          <span className={styles.statChip}>Created: {formatDate(repository.created_at)}</span>
-        </div>
-        <button className={styles.outlineButton} type="button" onClick={handleReanalyze} disabled={refreshing}>
-          Re-analyze
-        </button>
-        {refreshError ? <p className={styles.error}>{refreshError}</p> : null}
-      </section>
+        }
+      />
+      <div className={styles.stats}>
+        <span className={`${styles.statChip} ${styles.providerChip}`}>{repository.provider || "local"}</span>
+        <span className={styles.statChip}>Language: {repository.language || "-"}</span>
+        <span className={styles.statChip}>Modules: {repository.module_count}</span>
+        <span className={styles.statChip}>Files: {repository.file_count}</span>
+        <span className={styles.statChip}>Branch: {repository.branch || "-"}</span>
+        <span className={styles.statChip}>Source: {repository.source_type}</span>
+        <span className={styles.statChip}>KB Entries: {knowledgeBase?.total ?? 0}</span>
+        <span className={styles.statChip}>Created: {formatDate(repository.created_at)}</span>
+      </div>
+      {refreshError ? <p className={styles.error}>{refreshError}</p> : null}
 
       <Modal
         isOpen={Boolean(refreshAuthError)}
@@ -994,8 +1001,8 @@ function RepositoryPage() {
               />
             ) : (
               <div className={styles.topicList}>
-                {topics.map((topic) => (
-                  <div key={topic.id} className={styles.topicItem}>
+                {topics.map((topic, index) => (
+                  <div key={topic.id} className={`${styles.topicItem} ${getTopicAccentClass(index)}`}>
                     <div>
                       <strong>{topic.title}</strong>
                       {topic.description ? <p className={styles.topicDescription}>{topic.description}</p> : null}

@@ -123,7 +123,7 @@
   background: var(--color-primary);
   color: var(--color-surface);
   border-bottom-right-radius: 5px;
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+  box-shadow: 0 8px 18px rgba(109, 93, 246, 0.18);
 }
 
 .assistantBubble {

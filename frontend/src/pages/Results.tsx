@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { EmptyState, Loader } from "../components/common";
+import { EmptyState, Loader, PageHero } from "../components/common";
 import { resultService } from "../services/resultService";
 import { useAuthStore } from "../store/authStore";
 import { ResultResponse } from "../types";
@@ -56,7 +56,7 @@ function ResultsPage() {
   if (results.overallScore === null) {
     return (
       <div className={styles.page}>
-        <h1 className={styles.heading}>{role === "ADMIN" ? "Team Results" : "My Results"}</h1>
+        <PageHero eyebrow={`Project ${projectId}`} heading={role === "ADMIN" ? "Team Results" : "My Results"} />
         <EmptyState title="No previous assessments" description="Results will appear after an assessment is submitted." />
       </div>
     );
@@ -64,16 +64,16 @@ function ResultsPage() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
-        <div>
-          <p className={styles.eyebrow}>Project {projectId}</p>
-          <h1 className={styles.heading}>{role === "ADMIN" ? "Team Results" : "My Results"}</h1>
-        </div>
-        <div className={styles.scoreCard}>
-          <span>Overall Score</span>
-          <strong>{results.overallScore}%</strong>
-        </div>
-      </section>
+      <PageHero
+        eyebrow={`Project ${projectId}`}
+        heading={role === "ADMIN" ? "Team Results" : "My Results"}
+        action={
+          <div className={styles.scoreCard}>
+            <span>Overall Score</span>
+            <strong>{results.overallScore}%</strong>
+          </div>
+        }
+      />
 
       <section className={styles.panel}>
         <div className={styles.panelHeader}>
