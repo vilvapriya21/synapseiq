@@ -1,15 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, EmptyState, PageHero } from "../components/common";
+import { Button, EmptyState } from "../components/common";
 import Card from "../components/common/Card";
 import Loader from "../components/common/Loader";
 import { ROUTES } from "../routes/routePaths";
 import { dashboardService, type DashboardResponse } from "../services/dashboardService";
 import {
   getAssignedRepositories,
-  getMyAssignments,
-  type MyAssignment,
-  type Repository,
   type RepositoryListResponse,
 } from "../services/repositoryService";
 import { useAuthStore } from "../store/authStore";
@@ -40,7 +37,6 @@ function DashboardPage() {
   const role = normalizeRole(user?.role ?? "");
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [assignedRepositories, setAssignedRepositories] = useState<RepositoryListResponse | null>(null);
-  const [myAssignments, setMyAssignments] = useState<MyAssignment[]>([]);
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -50,22 +46,17 @@ function DashboardPage() {
     setIsLoading(true);
     setError("");
 
-    const request = role === "LEARNER"
-      ? Promise.all([getAssignedRepositories(), getMyAssignments()])
-      : dashboardService.getDashboard();
+    const request = role === "LEARNER" ? getAssignedRepositories() : dashboardService.getDashboard();
 
     request
       .then((data) => {
         if (!isMounted) return;
         if (role === "LEARNER") {
-          const [repositoriesResponse, assignmentsResponse] = data as [RepositoryListResponse, MyAssignment[]];
-          setAssignedRepositories(repositoriesResponse);
-          setMyAssignments(assignmentsResponse);
+          setAssignedRepositories(data as RepositoryListResponse);
           setDashboard(null);
         } else {
           setDashboard(data as DashboardResponse);
           setAssignedRepositories(null);
-          setMyAssignments([]);
         }
       })
       .catch(() => {
@@ -113,90 +104,84 @@ function DashboardPage() {
   }
 
   if (role === "LEARNER") {
+    const learnerRepositories = assignedRepositories?.repositories ?? [];
     const assignedCount = assignedRepositories?.total ?? filteredAssignedRepositories.length;
-    const knowledgeBasesReady = filteredAssignedRepositories.filter(
+    const indexedCount = learnerRepositories.filter(
+      (repository) => repository.status === "indexed",
+    ).length;
+    const pendingCount = learnerRepositories.filter(
+      (repository) => repository.status === "pending" || repository.status === "indexing",
+    ).length;
+    const knowledgeBasesReady = learnerRepositories.filter(
       (repository) => repository.knowledge_base_status === "ready",
     ).length;
 
     return (
       <div className={styles.page}>
-        <PageHero
-          eyebrow={`Welcome ${user?.name || "User"}`}
-          heading="Learner Dashboard"
-          action={
-            <input
-              className={styles.search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search repositories"
-              type="search"
-              value={search}
-            />
-          }
-        />
-
-        <section className={styles.stats}>
-          <Card className={styles.statCard}>
-            <span className={styles.statLabel}>Repositories Assigned</span>
-            <span className={styles.statValue}>{assignedCount}</span>
-            <span className={styles.statHint}>Available to learn</span>
-          </Card>
-          <Card className={styles.statCard}>
-            <span className={styles.statLabel}>Knowledge Bases Ready</span>
-            <span className={styles.statValue}>{knowledgeBasesReady}</span>
-            <span className={styles.statHint}>Ready to query</span>
-          </Card>
-        </section>
-
-        <Card className={styles.card}>
-          <h2>My Current Learning</h2>
-          {myAssignments.length === 0 ? (
-            <EmptyState
-              title="No repositories assigned yet"
-              description="Assigned repositories and KT topics will appear here when your admin assigns them."
-            />
-          ) : (
-            <div className={styles.assignmentGrid}>
-              {myAssignments.map((assignment) => (
-                <div key={assignment.assignment_id} className={styles.assignmentCard}>
-                  <span className={styles.repoTag}>{assignment.repository_name}</span>
-                  <h3>{assignment.kt_topic_title || assignment.repository_name}</h3>
-                  {assignment.kt_topic_description ? <p>{assignment.kt_topic_description}</p> : null}
-                  <span className={styles.statusBadge}>{assignment.status}</span>
-                  <button
-                    className={styles.primaryButton}
-                    onClick={() => navigate(`/repositories/${assignment.repository_id}`)}
-                    type="button"
-                  >
-                    Start Learning
-                  </button>
-                </div>
-              ))}
+        <div className={styles.banner}>
+          <div className={styles.bannerTop}>
+            <p className={styles.bannerGreeting}>
+              Welcome back, <strong>{user?.name || "User"}</strong>
+            </p>
+          </div>
+          <div className={styles.bannerStats}>
+            <div className={styles.statTile}>
+              <span className={styles.statLabel}>Assigned Repositories</span>
+              <span className={styles.statValue}>{assignedCount}</span>
+              <span className={styles.statHint}>Available to learn</span>
             </div>
-          )}
-        </Card>
+            <div className={styles.statTile}>
+              <span className={styles.statLabel}>Indexed</span>
+              <span className={styles.statValue}>{indexedCount}</span>
+              <span className={styles.statHint}>Ready for knowledge extraction</span>
+            </div>
+            <div className={styles.statTile}>
+              <span className={styles.statLabel}>Pending / Indexing</span>
+              <span className={styles.statValue}>{pendingCount}</span>
+              <span className={styles.statHint}>Analysis in progress</span>
+            </div>
+            <div className={styles.statTile}>
+              <span className={styles.statLabel}>Knowledge Bases</span>
+              <span className={styles.statValue}>{knowledgeBasesReady}</span>
+              <span className={styles.statHint}>Ready to query</span>
+            </div>
+          </div>
+        </div>
 
         <Card className={styles.panel}>
           <div className={styles.panelHeader}>
             <div>
-              <h2>Assigned Repositories</h2>
+              <h2>Repositories</h2>
               <p>{filteredAssignedRepositories.length} repositories matched</p>
+            </div>
+            <div className={styles.panelActions}>
+              <input
+                aria-label="Search repositories"
+                className={styles.search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search repositories"
+                type="search"
+                value={search}
+              />
             </div>
           </div>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Repository</th>
+                  <th>Repository Name</th>
+                  <th>URL/Source</th>
                   <th>Language</th>
+                  <th>Modules</th>
                   <th>Status</th>
                   <th>KB Status</th>
-                  <th>Action</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredAssignedRepositories.length === 0 ? (
                   <tr>
-                    <td colSpan={5}>
+                    <td colSpan={7}>
                       <EmptyState title="No assigned repositories" description="No repositories matched your search." />
                     </td>
                   </tr>
@@ -205,9 +190,10 @@ function DashboardPage() {
                   <tr key={repository.id}>
                     <td>
                       <div className={styles.projectName}>{repository.name}</div>
-                      <div className={styles.repository}>{repository.url || `upload/${repository.name}`}</div>
                     </td>
+                    <td className={styles.repository}>{truncate(repository.url || `upload/${repository.name}`)}</td>
                     <td>{repository.language || "Unknown"}</td>
+                    <td>{repository.module_count}</td>
                     <td>
                       <span className={badgeClass(repository.status)}>{repository.status}</span>
                     </td>

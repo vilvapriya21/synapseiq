@@ -465,7 +465,6 @@ function RepositoryOnboardPage() {
       <PageHero
         eyebrow="Repositories"
         heading="Repository Onboarding"
-        subtitle="Connect source code repositories to begin knowledge extraction"
       />
 
       <section className={styles.connectCard}>

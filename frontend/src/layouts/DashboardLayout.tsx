@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { ROUTES } from "../routes/routePaths";
 import synapseLogo from "../assets/synapse-logo.svg";
+import { usePageTitle } from "../context/PageTitleContext";
 import { useAuthStore } from "../store/authStore";
 import { UserRole } from "../types";
 import { normalizeRole } from "../utils/roles";
@@ -21,9 +22,9 @@ const SIDEBAR_COLLAPSED_KEY = "synapseiq:sidebar-collapsed";
 
 const navigation: Array<{ label: string; roles: UserRole[]; to: string }> = [
   { label: "Dashboard", roles: ["ADMIN", "LEARNER"], to: ROUTES.dashboard },
+  { label: "Repository Onboarding", roles: ["ADMIN"], to: ROUTES.repositoryOnboard },
   { label: "Project Workspace", roles: ["ADMIN", "LEARNER"], to: ROUTES.projectWorkspace },
   { label: "Assessment", roles: ["ADMIN", "LEARNER"], to: ROUTES.assessments },
-  { label: "Repository Onboarding", roles: ["ADMIN"], to: ROUTES.repositoryOnboard },
   { label: "User Management", roles: ["ADMIN"], to: ROUTES.adminUsers },
 ];
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button, EmptyState, Loader, PageHero } from "../components/common";
 import Card from "../components/common/Card";
@@ -169,7 +170,7 @@ function ProjectPage() {
 
       <Card className={styles.toolbar} aria-label="Repository filters">
         <div className={styles.searchBox}>
-          <span aria-hidden="true">Search</span>
+          <Search aria-hidden="true" size={18} />
           <Input
             aria-label="Search repositories"
             className={styles.searchInput}
