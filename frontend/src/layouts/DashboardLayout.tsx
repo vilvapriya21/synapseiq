@@ -4,6 +4,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
   Home,
   Link2,
   Users,
@@ -12,7 +13,6 @@ import {
 import { ROUTES } from "../routes/routePaths";
 import synapseLogo from "../assets/synapse-logo.svg";
 import { ConfirmDialog } from "../components/common";
-import { usePageTitle } from "../context/PageTitleContext";
 import { useAuthStore } from "../store/authStore";
 import { UserRole } from "../types";
 import { normalizeRole } from "../utils/roles";
@@ -29,6 +29,7 @@ const navigation: Array<{ label: string; roles: UserRole[]; to: string }> = [
 
 const navIcons: Record<string, LucideIcon> = {
   Dashboard: Home,
+  Assessment: ClipboardCheck,
   Repositories: Link2,
   "User Management": Users,
 };
@@ -46,7 +47,6 @@ function DashboardLayout() {
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
   const role = normalizeRole(user?.role ?? "");
-  const { title } = usePageTitle();
   const visibleNavigation = navigation.filter((item) => item.roles.includes(role));
 
   useEffect(() => {
@@ -86,6 +86,7 @@ function DashboardLayout() {
             <strong>
               <span className={styles.brandNameText}>SynapseIQ</span>
             </strong>
+            <span className={styles.brandTagline}>AI Knowledge Platform</span>
           </div>
         </div>
         <button
@@ -123,10 +124,6 @@ function DashboardLayout() {
       </aside>
       <div className={styles.content}>
         <header className={styles.header}>
-          <div className={styles.headerTitle}>
-            <span className={styles.headerAppName}>SynapseIQ</span>
-            <span className={styles.headerTagline}>AI Knowledge Platform</span>
-          </div>
           <div className={styles.profile}>
             <button type="button" className={styles.logout} onClick={handleLogout}>
               Sign out
