@@ -1,3 +1,5 @@
+"""LLM-powered checklist generation for KT topics."""
+
 import json
 import logging
 
@@ -15,6 +17,14 @@ MAX_CONTEXT_CHARS = 12000
 
 
 def strip_markdown_fences(content: str) -> str:
+    """Handle strip markdown fences for the current operation.
+
+    Args:
+        content: File content or text being inspected.
+
+    Returns:
+        Result produced by the operation.
+    """
     text = content.strip()
     if not text.startswith("```"):
         return text
@@ -28,6 +38,14 @@ def strip_markdown_fences(content: str) -> str:
 
 
 def build_code_context(entries: list[KnowledgeBase]) -> str:
+    """Build code context for the current operation.
+
+    Args:
+        entries: entries value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     chunks: list[str] = []
     remaining = MAX_CONTEXT_CHARS
 
@@ -43,6 +61,16 @@ def build_code_context(entries: list[KnowledgeBase]) -> str:
 
 
 def generate_checklist_items(topic: KTTopic, db: Session, llm: LLMProvider) -> list[dict]:
+    """Handle generate checklist items for the current operation.
+
+    Args:
+        topic: topic value used by the operation.
+        db: Database session used for persistence and queries.
+        llm: LLM provider used for generation.
+
+    Returns:
+        Result produced by the operation.
+    """
     try:
         entries = db.scalars(
             select(KnowledgeBase)

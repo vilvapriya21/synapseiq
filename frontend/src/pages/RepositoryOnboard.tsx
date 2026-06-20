@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { CloudUpload, GitBranch, GitFork, GitPullRequest, RefreshCw, Search, Server, Upload } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ENV } from "../constants/env";
-import { EmptyState, Loader, PageHero } from "../components/common";
+import { ConfirmDialog, EmptyState, Loader, PageHero } from "../components/common";
 import Input from "../components/common/Input";
 import Table, { type TableColumn } from "../components/common/Table";
 import {
@@ -14,7 +14,42 @@ import {
 } from "../services/repositoryService";
 import apiClient from "../services/api";
 import type { Repository } from "../services/repositoryService";
+import { extractApiErrorDetail } from "../utils/errorUtils";
 import styles from "./RepositoryOnboard.module.css";
+
+/**
+ * Maps a backend error detail string to a human-friendly message.
+ * Returns the original detail if no specific mapping matches,
+ * or a generic fallback if detail is empty.
+ */
+function mapRepositoryError(detail: string, fallback: string): string {
+  const d = detail.toLowerCase();
+  if (d.includes("repository already exists")) {
+    return "This repository has already been added. You can find it in the list below.";
+  }
+  if (d.includes("auth_required") || d.includes("auth required") || d.includes("not connected")) {
+    return "Your account is not connected to this Git provider. Use the provider tab to connect first.";
+  }
+  if (d.includes("auth_invalid") || d.includes("invalid") || d.includes("401") || d.includes("403")) {
+    return "Authentication failed. Your access token may have expired or lack permission for this repository. Re-connect the provider and try again.";
+  }
+  if (d.includes("not found") || d.includes("404")) {
+    return "Repository not found. Check that the URL is correct and that you have access to it.";
+  }
+  if (d.includes("branch")) {
+    return "The specified branch was not found in this repository. Check the branch name and try again.";
+  }
+  if (d.includes("valid git repository url") || d.includes("https://")) {
+    return "Please enter a valid repository URL starting with https://.";
+  }
+  if (d.includes("azure devops pat") || d.includes("pat")) {
+    return "Please save your Azure DevOps Personal Access Token before connecting an Azure repository.";
+  }
+  if (d.includes("valid azure")) {
+    return "Please enter a valid Azure DevOps URL (e.g. https://dev.azure.com/org/project/_git/repo).";
+  }
+  return detail || fallback;
+}
 
 const PENDING_REFRESH_REPO_KEY = "synapseiq.pendingRefreshRepoId";
 const PENDING_REFRESH_PROVIDER_KEY = "synapseiq.pendingRefreshProvider";
@@ -139,6 +174,8 @@ function RepositoryOnboardPage() {
   const [gitlabStatus, setGitlabStatus] = useState<"connected" | "disconnected" | "unknown">("unknown");
   const [bitbucketStatus, setBitbucketStatus] = useState<"connected" | "disconnected" | "unknown">("unknown");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmDeleteName, setConfirmDeleteName] = useState<string>("");
   const [azureStatus, setAzureStatus] = useState<"connected" | "disconnected" | "unknown">("unknown");
   const [azurePat, setAzurePat] = useState("");
   const [azurePatSaving, setAzurePatSaving] = useState(false);
@@ -207,11 +244,13 @@ function RepositoryOnboardPage() {
     if (params.get("gitlab") === "connected") {
       setGitlabStatus("connected");
       setProvider("gitlab");
+      setConnectError("");
     }
 
     if (params.get("bitbucket") === "connected") {
       setBitbucketStatus("connected");
       setProvider("bitbucket");
+      setConnectError("");
     }
 
     if (connectedProvider) {
@@ -278,15 +317,8 @@ function RepositoryOnboardPage() {
       setConnectSuccess("Repository connected successfully.");
     } catch (err: unknown) {
       console.error("[RepositoryOnboard] Connect repository failed", err);
-      const axiosError = err as { response?: { data?: { detail?: string } } };
-      const detail = axiosError?.response?.data?.detail ?? "";
-      if (detail.toLowerCase().includes("not found") || detail.toLowerCase().includes("403")) {
-        setConnectError(
-          "Repository not found or access denied. Connect your GitHub account above to access private repositories."
-        );
-      } else {
-        setConnectError(detail || "Unable to connect repository.");
-      }
+      const detail = extractApiErrorDetail(err);
+      setConnectError(mapRepositoryError(detail, "Unable to connect repository. Please check the URL and your provider connection."));
     } finally {
       setSubmitting(false);
     }
@@ -311,8 +343,8 @@ function RepositoryOnboardPage() {
       setConnectSuccess("Azure DevOps repository connected successfully.");
     } catch (err: unknown) {
       console.error("[RepositoryOnboard] Connect Azure repository failed", err);
-      const axiosError = err as { response?: { data?: { detail?: string } } };
-      setConnectError(axiosError?.response?.data?.detail || "Unable to connect Azure DevOps repository.");
+      const detail = extractApiErrorDetail(err);
+      setConnectError(mapRepositoryError(detail, "Unable to connect repository. Please check the URL and your provider connection."));
     } finally {
       setSubmitting(false);
     }
@@ -331,8 +363,9 @@ function RepositoryOnboardPage() {
         fileInputRef.current.value = "";
       }
       await fetchRepositories();
-    } catch {
-      setUploadError("Unable to upload repository.");
+    } catch (err: unknown) {
+      const detail = extractApiErrorDetail(err);
+      setUploadError(mapRepositoryError(detail, "Upload failed. Only ZIP archives under 2 GB are supported."));
     } finally {
       setSubmitting(false);
       setDragActive(false);
@@ -354,28 +387,28 @@ function RepositoryOnboardPage() {
       await fetchRepositories();
     } catch (err: unknown) {
       console.error("[RepositoryOnboard] Refresh repositories failed", err);
-      const axiosError = err as { response?: { data?: { detail?: string } } };
-      const detail = axiosError?.response?.data?.detail ?? "";
-      if (detail.toLowerCase().includes("not found") || detail.toLowerCase().includes("403")) {
-        setConnectError(
-          "Repository not found or access denied. Connect your GitHub account above to access private repositories."
-        );
-      } else {
-        setConnectError(detail || "Unable to refresh repositories.");
-      }
+      const detail = extractApiErrorDetail(err);
+      setConnectError(mapRepositoryError(detail, "Unable to refresh repositories. Please check the URL and your provider connection."));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (repoId: string) => {
-    if (!window.confirm("Remove this repository? This cannot be undone.")) return;
-    setDeletingId(repoId);
+  const requestDelete = (id: string, name: string) => {
+    setConfirmDeleteId(id);
+    setConfirmDeleteName(name);
+  };
+
+  const handleConfirmedDelete = async () => {
+    if (!confirmDeleteId) return;
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
+    setDeletingId(id);
     try {
-      await deleteRepository(repoId);
-      await fetchRepositories();
+      await deleteRepository(id);
+      setRepositories((prev) => prev.filter((repository) => repository.id !== id));
     } catch {
-      setConnectError("Failed to remove repository.");
+      setConnectError("Unable to remove repository.");
     } finally {
       setDeletingId(null);
     }
@@ -475,7 +508,7 @@ function RepositoryOnboardPage() {
           <button
             className={styles.deleteButton}
             type="button"
-            onClick={() => handleDelete(repository.id)}
+            onClick={() => requestDelete(repository.id, repository.name)}
             disabled={deletingId === repository.id}
             title="Remove repository"
           >
@@ -490,7 +523,7 @@ function RepositoryOnboardPage() {
     <div className={styles.page}>
       <PageHero
         eyebrow="Repositories"
-        heading="Repository Onboarding"
+        heading="Repositories"
       />
 
       <section className={styles.connectCard}>
@@ -505,7 +538,11 @@ function RepositoryOnboardPage() {
           <button
             className={`${styles.providerTab} ${provider === "github" ? styles.providerTabActive : ""}`}
             type="button"
-            onClick={() => setProvider("github")}
+            onClick={() => {
+              setProvider("github");
+              setConnectError("");
+              setUploadError("");
+            }}
           >
             <span className={`${styles.providerMark} ${styles.githubMark}`}><GitPullRequest size={20} /></span>
             <strong>GitHub</strong>
@@ -517,7 +554,11 @@ function RepositoryOnboardPage() {
           <button
             className={`${styles.providerTab} ${provider === "gitlab" ? styles.providerTabActive : ""}`}
             type="button"
-            onClick={() => setProvider("gitlab")}
+            onClick={() => {
+              setProvider("gitlab");
+              setConnectError("");
+              setUploadError("");
+            }}
           >
             <span className={`${styles.providerMark} ${styles.gitlabMark}`}><GitBranch size={20} /></span>
             <strong>GitLab</strong>
@@ -529,7 +570,11 @@ function RepositoryOnboardPage() {
           <button
             className={`${styles.providerTab} ${provider === "bitbucket" ? styles.providerTabActive : ""}`}
             type="button"
-            onClick={() => setProvider("bitbucket")}
+            onClick={() => {
+              setProvider("bitbucket");
+              setConnectError("");
+              setUploadError("");
+            }}
           >
             <span className={`${styles.providerMark} ${styles.bitbucketMark}`}><GitFork size={20} /></span>
             <strong>Bitbucket</strong>
@@ -541,7 +586,11 @@ function RepositoryOnboardPage() {
           <button
             className={`${styles.providerTab} ${provider === "azure" ? styles.providerTabActive : ""}`}
             type="button"
-            onClick={() => setProvider("azure")}
+            onClick={() => {
+              setProvider("azure");
+              setConnectError("");
+              setUploadError("");
+            }}
           >
             <span className={`${styles.providerMark} ${styles.azureMark}`}><Server size={20} /></span>
             <strong>Azure DevOps</strong>
@@ -553,7 +602,11 @@ function RepositoryOnboardPage() {
           <button
             className={`${styles.providerTab} ${provider === "upload" ? styles.providerTabActive : ""}`}
             type="button"
-            onClick={() => setProvider("upload")}
+            onClick={() => {
+              setProvider("upload");
+              setConnectError("");
+              setUploadError("");
+            }}
           >
             <Upload size={30} />
             <strong>Upload ZIP</strong>
@@ -630,7 +683,11 @@ type="text"
               />
             </div>
 
-            {connectError ? <p className={styles.error}>{connectError}</p> : null}
+            {connectError && (
+              <div className={styles.errorBanner} role="alert">
+                <strong>Error:&nbsp;</strong>{connectError}
+              </div>
+            )}
 
             <button className={styles.primaryButton} type="submit" disabled={submitting}>
               Connect Repository
@@ -706,7 +763,11 @@ type="text"
               />
             </div>
 
-            {connectError ? <p className={styles.error}>{connectError}</p> : null}
+            {connectError && (
+              <div className={styles.errorBanner} role="alert">
+                <strong>Error:&nbsp;</strong>{connectError}
+              </div>
+            )}
 
             <button className={styles.primaryButton} type="submit" disabled={submitting}>
               Connect Repository
@@ -782,7 +843,11 @@ type="text"
               />
             </div>
 
-            {connectError ? <p className={styles.error}>{connectError}</p> : null}
+            {connectError && (
+              <div className={styles.errorBanner} role="alert">
+                <strong>Error:&nbsp;</strong>{connectError}
+              </div>
+            )}
 
             <button className={styles.primaryButton} type="submit" disabled={submitting}>
               Connect Repository
@@ -841,7 +906,11 @@ type="password"
             <p className={styles.helperText}>
               Generate PAT from Azure DevOps &rarr; User Settings &rarr; Personal Access Tokens. Required scope: Code Read.
             </p>
-            {azureStatus !== "connected" && connectError ? <p className={styles.error}>{connectError}</p> : null}
+            {azureStatus !== "connected" && connectError && (
+              <div className={styles.errorBanner} role="alert">
+                <strong>Error:&nbsp;</strong>{connectError}
+              </div>
+            )}
 
             {azureStatus === "connected" ? (
               <>
@@ -870,7 +939,11 @@ type="text"
                 <p className={styles.helperText}>
                   Also supported: https://org.visualstudio.com/project/_git/repo
                 </p>
-                {connectError ? <p className={styles.error}>{connectError}</p> : null}
+                {connectError && (
+                  <div className={styles.errorBanner} role="alert">
+                    <strong>Error:&nbsp;</strong>{connectError}
+                  </div>
+                )}
                 {connectSuccess ? <p className={styles.success}>{connectSuccess}</p> : null}
                 <button className={styles.primaryButton} type="submit" disabled={submitting}>
                   Connect Repository
@@ -909,7 +982,11 @@ type="text"
               <span>or click to browse &middot; Max 2GB</span>
             </div>
 
-            {uploadError ? <p className={styles.error}>{uploadError}</p> : null}
+            {uploadError && (
+              <div className={styles.errorBanner} role="alert">
+                <strong>Error:&nbsp;</strong>{uploadError}
+              </div>
+            )}
 
             <input
               ref={fileInputRef}
@@ -982,6 +1059,16 @@ type="text"
           />
         )}
       </section>
+      <ConfirmDialog
+        isOpen={confirmDeleteId !== null}
+        title="Remove repository"
+        message={`Remove "${confirmDeleteName}"? This cannot be undone.`}
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleConfirmedDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }

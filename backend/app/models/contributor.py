@@ -1,3 +1,5 @@
+"""SQLAlchemy model for repository contributor analytics."""
+
 from datetime import datetime, timezone
 from uuid import uuid4
 

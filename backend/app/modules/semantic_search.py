@@ -1,3 +1,5 @@
+"""Lightweight semantic ranking helpers for repository knowledge-base entries."""
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -7,6 +9,16 @@ from app.models.knowledge_base import KnowledgeBase
 def rank_relevant_entries(
     question: str, entries: list[KnowledgeBase], top_k: int = 6
 ) -> list[KnowledgeBase]:
+    """Handle rank relevant entries for the current operation.
+
+    Args:
+        question: question value used by the operation.
+        entries: entries value used by the operation.
+        top_k: top_k value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     if not entries:
         return []
 

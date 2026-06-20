@@ -1,3 +1,5 @@
+"""API endpoints for repository onboarding, indexing, and file access."""
+
 from base64 import b64encode
 from datetime import datetime, timezone
 import json
@@ -88,14 +90,39 @@ AUTH_ERROR_MARKERS = (
 
 
 def is_admin(user: User) -> bool:
+    """Return whether the user has the admin role.
+
+    Args:
+        user: user value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     return user.role.lower() == "admin"
 
 
 def is_learner(user: User) -> bool:
+    """Return whether the user has a learner-compatible role.
+
+    Args:
+        user: user value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     return user.role.lower() in {"learner", "user"}
 
 
 def get_provider_token(user: User, provider: str) -> str | None:
+    """Return the provider token for the current operation.
+
+    Args:
+        user: user value used by the operation.
+        provider: Git provider name.
+
+    Returns:
+        Result produced by the operation.
+    """
     if provider == "github":
         return user.github_access_token
     if provider == "gitlab":
@@ -108,6 +135,15 @@ def get_provider_token(user: User, provider: str) -> str | None:
 
 
 def auth_error_detail(code: str, provider: str) -> dict[str, str]:
+    """Handle auth error detail for the current operation.
+
+    Args:
+        code: code value used by the operation.
+        provider: Git provider name.
+
+    Returns:
+        Result produced by the operation.
+    """
     label = PROVIDER_LABELS.get(provider, provider.title())
     if code == "AUTH_REQUIRED":
         action = "refreshing this repository"
@@ -121,11 +157,28 @@ def auth_error_detail(code: str, provider: str) -> dict[str, str]:
 
 
 def is_auth_failure(output: str) -> bool:
+    """Handle is auth failure for the current operation.
+
+    Args:
+        output: output value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     output_lower = output.lower()
     return any(marker.lower() in output_lower for marker in AUTH_ERROR_MARKERS)
 
 
 def validate_refresh_auth(repository: Repository, current_user: User) -> None:
+    """Validate refresh auth for the current operation.
+
+    Args:
+        repository: Repository model being read or updated.
+        current_user: Authenticated user associated with the request.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if repository.source_type != "git":
         return
 
@@ -168,6 +221,14 @@ def validate_refresh_auth(repository: Repository, current_user: User) -> None:
 
 
 def get_repository_name_from_filename(filename: str) -> str:
+    """Return the repository name from filename for the current operation.
+
+    Args:
+        filename: filename value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     name = Path(filename).name
     if name.lower().endswith(".zip"):
         return name[:-4]
@@ -175,6 +236,14 @@ def get_repository_name_from_filename(filename: str) -> str:
 
 
 def get_upload_size(file: UploadFile) -> int:
+    """Return the upload size for the current operation.
+
+    Args:
+        file: Uploaded file supplied by the client.
+
+    Returns:
+        Result produced by the operation.
+    """
     file.file.seek(0, 2)
     size = file.file.tell()
     file.file.seek(0)
@@ -182,14 +251,38 @@ def get_upload_size(file: UploadFile) -> int:
 
 
 def get_repository_document_dir(repo_id: str) -> Path:
+    """Return the repository document dir for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+
+    Returns:
+        Result produced by the operation.
+    """
     return DOCUMENT_UPLOAD_DIR / repo_id
 
 
 def get_repository_upload_manifest_path(repo_id: str) -> Path:
+    """Return the repository upload manifest path for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+
+    Returns:
+        Result produced by the operation.
+    """
     return get_repository_document_dir(repo_id) / "manifest.json"
 
 
 def read_repository_upload_manifest(repo_id: str) -> list[dict]:
+    """Handle read repository upload manifest for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+
+    Returns:
+        Result produced by the operation.
+    """
     manifest_path = get_repository_upload_manifest_path(repo_id)
     if not manifest_path.exists():
         return []
@@ -201,6 +294,12 @@ def read_repository_upload_manifest(repo_id: str) -> list[dict]:
 
 
 def write_repository_upload_manifest(repo_id: str, uploads: list[dict]) -> None:
+    """Handle write repository upload manifest for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        uploads: uploads value used by the operation.
+    """
     upload_dir = get_repository_document_dir(repo_id)
     upload_dir.mkdir(parents=True, exist_ok=True)
     get_repository_upload_manifest_path(repo_id).write_text(
@@ -210,6 +309,18 @@ def write_repository_upload_manifest(repo_id: str, uploads: list[dict]) -> None:
 
 
 def get_repository_upload_file_path(repo_id: str, upload_id: str) -> Path:
+    """Return the repository upload file path for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        upload_id: upload_id value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     root = get_repository_document_dir(repo_id).resolve()
     requested = (root / upload_id).resolve()
 
@@ -222,6 +333,14 @@ def get_repository_upload_file_path(repo_id: str, upload_id: str) -> Path:
 
 
 def to_repository_upload_response(upload: dict) -> RepositoryUploadResponse:
+    """Handle to repository upload response for the current operation.
+
+    Args:
+        upload: upload value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     return RepositoryUploadResponse(
         id=upload["id"],
         filename=upload["filename"],
@@ -233,6 +352,19 @@ def to_repository_upload_response(upload: dict) -> RepositoryUploadResponse:
 
 
 def get_owned_repository(db: DbSession, repo_id: str, owner_id: str) -> Repository:
+    """Return the owned repository for the current operation.
+
+    Args:
+        db: Database session used for persistence and queries.
+        repo_id: Repository identifier.
+        owner_id: owner_id value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     repository = db.scalar(
         select(Repository).where(
             Repository.id == repo_id,
@@ -245,6 +377,19 @@ def get_owned_repository(db: DbSession, repo_id: str, owner_id: str) -> Reposito
 
 
 def get_accessible_repository(db: DbSession, repo_id: str, current_user: User) -> Repository:
+    """Return the accessible repository for the current operation.
+
+    Args:
+        db: Database session used for persistence and queries.
+        repo_id: Repository identifier.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if is_admin(current_user):
         return get_owned_repository(db, repo_id, current_user.id)
 
@@ -268,6 +413,16 @@ def get_or_create_repository_learning_topic(
     repository: Repository,
     current_user: User,
 ) -> KTTopic:
+    """Return the or create repository learning topic for the current operation.
+
+    Args:
+        db: Database session used for persistence and queries.
+        repository: Repository model being read or updated.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+    """
     topic = db.scalar(
         select(KTTopic).where(
             KTTopic.repository_id == repository.id,
@@ -296,6 +451,20 @@ def connect_repository(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Repository:
+    """Handle connect repository for the current operation.
+
+    Args:
+        payload: Validated request body for the operation.
+        background_tasks: FastAPI background task manager used to schedule asynchronous work.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if not is_valid_git_url(payload.url):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -361,6 +530,20 @@ def upload_repository(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Repository:
+    """Handle upload repository for the current operation.
+
+    Args:
+        background_tasks: FastAPI background task manager used to schedule asynchronous work.
+        file: Uploaded file supplied by the client.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     filename = file.filename or ""
     if file.content_type != "application/zip" and not filename.lower().endswith(".zip"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only ZIP uploads are supported")
@@ -396,6 +579,15 @@ def list_repositories(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> RepositoryListResponse:
+    """List repositories for the current user.
+
+    Args:
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+    """
     repositories = db.scalars(
         select(Repository)
         .where(Repository.owner_id == current_user.id)
@@ -410,6 +602,15 @@ def get_my_assignments(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> list[MyAssignmentResponse]:
+    """Return the my assignments for the current operation.
+
+    Args:
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+    """
     rows = db.scalars(select(RepositoryAssignment).where(RepositoryAssignment.learner_id == current_user.id)).all()
     results = []
     for a in rows:
@@ -434,6 +635,15 @@ def get_assigned_repositories(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> RepositoryListResponse:
+    """Return the assigned repositories for the current operation.
+
+    Args:
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+    """
     rows = db.scalars(select(RepositoryAssignment).where(RepositoryAssignment.learner_id == current_user.id)).all()
     repository_ids = list(dict.fromkeys(row.repository_id for row in rows))
     if not repository_ids:
@@ -454,6 +664,17 @@ def refresh_repository(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Repository:
+    """Handle refresh repository for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        background_tasks: FastAPI background task manager used to schedule asynchronous work.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+    """
     repository = get_owned_repository(db, repo_id, current_user.id)
     validate_refresh_auth(repository, current_user)
 
@@ -480,6 +701,17 @@ def get_knowledge_base(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> KnowledgeBaseResponse:
+    """Return the knowledge base for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        entry_type: entry_type value used by the operation.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+    """
     repository = get_accessible_repository(db, repo_id, current_user)
 
     query = select(KnowledgeBase).where(KnowledgeBase.repository_id == repo_id)
@@ -497,6 +729,18 @@ def get_knowledge_base(
 
 
 def get_stored_repository_file(repo_id: str, file_path: str) -> Path:
+    """Return the stored repository file for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        file_path: Repository-relative file path.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     storage_roots = [REPOSITORY_STORAGE_DIR.resolve()]
     legacy_root = (Path("uploads") / "repositories").resolve()
     if legacy_root not in storage_roots:
@@ -517,6 +761,17 @@ def get_stored_repository_file(repo_id: str, file_path: str) -> Path:
 
 
 def format_notebook_preview(requested: Path) -> str:
+    """Handle format notebook preview for the current operation.
+
+    Args:
+        requested: requested value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     try:
         notebook = json.loads(requested.read_text(encoding="utf-8", errors="replace"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -569,6 +824,17 @@ def get_repository_file(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> RepositoryFileResponse:
+    """Return the repository file for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        file_path: Repository-relative file path.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+    """
     get_accessible_repository(db, repo_id, current_user)
     requested = get_stored_repository_file(repo_id, file_path)
     size = requested.stat().st_size
@@ -633,6 +899,16 @@ def list_repository_uploads(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> RepositoryUploadListResponse:
+    """List repository uploads for the current user.
+
+    Args:
+        repo_id: Repository identifier.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+    """
     get_accessible_repository(db, repo_id, current_user)
     uploads = [to_repository_upload_response(upload) for upload in read_repository_upload_manifest(repo_id)]
     uploads.sort(key=lambda upload: upload.uploaded_at, reverse=True)
@@ -646,6 +922,20 @@ def upload_repository_document(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> RepositoryUploadResponse:
+    """Handle upload repository document for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        file: Uploaded file supplied by the client.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if not is_admin(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
@@ -683,6 +973,20 @@ def download_repository_upload(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> FileResponse:
+    """Handle download repository upload for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        upload_id: upload_id value used by the operation.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     get_accessible_repository(db, repo_id, current_user)
     uploads = read_repository_upload_manifest(repo_id)
     upload = next((candidate for candidate in uploads if candidate["id"] == upload_id), None)
@@ -707,6 +1011,17 @@ def delete_repository_upload(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> None:
+    """Delete the requested repository upload resource.
+
+    Args:
+        repo_id: Repository identifier.
+        upload_id: upload_id value used by the operation.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if not is_admin(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
@@ -730,6 +1045,19 @@ def analyze_repository_contributors(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ContributorListResponse:
+    """Handle analyze repository contributors for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     repository = get_owned_repository(db, repo_id, current_user.id)
     if repository.source_type == "upload":
         raise HTTPException(
@@ -769,6 +1097,16 @@ def get_contributors(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ContributorListResponse:
+    """Return the contributors for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+    """
     repository = get_owned_repository(db, repo_id, current_user.id)
 
     contributors = db.scalars(
@@ -792,6 +1130,20 @@ def create_assignment(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> AssignmentResponse:
+    """Create assignment records for the request.
+
+    Args:
+        repo_id: Repository identifier.
+        payload: Validated request body for the operation.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if not is_admin(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
@@ -849,6 +1201,19 @@ def list_assignments(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> AssignmentListResponse:
+    """List assignments for the current user.
+
+    Args:
+        repo_id: Repository identifier.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if not is_admin(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
@@ -879,6 +1244,17 @@ def delete_assignment(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> None:
+    """Delete the requested assignment resource.
+
+    Args:
+        repo_id: Repository identifier.
+        assignment_id: assignment_id value used by the operation.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if not is_admin(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     assignment = db.get(RepositoryAssignment, assignment_id)
@@ -894,6 +1270,13 @@ def delete_repository(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> None:
+    """Delete the requested repository resource.
+
+    Args:
+        repo_id: Repository identifier.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+    """
     repository = get_owned_repository(db, repo_id, current_user.id)
 
     upload_path = UPLOAD_DIR / f"{repo_id}.zip"
@@ -929,4 +1312,14 @@ def get_repository(
     db: DbSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Repository:
+    """Return the repository for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+    """
     return get_accessible_repository(db, repo_id, current_user)

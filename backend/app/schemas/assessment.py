@@ -1,3 +1,5 @@
+"""Pydantic schemas for assessments, generated questions, attempts, and results."""
+
 from datetime import datetime
 from typing import Dict, List, Literal
 
@@ -5,16 +7,19 @@ from pydantic import BaseModel, Field
 
 
 class GenerateQuestionsRequest(BaseModel):
+    """Pydantic schema for GenerateQuestionsRequest payloads."""
     kt_topic_id: str
     num_questions: int = Field(ge=1, le=30)
 
 
 class GeneratedOption(BaseModel):
+    """Pydantic schema for GeneratedOption payloads."""
     label: str
     is_correct: bool
 
 
 class GeneratedQuestion(BaseModel):
+    """Pydantic schema for GeneratedQuestion payloads."""
     question_text: str
     question_type: Literal["single", "multi"]
     options: List[GeneratedOption]
@@ -23,10 +28,12 @@ class GeneratedQuestion(BaseModel):
 
 
 class GenerateQuestionsResponse(BaseModel):
+    """Pydantic schema for GenerateQuestionsResponse payloads."""
     questions: List[GeneratedQuestion]
 
 
 class SaveAssessmentRequest(BaseModel):
+    """Pydantic schema for SaveAssessmentRequest payloads."""
     kt_topic_id: str
     title: str
     duration_minutes: int = Field(ge=1, le=180)
@@ -35,10 +42,12 @@ class SaveAssessmentRequest(BaseModel):
 
 
 class AssignAssessmentRequest(BaseModel):
+    """Pydantic schema for AssignAssessmentRequest payloads."""
     assigned_to: str
 
 
 class AssessmentOptionResponse(BaseModel):
+    """Pydantic schema for AssessmentOptionResponse payloads."""
     id: str
     label: str
     is_correct: bool
@@ -46,6 +55,7 @@ class AssessmentOptionResponse(BaseModel):
 
 
 class AssessmentQuestionResponse(BaseModel):
+    """Pydantic schema for AssessmentQuestionResponse payloads."""
     id: str
     question_text: str
     question_type: str
@@ -56,6 +66,7 @@ class AssessmentQuestionResponse(BaseModel):
 
 
 class AssessmentResponse(BaseModel):
+    """Pydantic schema for AssessmentResponse payloads."""
     id: str
     kt_topic_id: str
     title: str
@@ -66,6 +77,7 @@ class AssessmentResponse(BaseModel):
 
 
 class AssessmentListItem(BaseModel):
+    """Pydantic schema for AssessmentListItem payloads."""
     id: str
     kt_topic_id: str
     repository_id: str
@@ -79,12 +91,14 @@ class AssessmentListItem(BaseModel):
 
 
 class AssessmentOptionLearnerView(BaseModel):
+    """Pydantic schema for AssessmentOptionLearnerView payloads."""
     id: str
     label: str
     order: int
 
 
 class AssessmentQuestionLearnerView(BaseModel):
+    """Pydantic schema for AssessmentQuestionLearnerView payloads."""
     id: str
     question_text: str
     question_type: str
@@ -93,6 +107,7 @@ class AssessmentQuestionLearnerView(BaseModel):
 
 
 class AssessmentLearnerView(BaseModel):
+    """Pydantic schema for AssessmentLearnerView payloads."""
     id: str
     kt_topic_id: str
     title: str
@@ -101,11 +116,13 @@ class AssessmentLearnerView(BaseModel):
 
 
 class SubmitAttemptRequest(BaseModel):
+    """Pydantic schema for SubmitAttemptRequest payloads."""
     assessment_id: str
     answers: Dict[str, List[str]]
 
 
 class PerQuestionResult(BaseModel):
+    """Pydantic schema for PerQuestionResult payloads."""
     question_id: str
     question_text: str
     question_type: str
@@ -116,6 +133,7 @@ class PerQuestionResult(BaseModel):
 
 
 class AttemptResultResponse(BaseModel):
+    """Pydantic schema for AttemptResultResponse payloads."""
     attempt_id: str
     score_percentage: float
     total_questions: int
@@ -126,6 +144,7 @@ class AttemptResultResponse(BaseModel):
 
 
 class LearnerAttemptSummary(BaseModel):
+    """Pydantic schema for LearnerAttemptSummary payloads."""
     attempt_id: str
     learner_id: str
     learner_name: str

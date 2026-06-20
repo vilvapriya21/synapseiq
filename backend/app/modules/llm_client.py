@@ -1,3 +1,5 @@
+"""Thin wrappers around configured LLM providers for chat and analysis completions."""
+
 from typing import Protocol
 
 import httpx
@@ -10,12 +12,37 @@ class LLMError(Exception):
 
 
 class LLMProvider(Protocol):
+    """Protocol for LLM providers that can complete prompt pairs."""
     def complete(self, system_prompt: str, user_prompt: str, max_tokens: int = 1024) -> str:
+        """Return an LLM completion for the supplied system and user prompts.
+
+        Args:
+            system_prompt: system_prompt value used by the operation.
+            user_prompt: user_prompt value used by the operation.
+            max_tokens: max_tokens value used by the operation.
+
+        Returns:
+            Result produced by the operation.
+        """
         ...
 
 
 class GroqProvider:
+    """Groq-backed LLM provider implementation."""
     def complete(self, system_prompt: str, user_prompt: str, max_tokens: int = 1024) -> str:
+        """Return an LLM completion for the supplied system and user prompts.
+
+        Args:
+            system_prompt: system_prompt value used by the operation.
+            user_prompt: user_prompt value used by the operation.
+            max_tokens: max_tokens value used by the operation.
+
+        Returns:
+            Result produced by the operation.
+
+        Raises:
+            LLMError: If the configured provider cannot complete the request.
+        """
         payload = {
             "model": settings.groq_model,
             "messages": [
@@ -46,7 +73,21 @@ class GroqProvider:
 
 
 class OllamaProvider:
+    """Ollama-backed local LLM provider implementation."""
     def complete(self, system_prompt: str, user_prompt: str, max_tokens: int = 1024) -> str:
+        """Return an LLM completion for the supplied system and user prompts.
+
+        Args:
+            system_prompt: system_prompt value used by the operation.
+            user_prompt: user_prompt value used by the operation.
+            max_tokens: max_tokens value used by the operation.
+
+        Returns:
+            Result produced by the operation.
+
+        Raises:
+            LLMError: If the configured provider cannot complete the request.
+        """
         url = f"{settings.ollama_base_url}/api/chat"
         payload = {
             "model": settings.ollama_model,
@@ -76,6 +117,14 @@ class OllamaProvider:
 
 
 def get_llm_provider() -> LLMProvider:
+    """Return the configured LLM provider implementation.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        LLMError: If the configured provider cannot complete the request.
+    """
     if settings.llm_provider == "groq":
         return GroqProvider()
     if settings.llm_provider == "ollama":

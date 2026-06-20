@@ -1,3 +1,5 @@
+"""Repository cloning, file extraction, and analysis pipeline."""
+
 from collections import Counter
 import ast
 import os
@@ -17,6 +19,14 @@ from app.modules.git_provider import build_authenticated_url
 
 
 def mask_credentials(url: str) -> str:
+    """Mask credentials embedded in an authenticated clone URL.
+
+    Args:
+        url: Repository URL or API URL to process.
+
+    Returns:
+        Result produced by the operation.
+    """
     return re.sub(r"(https://[^:@/]+:)[^@/]+(@)", r"\1***\2", url)
 
 
@@ -58,6 +68,17 @@ REPOSITORY_STORAGE_DIR = BACKEND_DIR / "uploads" / "repositories"
 
 
 def clone_repository(clone_url: str, target_dir: Path, branch: str | None = None, provider: str | None = None) -> None:
+    """Clone a repository into a target directory for analysis.
+
+    Args:
+        clone_url: Repository clone URL.
+        target_dir: Directory where cloned files should be written.
+        branch: Repository branch name.
+        provider: Git provider name.
+
+    Raises:
+        Exception: If the operation cannot be completed.
+    """
     command = ["git", "clone", "--depth=1", "--single-branch"]
     if branch:
         command.extend(["--branch", branch])
@@ -101,6 +122,14 @@ def clone_repository(clone_url: str, target_dir: Path, branch: str | None = None
 
 
 def walk_repo(root: Path) -> list[Path]:
+    """Collect file paths under a repository while skipping ignored directories.
+
+    Args:
+        root: Repository root directory.
+
+    Returns:
+        Result produced by the operation.
+    """
     file_paths: list[Path] = []
     for current_root, dirs, files in os.walk(root):
         dirs[:] = [directory for directory in dirs if directory not in IGNORED_DIRS]
@@ -111,6 +140,14 @@ def walk_repo(root: Path) -> list[Path]:
 
 
 def detect_language(file_paths: list[Path]) -> str | None:
+    """Infer the dominant programming language from repository file extensions.
+
+    Args:
+        file_paths: Repository file paths to inspect.
+
+    Returns:
+        Result produced by the operation.
+    """
     extension_counts = Counter(
         file_path.suffix.lower()
         for file_path in file_paths
@@ -124,15 +161,40 @@ def detect_language(file_paths: list[Path]) -> str | None:
 
 
 def count_modules(file_paths: list[Path]) -> int:
+    """Count source modules by supported language extension.
+
+    Args:
+        file_paths: Repository file paths to inspect.
+
+    Returns:
+        Result produced by the operation.
+    """
     return sum(1 for file_path in file_paths if file_path.suffix.lower() in LANGUAGE_EXTENSIONS)
 
 
 def extract_file_tree(root: Path, file_paths: list[Path]) -> str:
+    """Build a newline-delimited repository file tree.
+
+    Args:
+        root: Repository root directory.
+        file_paths: Repository file paths to inspect.
+
+    Returns:
+        Result produced by the operation.
+    """
     lines = [str(file_path.relative_to(root)) for file_path in file_paths]
     return "\n".join(lines)
 
 
 def extract_readme(root: Path) -> str | None:
+    """Read the first top-level README file if one exists.
+
+    Args:
+        root: Repository root directory.
+
+    Returns:
+        Result produced by the operation.
+    """
     readme_names = {"readme.md", "readme.rst", "readme.txt"}
     for path in root.iterdir():
         if path.is_file() and path.name.lower() in readme_names:
@@ -141,6 +203,14 @@ def extract_readme(root: Path) -> str | None:
 
 
 def extract_dependencies(root: Path) -> list[tuple[str, str]]:
+    """Extract known dependency manifest contents from the repository root.
+
+    Args:
+        root: Repository root directory.
+
+    Returns:
+        Result produced by the operation.
+    """
     dependencies: list[tuple[str, str]] = []
     for path in root.iterdir():
         if path.is_file() and path.name in DEPENDENCY_FILES:
@@ -150,14 +220,36 @@ def extract_dependencies(root: Path) -> list[tuple[str, str]]:
 
 
 def is_text_file(file_path: Path) -> bool:
+    """Return whether a file path has a supported text extension.
+
+    Args:
+        file_path: Repository-relative file path.
+
+    Returns:
+        Result produced by the operation.
+    """
     return file_path.suffix.lower() in TEXT_FILE_EXTENSIONS
 
 
 def is_image_file(file_path: Path) -> bool:
+    """Return whether a file path has a supported image extension.
+
+    Args:
+        file_path: Repository-relative file path.
+
+    Returns:
+        Result produced by the operation.
+    """
     return file_path.suffix.lower() in IMAGE_FILE_EXTENSIONS
 
 
 def persist_repository_files(root: Path, repo_id: str) -> None:
+    """Persist analyzed repository files into local storage.
+
+    Args:
+        root: Repository root directory.
+        repo_id: Repository identifier.
+    """
     destination = REPOSITORY_STORAGE_DIR / repo_id
     REPOSITORY_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
     if destination.exists():
@@ -171,6 +263,14 @@ def persist_repository_files(root: Path, repo_id: str) -> None:
 
 
 def extract_python_signatures(file_path: Path) -> str:
+    """Extract Python class and function signatures from a source file.
+
+    Args:
+        file_path: Repository-relative file path.
+
+    Returns:
+        Result produced by the operation.
+    """
     try:
         source = file_path.read_text(encoding="utf-8", errors="ignore")
         tree = ast.parse(source)
@@ -192,6 +292,14 @@ def extract_python_signatures(file_path: Path) -> str:
 
 
 def extract_csharp_signatures(file_path: Path) -> str:
+    """Extract C# type, method, and property signatures from a source file.
+
+    Args:
+        file_path: Repository-relative file path.
+
+    Returns:
+        Result produced by the operation.
+    """
     try:
         source = file_path.read_text(encoding="utf-8", errors="ignore")
         class_pattern = r"^\s*(?:public|private|internal|protected)?\s*(?:static\s+|abstract\s+|sealed\s+|partial\s+)*(?:class|interface|record|struct)\s+\w+[^\{]*"
@@ -209,6 +317,15 @@ def extract_csharp_signatures(file_path: Path) -> str:
 
 
 def classify_aspnet_role(file_path: Path, content: str) -> str | None:
+    """Classify a C# file by common ASP.NET project role.
+
+    Args:
+        file_path: Repository-relative file path.
+        content: File content or text being inspected.
+
+    Returns:
+        Result produced by the operation.
+    """
     try:
         if file_path.name.endswith("Controller.cs") and (
             "ControllerBase" in content or ": Controller" in content
@@ -226,6 +343,14 @@ def classify_aspnet_role(file_path: Path, content: str) -> str | None:
 
 
 def extract_dart_signatures(file_path: Path) -> str:
+    """Extract Dart class and method signatures from a source file.
+
+    Args:
+        file_path: Repository-relative file path.
+
+    Returns:
+        Result produced by the operation.
+    """
     try:
         source = file_path.read_text(encoding="utf-8", errors="ignore")
         class_pattern = r"^\s*(abstract\s+)?class\s+\w+[^\{]*"
@@ -243,6 +368,14 @@ def extract_dart_signatures(file_path: Path) -> str:
 
 
 def extract_js_ts_signatures(file_path: Path) -> str:
+    """Extract JavaScript or TypeScript declarations from a source file.
+
+    Args:
+        file_path: Repository-relative file path.
+
+    Returns:
+        Result produced by the operation.
+    """
     try:
         source = file_path.read_text(encoding="utf-8", errors="ignore")
         function_pattern = r"^\s*(?:export\s+)?(?:async\s+)?function\s+\w+\s*\([^)]*\)"
@@ -264,6 +397,14 @@ def extract_js_ts_signatures(file_path: Path) -> str:
 
 
 def extract_java_kotlin_signatures(file_path: Path) -> str:
+    """Extract Java or Kotlin class and method signatures from a source file.
+
+    Args:
+        file_path: Repository-relative file path.
+
+    Returns:
+        Result produced by the operation.
+    """
     try:
         source = file_path.read_text(encoding="utf-8", errors="ignore")
         class_pattern = r"^\s*(?:public\s+|private\s+|internal\s+)?(?:abstract\s+|open\s+|data\s+|sealed\s+)?(?:class|interface|object)\s+\w+[^\{]*"
@@ -289,6 +430,14 @@ SIGNATURE_EXTRACTORS: dict[str, tuple[Callable[[Path], str], tuple[str, ...]]] =
 
 
 def build_knowledge_base(repository: Repository, root: Path, file_paths: list[Path], db: Session) -> None:
+    """Build persisted knowledge-base entries for an analyzed repository.
+
+    Args:
+        repository: Repository model being read or updated.
+        root: Repository root directory.
+        file_paths: Repository file paths to inspect.
+        db: Database session used for persistence and queries.
+    """
     try:
         print(f"[KNOWLEDGE_BASE] building repository_id={repository.id} root={root} files={len(file_paths)}")
         repository.knowledge_base_status = "building"
@@ -371,6 +520,19 @@ def analyze_repository(
     gitlab_token: str | None = None,
     bitbucket_token: str | None = None,
 ) -> None:
+    """Analyze a repository and update its indexing metadata and knowledge base.
+
+    Args:
+        repo_id: Repository identifier.
+        db: Database session used for persistence and queries.
+        github_token: github_token value used by the operation.
+        azure_token: Azure DevOps Personal Access Token.
+        gitlab_token: gitlab_token value used by the operation.
+        bitbucket_token: bitbucket_token value used by the operation.
+
+    Raises:
+        Exception: If the operation cannot be completed.
+    """
     print(f"[REPO_ANALYSIS] start repo_id={repo_id}")
     repository = db.get(Repository, repo_id)
     if repository is None:

@@ -1,3 +1,5 @@
+"""Utilities for detecting Git providers and constructing authenticated clone URLs."""
+
 import re
 from urllib.parse import quote, urlsplit, urlunsplit
 
@@ -11,6 +13,14 @@ PROVIDER_PATTERNS: list[tuple[str, str]] = [
 
 
 def detect_provider(url: str) -> str:
+    """Detect the Git provider represented by a repository URL.
+
+    Args:
+        url: Repository URL or API URL to process.
+
+    Returns:
+        Result produced by the operation.
+    """
     url = url.strip()
     for provider, pattern in PROVIDER_PATTERNS:
         if re.match(pattern, url, re.IGNORECASE):
@@ -19,6 +29,14 @@ def detect_provider(url: str) -> str:
 
 
 def is_valid_git_url(url: str) -> bool:
+    """Return whether a repository URL is a valid HTTPS Git URL.
+
+    Args:
+        url: Repository URL or API URL to process.
+
+    Returns:
+        Result produced by the operation.
+    """
     url = url.strip()
     if not url.startswith("https://"):
         return False
@@ -31,6 +49,14 @@ def is_valid_git_url(url: str) -> bool:
 
 
 def is_valid_azure_repo_url(url: str) -> bool:
+    """Return whether a URL matches a supported Azure DevOps repository format.
+
+    Args:
+        url: Repository URL or API URL to process.
+
+    Returns:
+        Result produced by the operation.
+    """
     url = _clean_url(url)
     azure_patterns = [
         r"^https://dev\.azure\.com/[^/]+/[^/]+/_git/[^/]+$",
@@ -40,7 +66,14 @@ def is_valid_azure_repo_url(url: str) -> bool:
 
 
 def _clean_url(url: str) -> str:
-    """Strip whitespace, trailing slashes, and .git suffix for consistent processing."""
+    """Normalize a repository URL for provider-specific processing.
+
+    Args:
+        url: Repository URL to normalize.
+
+    Returns:
+        URL without surrounding whitespace, trailing slashes, or a trailing .git suffix.
+    """
     url = url.strip()
     url = url.rstrip("/")
     if url.endswith(".git"):
@@ -49,11 +82,15 @@ def _clean_url(url: str) -> str:
 
 
 def build_authenticated_url(url: str, token: str | None, provider: str) -> str:
-    """
-    Inject a user's OAuth token into the clone URL.
-    Uses token-as-username format which works for owners AND collaborators.
-    Format: https://{token}@github.com/owner/repo.git
-    The oauth2: prefix only works for repo owners in some cases.
+    """Inject a provider access token into a clone URL.
+
+    Args:
+        url: Repository URL to authenticate.
+        token: Provider access token or PAT. If omitted, an unauthenticated clone URL is returned.
+        provider: Git provider name used to choose the authentication URL format.
+
+    Returns:
+        Clone URL formatted for the selected provider.
     """
     base = _clean_url(url)
 
@@ -98,6 +135,13 @@ def build_authenticated_url(url: str, token: str | None, provider: str) -> str:
 
 
 def extract_repo_name(url: str) -> str:
-    """Extract the repository name from a git URL."""
+    """Extract the repository name from a Git URL.
+
+    Args:
+        url: Repository URL to inspect.
+
+    Returns:
+        Repository name from the final URL path segment.
+    """
     base = _clean_url(url)
     return base.rstrip("/").split("/")[-1]

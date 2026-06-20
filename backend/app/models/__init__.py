@@ -1,3 +1,5 @@
+"""SQLAlchemy model exports used by application startup and migrations."""
+
 from app.models.assessment import (
     Assessment,
     AssessmentAttempt,

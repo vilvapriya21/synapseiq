@@ -419,6 +419,19 @@
   font-size: var(--font-size-sm);
 }
 
+.errorBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--color-error-subtle, #fff0f0);
+  border: 1px solid var(--color-error, #e53e3e);
+  color: var(--color-error, #c53030);
+  font-size: var(--font-size-sm);
+  margin-bottom: 16px;
+}
+
 .success {
   margin: 0;
   color: var(--color-success);

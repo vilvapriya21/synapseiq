@@ -1,3 +1,5 @@
+"""API endpoints for KT topics, checklist items, and learner progress."""
+
 import logging
 from datetime import datetime, timezone
 
@@ -34,10 +36,26 @@ logger = logging.getLogger(__name__)
 
 
 def is_admin(user: User) -> bool:
+    """Return whether the user has the admin role.
+
+    Args:
+        user: user value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     return user.role.lower() == "admin"
 
 
 def is_learner(user: User) -> bool:
+    """Return whether the user has a learner-compatible role.
+
+    Args:
+        user: user value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     return user.role.lower() in {"learner", "user"}
 
 
@@ -47,6 +65,20 @@ def get_accessible_topic(
     topic_id: str,
     current_user: User,
 ) -> KTTopic:
+    """Return the accessible topic for the current operation.
+
+    Args:
+        db: Database session used for persistence and queries.
+        repo_id: Repository identifier.
+        topic_id: topic_id value used by the operation.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     topic = db.get(KTTopic, topic_id)
     if topic is None or topic.repository_id != repo_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
@@ -75,6 +107,20 @@ def require_admin_owner(
     topic_id: str,
     current_user: User,
 ) -> KTTopic:
+    """Handle require admin owner for the current operation.
+
+    Args:
+        db: Database session used for persistence and queries.
+        repo_id: Repository identifier.
+        topic_id: topic_id value used by the operation.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     topic = get_accessible_topic(db, repo_id, topic_id, current_user)
     if not is_admin(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
@@ -82,6 +128,19 @@ def require_admin_owner(
 
 
 def get_topic_checklist_item(db: Session, topic_id: str, item_id: str) -> KTChecklistItem:
+    """Return the topic checklist item for the current operation.
+
+    Args:
+        db: Database session used for persistence and queries.
+        topic_id: topic_id value used by the operation.
+        item_id: item_id value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     item = db.get(KTChecklistItem, item_id)
     if item is None or item.kt_topic_id != topic_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Checklist item not found")
@@ -93,6 +152,16 @@ def checklist_item_response(
     completed: bool = False,
     completed_at: datetime | None = None,
 ) -> ChecklistItemResponse:
+    """Handle checklist item response for the current operation.
+
+    Args:
+        item: item value used by the operation.
+        completed: completed value used by the operation.
+        completed_at: completed_at value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     return ChecklistItemResponse(
         id=item.id,
         kt_topic_id=item.kt_topic_id,
@@ -113,6 +182,21 @@ def create_kt_topic(
     current_user: User = Depends(get_current_user),
     llm: LLMProvider = Depends(get_llm),
 ) -> KTTopic:
+    """Create kt topic records for the request.
+
+    Args:
+        repo_id: Repository identifier.
+        payload: Validated request body for the operation.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+        llm: LLM provider used for generation.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if not is_admin(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     get_owned_repository(db, repo_id, current_user.id)
@@ -155,6 +239,16 @@ def list_kt_topics(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> KTTopicListResponse:
+    """List kt topics for the current user.
+
+    Args:
+        repo_id: Repository identifier.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+    """
     topics = db.scalars(
         select(KTTopic)
         .where(
@@ -170,6 +264,14 @@ def list_kt_topics(
 
 
 def parse_top_files(top_files_str: str | None) -> dict[str, int]:
+    """Parse top files into structured data.
+
+    Args:
+        top_files_str: top_files_str value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     if not top_files_str:
         return {}
     result: dict[str, int] = {}
@@ -190,6 +292,20 @@ def recommend_contributor(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> TopicRecommendationResponse:
+    """Handle recommend contributor for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        topic_id: topic_id value used by the operation.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if not is_admin(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
@@ -230,6 +346,17 @@ def list_checklist_items(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ChecklistListResponse:
+    """List checklist items for the current user.
+
+    Args:
+        repo_id: Repository identifier.
+        topic_id: topic_id value used by the operation.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+    """
     get_accessible_topic(db, repo_id, topic_id, current_user)
 
     items = db.scalars(
@@ -274,6 +401,18 @@ def create_checklist_item(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ChecklistItemResponse:
+    """Create checklist item records for the request.
+
+    Args:
+        repo_id: Repository identifier.
+        topic_id: topic_id value used by the operation.
+        payload: Validated request body for the operation.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+    """
     topic = require_admin_owner(db, repo_id, topic_id, current_user)
     max_order = db.scalar(
         select(func.max(KTChecklistItem.order)).where(KTChecklistItem.kt_topic_id == topic.id)
@@ -300,6 +439,19 @@ def update_checklist_item(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ChecklistItemResponse:
+    """Update the requested checklist item resource.
+
+    Args:
+        repo_id: Repository identifier.
+        topic_id: topic_id value used by the operation.
+        item_id: item_id value used by the operation.
+        payload: Validated request body for the operation.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+    """
     topic = require_admin_owner(db, repo_id, topic_id, current_user)
     item = get_topic_checklist_item(db, topic.id, item_id)
 
@@ -323,6 +475,15 @@ def delete_checklist_item(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> None:
+    """Delete the requested checklist item resource.
+
+    Args:
+        repo_id: Repository identifier.
+        topic_id: topic_id value used by the operation.
+        item_id: item_id value used by the operation.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+    """
     topic = require_admin_owner(db, repo_id, topic_id, current_user)
     item = get_topic_checklist_item(db, topic.id, item_id)
     db.execute(sql_delete(KTChecklistProgress).where(KTChecklistProgress.checklist_item_id == item.id))
@@ -338,6 +499,18 @@ def regenerate_checklist(
     current_user: User = Depends(get_current_user),
     llm: LLMProvider = Depends(get_llm),
 ) -> ChecklistListResponse:
+    """Handle regenerate checklist for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        topic_id: topic_id value used by the operation.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+        llm: LLM provider used for generation.
+
+    Returns:
+        Result produced by the operation.
+    """
     topic = require_admin_owner(db, repo_id, topic_id, current_user)
     checklist_item_ids = db.scalars(
         select(KTChecklistItem.id).where(KTChecklistItem.kt_topic_id == topic.id)
@@ -379,6 +552,21 @@ def complete_checklist_item(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ChecklistItemResponse:
+    """Handle complete checklist item for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        topic_id: topic_id value used by the operation.
+        item_id: item_id value used by the operation.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     topic = get_accessible_topic(db, repo_id, topic_id, current_user)
     if not is_learner(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Learner access required")
@@ -414,6 +602,18 @@ def uncomplete_checklist_item(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> None:
+    """Handle uncomplete checklist item for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        topic_id: topic_id value used by the operation.
+        item_id: item_id value used by the operation.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     topic = get_accessible_topic(db, repo_id, topic_id, current_user)
     if not is_learner(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Learner access required")
@@ -435,6 +635,17 @@ def delete_kt_topic(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> None:
+    """Delete the requested kt topic resource.
+
+    Args:
+        repo_id: Repository identifier.
+        topic_id: topic_id value used by the operation.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if not is_admin(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     topic = db.get(KTTopic, topic_id)

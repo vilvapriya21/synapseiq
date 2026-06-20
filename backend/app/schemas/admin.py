@@ -1,9 +1,12 @@
+"""Pydantic schemas for administrator user-management payloads."""
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
 
 class UserListItem(BaseModel):
+    """Pydantic schema for UserListItem payloads."""
     id: str
     name: str
     email: str
@@ -13,6 +16,7 @@ class UserListItem(BaseModel):
 
 
 class CreateUserRequest(BaseModel):
+    """Pydantic schema for CreateUserRequest payloads."""
     name: str
     email: str
     password: str
@@ -20,4 +24,5 @@ class CreateUserRequest(BaseModel):
 
 
 class UpdateRoleRequest(BaseModel):
+    """Pydantic schema for UpdateRoleRequest payloads."""
     role: str

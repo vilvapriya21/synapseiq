@@ -1,3 +1,5 @@
+"""Application configuration loaded from environment variables."""
+
 from functools import lru_cache
 
 from pydantic import AnyHttpUrl, Field, ValidationInfo, field_validator
@@ -5,6 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """Environment-backed application settings."""
     app_name: str = "SynapseIQ"
     app_env: str = "development"
     api_v1_prefix: str = "/api/v1"
@@ -29,6 +32,17 @@ class Settings(BaseSettings):
     @field_validator("database_url")
     @classmethod
     def database_url_must_be_set(cls, v: str) -> str:
+        """Handle database url must be set for the current operation.
+
+        Args:
+            v: v value used by the operation.
+
+        Returns:
+            Result produced by the operation.
+
+        Raises:
+            ValueError: If the operation cannot be completed.
+        """
         if not v:
             raise ValueError(
                 "DATABASE_URL is not set. Add it to backend/.env — "
@@ -39,6 +53,18 @@ class Settings(BaseSettings):
     @field_validator("groq_api_key")
     @classmethod
     def groq_api_key_required_for_groq(cls, v: str, info: ValidationInfo) -> str:
+        """Handle groq api key required for groq for the current operation.
+
+        Args:
+            v: v value used by the operation.
+            info: info value used by the operation.
+
+        Returns:
+            Result produced by the operation.
+
+        Raises:
+            ValueError: If the operation cannot be completed.
+        """
         if info.data.get("llm_provider") == "groq" and not v:
             raise ValueError("LLM_PROVIDER is set to 'groq'. Set GROQ_API_KEY in backend/.env.")
         return v
@@ -48,6 +74,11 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
+    """Return the settings for the current operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     return Settings()
 
 

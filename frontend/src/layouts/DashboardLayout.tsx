@@ -7,11 +7,11 @@ import {
   Home,
   Link2,
   Users,
-  Workflow,
   type LucideIcon,
 } from "lucide-react";
 import { ROUTES } from "../routes/routePaths";
 import synapseLogo from "../assets/synapse-logo.svg";
+import { ConfirmDialog } from "../components/common";
 import { usePageTitle } from "../context/PageTitleContext";
 import { useAuthStore } from "../store/authStore";
 import { UserRole } from "../types";
@@ -22,16 +22,14 @@ const SIDEBAR_COLLAPSED_KEY = "synapseiq:sidebar-collapsed";
 
 const navigation: Array<{ label: string; roles: UserRole[]; to: string }> = [
   { label: "Dashboard", roles: ["ADMIN", "LEARNER"], to: ROUTES.dashboard },
-  { label: "Repository Onboarding", roles: ["ADMIN"], to: ROUTES.repositoryOnboard },
-  { label: "Project Workspace", roles: ["ADMIN", "LEARNER"], to: ROUTES.projectWorkspace },
+  { label: "Repositories", roles: ["ADMIN"], to: ROUTES.repositories },
   { label: "Assessment", roles: ["ADMIN", "LEARNER"], to: ROUTES.assessments },
   { label: "User Management", roles: ["ADMIN"], to: ROUTES.adminUsers },
 ];
 
 const navIcons: Record<string, LucideIcon> = {
   Dashboard: Home,
-  "Project Workspace": Workflow,
-  "Repository Onboarding": Link2,
+  Repositories: Link2,
   "User Management": Users,
 };
 
@@ -43,6 +41,7 @@ function DashboardLayout() {
       return false;
     }
   });
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
@@ -58,14 +57,14 @@ function DashboardLayout() {
     }
   }, [collapsed]);
 
-  const handleLogout = () => {
-    if (!window.confirm("Are you sure you want to sign out?")) {
-      return;
-    }
+  const handleLogout = () => setShowSignOutConfirm(true);
 
+  const handleConfirmLogout = () => {
+    setShowSignOutConfirm(false);
     logout();
     navigate(ROUTES.login, { replace: true });
   };
+
   const initials = (user?.name || "Workspace User")
     .split(" ")
     .map((part) => part[0])
@@ -138,6 +137,16 @@ function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+      <ConfirmDialog
+        isOpen={showSignOutConfirm}
+        title="Sign out"
+        message="Are you sure you want to sign out?"
+        confirmLabel="Sign out"
+        cancelLabel="Stay signed in"
+        variant="primary"
+        onConfirm={handleConfirmLogout}
+        onCancel={() => setShowSignOutConfirm(false)}
+      />
     </div>
   );
 }

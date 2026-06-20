@@ -1,3 +1,5 @@
+"""Email delivery helpers for account and password reset workflows."""
+
 import os
 import logging
 from typing import Optional
@@ -8,7 +10,14 @@ logger = logging.getLogger(__name__)
 def send_password_reset_email(to_email: str, code: str) -> bool:
     """Attempt to send a password reset verification code via SMTP if configured.
 
-    Returns True on success, False otherwise. In development this will log the code.
+    In development, this logs the code when SMTP settings are not configured.
+
+    Args:
+        to_email: Recipient email address.
+        code: Password reset verification code to send.
+
+    Returns:
+        True when SMTP delivery succeeds, False otherwise.
     """
     smtp_host = os.getenv("SMTP_HOST")
     smtp_port = int(os.getenv("SMTP_PORT", "0") or 0)

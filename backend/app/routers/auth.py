@@ -1,3 +1,5 @@
+"""API endpoints for signup, login, logout, and password reset flows."""
+
 from datetime import datetime, timedelta, timezone
 from random import SystemRandom
 import re
@@ -34,14 +36,39 @@ PASSWORD_RULE_MESSAGE = (
 
 
 def serialize_user(user: User) -> UserRead:
+    """Handle serialize user for the current operation.
+
+    Args:
+        user: user value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     return UserRead(id=user.id, email=user.email, name=user.name, role=user.role, roles=[user.role])
 
 
 def find_user(db: Session, email: str) -> User | None:
+    """Handle find user for the current operation.
+
+    Args:
+        db: Database session used for persistence and queries.
+        email: Email address to look up or normalize.
+
+    Returns:
+        Result produced by the operation.
+    """
     return db.scalar(select(User).where(User.email == email.lower()))
 
 
 def validate_password(password: str) -> None:
+    """Validate password for the current operation.
+
+    Args:
+        password: Plaintext password to validate or hash.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if not 8 <= len(password) <= 72:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=PASSWORD_RULE_MESSAGE)
     if not re.search(r"[A-Z]", password):
@@ -56,6 +83,18 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> User:
+    """Resolve the authenticated user from the bearer token.
+
+    Args:
+        credentials: Bearer authorization credentials from the request.
+        db: Database session used for persistence and queries.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if credentials is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing authentication token")
 
@@ -73,6 +112,18 @@ def get_current_user(
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
 def signup(payload: SignupRequest, db: Session = Depends(get_db)) -> dict[str, str]:
+    """Handle signup for the current operation.
+
+    Args:
+        payload: Validated request body for the operation.
+        db: Database session used for persistence and queries.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if find_user(db, payload.email):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="An account with this email already exists")
     if not payload.first_name.strip():
@@ -104,6 +155,18 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)) -> dict[str, s
 
 @router.post("/login", response_model=LoginResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> LoginResponse:
+    """Handle login for the current operation.
+
+    Args:
+        payload: Validated request body for the operation.
+        db: Database session used for persistence and queries.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     user = find_user(db, payload.email)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found. Please sign up first.")
@@ -117,6 +180,17 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> LoginResponse
 
 @router.post("/logout")
 def logout(credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme)) -> dict[str, str]:
+    """Handle logout for the current operation.
+
+    Args:
+        credentials: Bearer authorization credentials from the request.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if credentials is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing authentication token")
     try:
@@ -128,11 +202,31 @@ def logout(credentials: HTTPAuthorizationCredentials | None = Depends(bearer_sch
 
 @router.get("/me", response_model=UserRead)
 def me(current_user: User = Depends(get_current_user)) -> UserRead:
+    """Handle me for the current operation.
+
+    Args:
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+    """
     return serialize_user(current_user)
 
 
 @router.post("/forgot-password", response_model=ForgotPasswordResponse)
 def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)) -> ForgotPasswordResponse:
+    """Handle forgot password for the current operation.
+
+    Args:
+        payload: Validated request body for the operation.
+        db: Database session used for persistence and queries.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     user = find_user(db, payload.email)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No account found with this email.")
@@ -152,6 +246,18 @@ def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db
 
 @router.post("/verify-reset-code")
 def verify_reset_code(payload: "VerifyResetRequest", db: Session = Depends(get_db)) -> dict[str, str]:
+    """Handle verify reset code for the current operation.
+
+    Args:
+        payload: Validated request body for the operation.
+        db: Database session used for persistence and queries.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     from app.schemas.auth import VerifyResetRequest
 
     user = find_user(db, payload.email)
@@ -182,6 +288,18 @@ def verify_reset_code(payload: "VerifyResetRequest", db: Session = Depends(get_d
 
 @router.post("/reset-password")
 def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)) -> dict[str, str]:
+    """Handle reset password for the current operation.
+
+    Args:
+        payload: Validated request body for the operation.
+        db: Database session used for persistence and queries.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if payload.password != payload.confirm_password:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Passwords do not match")
     validate_password(payload.password)

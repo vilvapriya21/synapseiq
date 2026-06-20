@@ -1,3 +1,5 @@
+"""SQLAlchemy models for users and password reset codes."""
+
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -8,6 +10,7 @@ from app.db.database import Base
 
 
 class User(Base):
+    """SQLAlchemy model representing an authenticated application user."""
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
@@ -27,6 +30,7 @@ class User(Base):
 
 
 class PasswordResetCode(Base):
+    """SQLAlchemy model representing a password reset verification code."""
     __tablename__ = "password_reset_codes"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))

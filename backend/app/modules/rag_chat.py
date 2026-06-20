@@ -1,3 +1,5 @@
+"""Retrieval-augmented chat helpers for repository knowledge-base answers."""
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -9,10 +11,18 @@ MAX_CONTEXT_CHARS = 8000
 
 
 def build_context(repository_id: str, question: str, db: Session) -> tuple[str, list[str]]:
-    """
-    Concatenates the repository's knowledge base entries into a single
-    context string, capped at MAX_CONTEXT_CHARS. Keeps README first when
-    present, then adds the entries most relevant to the current question.
+    """Build a bounded RAG context string for a repository question.
+
+    Keeps README content first when present, then appends entries ranked as most relevant
+    to the current question until the context budget is reached.
+
+    Args:
+        repository_id: Repository identifier whose knowledge base should be queried.
+        question: User question used to rank relevant entries.
+        db: Database session used to load knowledge-base entries.
+
+    Returns:
+        Tuple containing the context text and source labels included in that context.
     """
     entries = db.scalars(
         select(KnowledgeBase).where(KnowledgeBase.repository_id == repository_id)
@@ -49,6 +59,16 @@ def build_context(repository_id: str, question: str, db: Session) -> tuple[str, 
 
 
 def build_system_prompt(repository_name: str, language: str | None, context: str) -> str:
+    """Build system prompt for the current operation.
+
+    Args:
+        repository_name: repository_name value used by the operation.
+        language: language value used by the operation.
+        context: context value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     return (
         f"You are a knowledge transfer assistant helping a team member understand "
         f"the '{repository_name}' codebase ({language or 'unknown language'}). "
@@ -70,6 +90,20 @@ def answer_question(
     db: Session,
     llm: LLMProvider,
 ) -> tuple[str, list[str]]:
+    """Handle answer question for the current operation.
+
+    Args:
+        repository_id: repository_id value used by the operation.
+        repository_name: repository_name value used by the operation.
+        language: language value used by the operation.
+        question: question value used by the operation.
+        history_text: history_text value used by the operation.
+        db: Database session used for persistence and queries.
+        llm: LLM provider used for generation.
+
+    Returns:
+        Result produced by the operation.
+    """
     context, sources = build_context(repository_id, question, db)
     system_prompt = build_system_prompt(repository_name, language, context)
     user_prompt = f"{history_text}\nQuestion: {question}" if history_text else question

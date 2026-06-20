@@ -1,3 +1,5 @@
+"""Pydantic schemas for repositories, uploads, contributors, and assignments."""
+
 from datetime import datetime
 from typing import Optional
 
@@ -5,6 +7,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class RepositoryConnectRequest(BaseModel):
+    """Pydantic schema for RepositoryConnectRequest payloads."""
     url: str
     branch: str = "main"
     provider: Optional[str] = None
@@ -12,6 +15,7 @@ class RepositoryConnectRequest(BaseModel):
 
 
 class RepositoryResponse(BaseModel):
+    """Pydantic schema for RepositoryResponse payloads."""
     id: str
     name: str
     source_type: str
@@ -30,11 +34,13 @@ class RepositoryResponse(BaseModel):
 
 
 class RepositoryListResponse(BaseModel):
+    """Pydantic schema for RepositoryListResponse payloads."""
     repositories: list[RepositoryResponse]
     total: int
 
 
 class KnowledgeBaseEntry(BaseModel):
+    """Pydantic schema for KnowledgeBaseEntry payloads."""
     id: str
     entry_type: str
     file_path: Optional[str]
@@ -44,6 +50,7 @@ class KnowledgeBaseEntry(BaseModel):
 
 
 class KnowledgeBaseResponse(BaseModel):
+    """Pydantic schema for KnowledgeBaseResponse payloads."""
     repository_id: str
     status: str
     entries: list[KnowledgeBaseEntry]
@@ -51,6 +58,7 @@ class KnowledgeBaseResponse(BaseModel):
 
 
 class RepositoryFileResponse(BaseModel):
+    """Pydantic schema for RepositoryFileResponse payloads."""
     repository_id: str
     path: str
     entry_type: str
@@ -60,6 +68,7 @@ class RepositoryFileResponse(BaseModel):
 
 
 class RepositoryUploadResponse(BaseModel):
+    """Pydantic schema for RepositoryUploadResponse payloads."""
     id: str
     filename: str
     content_type: Optional[str] = None
@@ -69,11 +78,13 @@ class RepositoryUploadResponse(BaseModel):
 
 
 class RepositoryUploadListResponse(BaseModel):
+    """Pydantic schema for RepositoryUploadListResponse payloads."""
     uploads: list[RepositoryUploadResponse]
     total: int
 
 
 class ContributorResponse(BaseModel):
+    """Pydantic schema for ContributorResponse payloads."""
     id: str
     name: str
     email: str
@@ -88,17 +99,20 @@ class ContributorResponse(BaseModel):
 
 
 class ContributorListResponse(BaseModel):
+    """Pydantic schema for ContributorListResponse payloads."""
     repository_id: str
     contributors: list[ContributorResponse]
     total: int
 
 
 class AssignLearnerRequest(BaseModel):
+    """Pydantic schema for AssignLearnerRequest payloads."""
     learner_id: str
     kt_topic_id: str | None = None
 
 
 class AssignmentResponse(BaseModel):
+    """Pydantic schema for AssignmentResponse payloads."""
     id: str
     repository_id: str
     kt_topic_id: Optional[str] = None
@@ -111,11 +125,13 @@ class AssignmentResponse(BaseModel):
 
 
 class AssignmentListResponse(BaseModel):
+    """Pydantic schema for AssignmentListResponse payloads."""
     assignments: list[AssignmentResponse]
     total: int
 
 
 class MyAssignmentResponse(BaseModel):
+    """Pydantic schema for MyAssignmentResponse payloads."""
     assignment_id: str
     repository_id: str
     repository_name: str

@@ -1,3 +1,5 @@
+"""LLM-powered assessment question generation and parsing helpers."""
+
 import json
 import logging
 
@@ -21,6 +23,14 @@ class AssessmentGenerationError(Exception):
 
 
 def strip_markdown_fences(content: str) -> str:
+    """Handle strip markdown fences for the current operation.
+
+    Args:
+        content: File content or text being inspected.
+
+    Returns:
+        Result produced by the operation.
+    """
     text = content.strip()
     if not text.startswith("```"):
         return text
@@ -34,6 +44,14 @@ def strip_markdown_fences(content: str) -> str:
 
 
 def extract_json_array(content: str) -> str:
+    """Extract json array from the supplied input.
+
+    Args:
+        content: File content or text being inspected.
+
+    Returns:
+        Result produced by the operation.
+    """
     text = strip_markdown_fences(content)
     if text.startswith("[") and text.endswith("]"):
         return text
@@ -46,6 +64,17 @@ def extract_json_array(content: str) -> str:
 
 
 def parse_generated_questions_json(content: str) -> list[dict]:
+    """Parse generated questions json into structured data.
+
+    Args:
+        content: File content or text being inspected.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        AssessmentGenerationError: If the operation cannot be completed.
+    """
     try:
         parsed = json.loads(strip_markdown_fences(content))
     except json.JSONDecodeError:
@@ -59,6 +88,14 @@ def parse_generated_questions_json(content: str) -> list[dict]:
 
 
 def build_code_context(entries: list[KnowledgeBase]) -> str:
+    """Build code context for the current operation.
+
+    Args:
+        entries: entries value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     chunks: list[str] = []
     remaining = MAX_CONTEXT_CHARS
 
@@ -79,9 +116,19 @@ def generate_assessment_questions(
     db: Session,
     llm: LLMProvider,
 ) -> list[dict]:
-    """
-    Uses KnowledgeBase entries for the topic's repository to generate MCQ questions.
-    Returns a list of dicts matching the generated question schema.
+    """Generate multiple-choice assessment questions for a KT topic.
+
+    Args:
+        topic: KT topic whose repository and path scope provide generation context.
+        num_questions: Number of questions to generate.
+        db: Database session used to load knowledge-base entries.
+        llm: LLM provider used to generate question batches.
+
+    Returns:
+        Generated question dictionaries matching the assessment schema.
+
+    Raises:
+        AssessmentGenerationError: If repository context is missing or the LLM response cannot be parsed.
     """
     try:
         repository_entries = db.scalars(

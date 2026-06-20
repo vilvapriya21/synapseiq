@@ -1,3 +1,5 @@
+"""SQLAlchemy model for repository knowledge-base entries."""
+
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -8,6 +10,7 @@ from app.db.database import Base
 
 
 class KnowledgeBase(Base):
+    """SQLAlchemy model representing indexed repository knowledge-base content."""
     __tablename__ = "knowledge_base_entries"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))

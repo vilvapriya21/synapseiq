@@ -1,3 +1,5 @@
+"""Pydantic schema exports shared across routers and services."""
+
 from app.schemas.auth import Token, TokenPayload, UserRead
 from app.schemas.health import HealthCheck
 from app.schemas.kt_topic import (

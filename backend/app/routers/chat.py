@@ -1,3 +1,5 @@
+"""API endpoints for repository chat history and RAG answers."""
+
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -32,6 +34,16 @@ def get_chat_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ChatHistoryResponse:
+    """Return the chat history for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+    """
     get_accessible_repository(db, repo_id, current_user)
 
     messages = db.scalars(
@@ -55,6 +67,21 @@ def post_chat_message(
     current_user: User = Depends(get_current_user),
     llm: LLMProvider = Depends(get_llm),
 ) -> ChatMessageResponse:
+    """Handle post chat message for the current operation.
+
+    Args:
+        repo_id: Repository identifier.
+        payload: Validated request body for the operation.
+        db: Database session used for persistence and queries.
+        current_user: Authenticated user associated with the request.
+        llm: LLM provider used for generation.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     repository = get_accessible_repository(db, repo_id, current_user)
 
     content = payload.content.strip()

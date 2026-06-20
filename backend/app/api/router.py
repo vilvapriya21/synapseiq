@@ -1,3 +1,5 @@
+"""Top-level API router that mounts versioned API endpoints."""
+
 from fastapi import APIRouter
 
 from app.api.v1 import health

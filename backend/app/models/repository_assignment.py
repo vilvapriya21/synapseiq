@@ -1,3 +1,5 @@
+"""SQLAlchemy model for repository and KT-topic learner assignments."""
+
 from datetime import datetime, timezone
 from uuid import uuid4
 

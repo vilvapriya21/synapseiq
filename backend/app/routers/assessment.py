@@ -1,3 +1,5 @@
+"""API endpoints for assessment generation, assignment, submission, and results."""
+
 from datetime import datetime, timezone
 from typing import cast
 
@@ -46,6 +48,14 @@ router = APIRouter()
 
 
 def _serialize_option(option: AssessmentOption) -> AssessmentOptionResponse:
+    """Handle serialize option for the current operation.
+
+    Args:
+        option: option value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     return AssessmentOptionResponse(
         id=option.id,
         label=option.label,
@@ -55,6 +65,14 @@ def _serialize_option(option: AssessmentOption) -> AssessmentOptionResponse:
 
 
 def _serialize_question(question: AssessmentQuestion) -> AssessmentQuestionResponse:
+    """Handle serialize question for the current operation.
+
+    Args:
+        question: question value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     return AssessmentQuestionResponse(
         id=question.id,
         question_text=question.question_text,
@@ -67,6 +85,14 @@ def _serialize_question(question: AssessmentQuestion) -> AssessmentQuestionRespo
 
 
 def _serialize_learner_question(question: AssessmentQuestion) -> AssessmentQuestionLearnerView:
+    """Handle serialize learner question for the current operation.
+
+    Args:
+        question: question value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     return AssessmentQuestionLearnerView(
         id=question.id,
         question_text=question.question_text,
@@ -81,6 +107,16 @@ def _assessment_response(
     assessment: Assessment,
     include_correct: bool,
 ) -> AssessmentResponse | AssessmentLearnerView:
+    """Handle assessment response for the current operation.
+
+    Args:
+        db: Database session used for persistence and queries.
+        assessment: assessment value used by the operation.
+        include_correct: include_correct value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+    """
     questions = db.scalars(
         select(AssessmentQuestion)
         .where(AssessmentQuestion.assessment_id == assessment.id)
@@ -146,6 +182,18 @@ def _assessment_response(
 
 
 def _get_assessment_or_404(db: Session, assessment_id: str) -> Assessment:
+    """Return the assessment or 404 for the current operation.
+
+    Args:
+        db: Database session used for persistence and queries.
+        assessment_id: assessment_id value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     assessment = db.get(Assessment, assessment_id)
     if assessment is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found")
@@ -153,6 +201,15 @@ def _get_assessment_or_404(db: Session, assessment_id: str) -> Assessment:
 
 
 def _require_assigned_learner(assessment: Assessment, current_user: User) -> None:
+    """Handle require assigned learner for the current operation.
+
+    Args:
+        assessment: assessment value used by the operation.
+        current_user: Authenticated user associated with the request.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if not is_learner(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Learner access required")
     if assessment.assigned_to != current_user.id:
@@ -166,6 +223,20 @@ def generate_questions(
     db: Session = Depends(get_db),
     llm: LLMProvider = Depends(get_llm),
 ) -> GenerateQuestionsResponse:
+    """Handle generate questions for the current operation.
+
+    Args:
+        payload: Validated request body for the operation.
+        current_user: Authenticated user associated with the request.
+        db: Database session used for persistence and queries.
+        llm: LLM provider used for generation.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     topic = db.get(KTTopic, payload.kt_topic_id)
     if topic is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
@@ -210,6 +281,19 @@ def save_assessment(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> AssessmentResponse:
+    """Handle save assessment for the current operation.
+
+    Args:
+        payload: Validated request body for the operation.
+        current_user: Authenticated user associated with the request.
+        db: Database session used for persistence and queries.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     topic = db.get(KTTopic, payload.kt_topic_id)
     if topic is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
@@ -269,6 +353,15 @@ def list_active_assessments(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[AssessmentListItem]:
+    """List active assessments for the current user.
+
+    Args:
+        current_user: Authenticated user associated with the request.
+        db: Database session used for persistence and queries.
+
+    Returns:
+        Result produced by the operation.
+    """
     if current_user.role.lower() == "admin":
         assessments = db.scalars(
             select(Assessment).where(Assessment.created_by == current_user.id)
@@ -317,6 +410,19 @@ def get_assessment_by_topic(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AssessmentResponse | AssessmentLearnerView | None:
+    """Return the assessment by topic for the current operation.
+
+    Args:
+        kt_topic_id: kt_topic_id value used by the operation.
+        current_user: Authenticated user associated with the request.
+        db: Database session used for persistence and queries.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     topic = db.get(KTTopic, kt_topic_id)
     if topic is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found")
@@ -354,6 +460,20 @@ def assign_assessment(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> AssessmentResponse:
+    """Handle assign assessment for the current operation.
+
+    Args:
+        assessment_id: assessment_id value used by the operation.
+        payload: Validated request body for the operation.
+        current_user: Authenticated user associated with the request.
+        db: Database session used for persistence and queries.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     assessment = _get_assessment_or_404(db, assessment_id)
     get_owned_repository(db, assessment.repository_id, current_user.id)
     learner = db.get(User, payload.assigned_to)
@@ -372,6 +492,13 @@ def delete_assessment(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> None:
+    """Delete the requested assessment resource.
+
+    Args:
+        assessment_id: assessment_id value used by the operation.
+        current_user: Authenticated user associated with the request.
+        db: Database session used for persistence and queries.
+    """
     assessment = _get_assessment_or_404(db, assessment_id)
     get_owned_repository(db, assessment.repository_id, current_user.id)
 
@@ -418,6 +545,13 @@ def start_attempt(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Handle start attempt for the current operation.
+
+    Args:
+        assessment_id: assessment_id value used by the operation.
+        current_user: Authenticated user associated with the request.
+        db: Database session used for persistence and queries.
+    """
     assessment = _get_assessment_or_404(db, assessment_id)
     _require_assigned_learner(assessment, current_user)
 
@@ -442,6 +576,17 @@ def submit_attempt(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Handle submit attempt for the current operation.
+
+    Args:
+        assessment_id: assessment_id value used by the operation.
+        payload: Validated request body for the operation.
+        current_user: Authenticated user associated with the request.
+        db: Database session used for persistence and queries.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     assessment = _get_assessment_or_404(db, assessment_id)
     _require_assigned_learner(assessment, current_user)
 
@@ -523,6 +668,16 @@ def get_my_result(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Return the my result for the current operation.
+
+    Args:
+        assessment_id: assessment_id value used by the operation.
+        current_user: Authenticated user associated with the request.
+        db: Database session used for persistence and queries.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     assessment = _get_assessment_or_404(db, assessment_id)
     _require_assigned_learner(assessment, current_user)
 
@@ -546,6 +701,13 @@ def get_admin_results(
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    """Return the admin results for the current operation.
+
+    Args:
+        assessment_id: assessment_id value used by the operation.
+        _: _ value used by the operation.
+        db: Database session used for persistence and queries.
+    """
     assessment = _get_assessment_or_404(db, assessment_id)
     attempts = db.scalars(
         select(AssessmentAttempt)
@@ -577,6 +739,16 @@ def get_attempt_detail(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Return the attempt detail for the current operation.
+
+    Args:
+        attempt_id: attempt_id value used by the operation.
+        current_user: Authenticated user associated with the request.
+        db: Database session used for persistence and queries.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     attempt = db.get(AssessmentAttempt, attempt_id)
     if attempt is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attempt not found")
@@ -589,6 +761,18 @@ def get_attempt_detail(
 
 
 def _build_attempt_result(db: Session, attempt: AssessmentAttempt) -> AttemptResultResponse:
+    """Build attempt result for the current operation.
+
+    Args:
+        db: Database session used for persistence and queries.
+        attempt: attempt value used by the operation.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     assessment = db.get(Assessment, attempt.assessment_id)
     if assessment is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found")

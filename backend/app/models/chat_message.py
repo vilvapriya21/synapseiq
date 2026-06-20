@@ -1,3 +1,5 @@
+"""SQLAlchemy model for persisted repository chat messages."""
+
 from datetime import datetime, timezone
 from uuid import uuid4
 

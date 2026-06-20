@@ -1,3 +1,5 @@
+"""SQLAlchemy models for assessments, questions, options, and learner attempts."""
+
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -8,6 +10,7 @@ from app.db.database import Base
 
 
 class Assessment(Base):
+    """SQLAlchemy model representing an assessment assigned to a KT topic."""
     __tablename__ = "assessments"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
@@ -23,6 +26,7 @@ class Assessment(Base):
 
 
 class AssessmentQuestion(Base):
+    """SQLAlchemy model representing a question within an assessment."""
     __tablename__ = "assessment_questions"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
@@ -37,6 +41,7 @@ class AssessmentQuestion(Base):
 
 
 class AssessmentOption(Base):
+    """SQLAlchemy model representing an answer option for an assessment question."""
     __tablename__ = "assessment_options"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
@@ -49,6 +54,7 @@ class AssessmentOption(Base):
 
 
 class AssessmentAttempt(Base):
+    """SQLAlchemy model representing a learner assessment attempt."""
     __tablename__ = "assessment_attempts"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
@@ -66,6 +72,7 @@ class AssessmentAttempt(Base):
 
 
 class AssessmentAttemptAnswer(Base):
+    """SQLAlchemy model representing saved answers for an assessment attempt."""
     __tablename__ = "assessment_attempt_answers"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))

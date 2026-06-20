@@ -1,3 +1,5 @@
+"""SQLAlchemy models for KT checklist items and learner progress."""
+
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -8,6 +10,7 @@ from app.db.database import Base
 
 
 class KTChecklistItem(Base):
+    """SQLAlchemy model representing a KT checklist item."""
     __tablename__ = "kt_checklist_items"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
@@ -22,6 +25,7 @@ class KTChecklistItem(Base):
 
 
 class KTChecklistProgress(Base):
+    """SQLAlchemy model representing learner progress on a checklist item."""
     __tablename__ = "kt_checklist_progress"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))

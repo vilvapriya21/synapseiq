@@ -1,3 +1,5 @@
+"""API endpoint for dashboard summary metrics."""
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -16,6 +18,15 @@ def get_dashboard(
     db: Session = Depends(get_db),
 ) -> dict:
     # Real counts from the repositories table for this user
+    """Return the dashboard for the current operation.
+
+    Args:
+        current_user: Authenticated user associated with the request.
+        db: Database session used for persistence and queries.
+
+    Returns:
+        Result produced by the operation.
+    """
     all_repos = db.scalars(
         select(Repository)
         .where(Repository.owner_id == current_user.id)

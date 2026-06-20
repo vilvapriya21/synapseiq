@@ -1,3 +1,5 @@
+"""Repository contributor analysis using Git history and provider APIs."""
+
 from pathlib import Path
 from urllib.parse import quote, urlparse
 import base64
@@ -19,11 +21,27 @@ logger = logging.getLogger(__name__)
 
 
 def sanitize_git_error(value: str) -> str:
-    """Remove credentials embedded in authenticated clone URLs."""
+    """Remove credentials embedded in authenticated clone URLs.
+
+    Args:
+        value: Git command output that may contain authenticated URLs.
+
+    Returns:
+        Sanitized command output with embedded credentials masked.
+    """
     return re.sub(r"(https://)[^/@\s]+@", r"\1***@", value)
 
 
 def clone_with_history(clone_url: str, target_dir: Path) -> None:
+    """Clone a repository with full history for contributor analysis.
+
+    Args:
+        clone_url: Repository clone URL.
+        target_dir: Directory where cloned files should be written.
+
+    Raises:
+        Exception: If the operation cannot be completed.
+    """
     command = ["git", "clone", clone_url, str(target_dir)]
     try:
         subprocess.run(
@@ -63,15 +81,42 @@ BOT_ACCOUNT_MARKERS = (
 
 
 def normalize_email(email: str) -> str:
+    """Normalize an email address for contributor aggregation.
+
+    Args:
+        email: Email address to look up or normalize.
+
+    Returns:
+        Result produced by the operation.
+    """
     return email.strip().lower()
 
 
 def is_bot_account(name: str, email: str) -> bool:
+    """Return whether a contributor identity appears to be automated.
+
+    Args:
+        name: Display name for the contributor or user.
+        email: Email address to look up or normalize.
+
+    Returns:
+        Result produced by the operation.
+    """
     identity = f"{name} {email}".lower()
     return any(marker in identity for marker in BOT_ACCOUNT_MARKERS)
 
 
 def get_or_create_contributor(authorship: dict[str, dict], name: str, email: str) -> dict | None:
+    """Create or return an in-memory contributor aggregate.
+
+    Args:
+        authorship: Mutable contributor aggregate keyed by normalized email.
+        name: Display name for the contributor or user.
+        email: Email address to look up or normalize.
+
+    Returns:
+        Result produced by the operation.
+    """
     normalized_email = normalize_email(email)
     if not normalized_email or is_bot_account(name, normalized_email):
         return None
@@ -92,6 +137,18 @@ def get_or_create_contributor(authorship: dict[str, dict], name: str, email: str
 
 
 def extract_commit_authorship(repo_dir: Path, seen_commit_shas: set[str] | None = None) -> dict[str, dict]:
+    """Extract contributor authorship metrics from Git commit history.
+
+    Args:
+        repo_dir: repo_dir value used by the operation.
+        seen_commit_shas: Set of commit SHAs already included in contributor metrics.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        Exception: If the operation cannot be completed.
+    """
     result = subprocess.run(
         ["git", "log", "--all", "--numstat", '--format=COMMIT|%H|%an|%ae|%cn|%ce'],
         cwd=repo_dir,
@@ -144,6 +201,14 @@ def extract_commit_authorship(repo_dir: Path, seen_commit_shas: set[str] | None 
 
 
 def parse_azure_repo_url(url: str) -> tuple[str, str, str] | None:
+    """Parse supported Azure DevOps repository URLs into API components.
+
+    Args:
+        url: Repository URL or API URL to process.
+
+    Returns:
+        Result produced by the operation.
+    """
     parsed = urlparse(url.strip().rstrip("/"))
     path_parts = [part for part in parsed.path.strip("/").split("/") if part]
 
@@ -158,6 +223,14 @@ def parse_azure_repo_url(url: str) -> tuple[str, str, str] | None:
 
 
 def get_azure_auth_header(azure_token: str) -> dict[str, str]:
+    """Build the Basic authentication header for an Azure DevOps PAT.
+
+    Args:
+        azure_token: Azure DevOps Personal Access Token.
+
+    Returns:
+        Result produced by the operation.
+    """
     auth_token = base64.b64encode(f":{azure_token}".encode("utf-8")).decode("ascii")
     return {"Authorization": f"Basic {auth_token}"}
 
@@ -167,6 +240,16 @@ def get_azure_paginated_values(
     azure_token: str,
     params: dict[str, str | int],
 ) -> list[dict]:
+    """Fetch all paginated values from an Azure DevOps API endpoint.
+
+    Args:
+        api_url: Azure DevOps API endpoint URL.
+        azure_token: Azure DevOps Personal Access Token.
+        params: Query parameters to send with the provider API request.
+
+    Returns:
+        Result produced by the operation.
+    """
     values: list[dict] = []
     continuation_token: str | None = None
     headers = get_azure_auth_header(azure_token)
@@ -197,6 +280,18 @@ def get_pull_request_commits(
     pr_id: int | str,
     azure_token: str,
 ) -> list[dict]:
+    """Fetch commits associated with an Azure DevOps pull request.
+
+    Args:
+        org: Azure DevOps organization name.
+        project: Azure DevOps project name.
+        repo: Azure DevOps repository name.
+        pr_id: Azure DevOps pull request identifier.
+        azure_token: Azure DevOps Personal Access Token.
+
+    Returns:
+        Result produced by the operation.
+    """
     api_url = (
         f"https://dev.azure.com/{quote(org, safe='')}/{quote(project, safe='')}"
         f"/_apis/git/repositories/{quote(repo, safe='')}/pullRequests/{quote(str(pr_id), safe='')}/commits"
@@ -217,6 +312,14 @@ def enrich_with_azure_commit_history(
     azure_token: str | None,
     seen_commit_shas: set[str],
 ) -> None:
+    """Augment contributor metrics with Azure DevOps pull request history.
+
+    Args:
+        authorship: Mutable contributor aggregate keyed by normalized email.
+        repository_url: Repository URL to inspect or query.
+        azure_token: Azure DevOps Personal Access Token.
+        seen_commit_shas: Set of commit SHAs already included in contributor metrics.
+    """
     if not azure_token:
         return
 
@@ -287,6 +390,15 @@ def enrich_with_azure_commit_history(
 
 
 def top_files_string(file_counts: dict[str, int], limit: int = 10) -> str:
+    """Serialize a contributor top-files map for storage.
+
+    Args:
+        file_counts: file_counts value used by the operation.
+        limit: Maximum number of items to include.
+
+    Returns:
+        Result produced by the operation.
+    """
     top_files = sorted(file_counts.items(), key=lambda item: item[1], reverse=True)[:limit]
     return ",".join(f"{path}:{count}" for path, count in top_files)[:2000]
 
@@ -299,6 +411,16 @@ def analyze_contributors(
     gitlab_token,
     bitbucket_token,
 ) -> None:
+    """Analyze repository history and persist contributor metrics.
+
+    Args:
+        repo_id: Repository identifier.
+        db: Database session used for persistence and queries.
+        github_token: github_token value used by the operation.
+        azure_token: Azure DevOps Personal Access Token.
+        gitlab_token: gitlab_token value used by the operation.
+        bitbucket_token: bitbucket_token value used by the operation.
+    """
     repository = db.get(Repository, repo_id)
     if repository is None:
         return

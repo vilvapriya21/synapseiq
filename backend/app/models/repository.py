@@ -1,3 +1,5 @@
+"""SQLAlchemy model for onboarded Git and uploaded repositories."""
+
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -8,6 +10,7 @@ from app.db.database import Base
 
 
 class Repository(Base):
+    """SQLAlchemy model representing an onboarded Git or uploaded repository."""
     __tablename__ = "repositories"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))

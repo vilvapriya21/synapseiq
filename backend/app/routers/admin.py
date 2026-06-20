@@ -1,3 +1,5 @@
+"""API endpoints for administrator user management."""
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -14,12 +16,31 @@ ALLOWED_ROLES = {"learner", "admin"}
 
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Handle require admin for the current operation.
+
+    Args:
+        current_user: Authenticated user associated with the request.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if current_user.role.lower() != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
 
 
 def validate_role(role: str) -> None:
+    """Validate role for the current operation.
+
+    Args:
+        role: role value used by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if role not in ALLOWED_ROLES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -32,6 +53,15 @@ def list_users(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> list[User]:
+    """List users for the current user.
+
+    Args:
+        current_user: Authenticated user associated with the request.
+        db: Database session used for persistence and queries.
+
+    Returns:
+        Result produced by the operation.
+    """
     return db.scalars(
         select(User)
         .where(User.id != current_user.id)
@@ -45,6 +75,19 @@ def create_user(
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> User:
+    """Create user records for the request.
+
+    Args:
+        payload: Validated request body for the operation.
+        _: _ value used by the operation.
+        db: Database session used for persistence and queries.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     validate_role(payload.role)
     if db.scalar(select(User).where(User.email == payload.email.lower())):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="An account with this email already exists")
@@ -71,6 +114,20 @@ def update_user_role(
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> User:
+    """Update the requested user role resource.
+
+    Args:
+        user_id: user_id value used by the operation.
+        payload: Validated request body for the operation.
+        _: _ value used by the operation.
+        db: Database session used for persistence and queries.
+
+    Returns:
+        Result produced by the operation.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     validate_role(payload.role)
     user = db.get(User, user_id)
     if user is None:
@@ -88,6 +145,16 @@ def delete_user(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> None:
+    """Delete the requested user resource.
+
+    Args:
+        user_id: user_id value used by the operation.
+        current_user: Authenticated user associated with the request.
+        db: Database session used for persistence and queries.
+
+    Raises:
+        HTTPException: If validation, authorization, or lookup fails.
+    """
     if user_id == current_user.id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete your own account")
 
