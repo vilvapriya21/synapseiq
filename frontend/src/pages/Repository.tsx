@@ -1,7 +1,7 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
-import ChatPanel from "../components/ChatPanel";
+import FloatingChatWidget from "../components/FloatingChatWidget";
 import KTChecklist from "../components/KTChecklist";
 import { EmptyState, Modal, PageHero } from "../components/common";
 import Loader from "../components/common/Loader";
@@ -958,7 +958,7 @@ function RepositoryPage() {
             </article>
           </section>
 
-          <section className={styles.card}>
+          <section className={`${styles.card} ${styles.spaciousCard} ${styles.topicsCard}`}>
             <div className={styles.cardHeader}>
               <h2>KT Topics</h2>
               {role === "ADMIN" ? (
@@ -1069,7 +1069,7 @@ function RepositoryPage() {
 
           {role === "ADMIN" ? (
             <>
-              <section className={styles.card}>
+              <section className={`${styles.card} ${styles.spaciousCard} ${styles.contributorsCard}`}>
                 <div className={styles.cardHeader}>
                   <div>
                     <h2>Code Contributors</h2>
@@ -1093,7 +1093,7 @@ function RepositoryPage() {
                     description="Click Analyze Contributors to extract commit history."
                   />
                 ) : (
-                  <table className={styles.table}>
+                  <table className={`${styles.table} ${styles.contributorsTable}`}>
                     <thead>
                       <tr>
                         <th>Name</th>
@@ -1120,7 +1120,7 @@ function RepositoryPage() {
                 )}
               </section>
 
-              <section className={styles.card}>
+              <section className={`${styles.card} ${styles.spaciousCard} ${styles.assignmentsCard}`}>
                 <h2>Current Learning</h2>
 
                 <div className={styles.assignForm}>
@@ -1151,7 +1151,7 @@ function RepositoryPage() {
                 {assignments.length === 0 ? (
                   <EmptyState title="No learners assigned yet" description="Assigned learners will appear here." />
                 ) : (
-                  <table className={styles.table}>
+                  <table className={`${styles.table} ${styles.assignmentsTable}`}>
                     <thead>
                       <tr>
                         <th>Learner</th>
@@ -1181,10 +1181,8 @@ function RepositoryPage() {
           ) : null}
         </main>
 
-        <aside className={styles.workspaceSidebar}>
-          {repoId ? <ChatPanel repoId={repoId} /> : null}
-        </aside>
       </div>
+      {repoId ? <FloatingChatWidget repoId={repoId} /> : null}
     </div>
   );
 }

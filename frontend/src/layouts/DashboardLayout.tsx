@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { ROUTES } from "../routes/routePaths";
 import synapseLogo from "../assets/synapse-logo.svg";
-import { usePageTitle } from "../context/PageTitleContext";
 import { useAuthStore } from "../store/authStore";
 import { UserRole } from "../types";
 import { normalizeRole } from "../utils/roles";
@@ -47,7 +46,6 @@ function DashboardLayout() {
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
   const role = normalizeRole(user?.role ?? user?.roles?.[0]);
-  const { title } = usePageTitle();
   const visibleNavigation = navigation.filter((item) => item.roles.includes(role));
 
   useEffect(() => {
@@ -83,7 +81,6 @@ function DashboardLayout() {
             <strong>
               <span className={styles.brandNameText}>SynapseIQ</span>
             </strong>
-            <span className={styles.brandSubtitle}>AI Knowledge Platform</span>
           </div>
         </div>
         <button
@@ -122,13 +119,8 @@ function DashboardLayout() {
       <div className={styles.content}>
         <header className={styles.header}>
           <div className={styles.headerTitle}>
-            <span className={styles.headerTitleEyebrow}>{title?.eyebrow ?? "SynapseIQ"}</span>
-            {title?.heading && (
-              <>
-                <span className={styles.headerTitleDivider}>/</span>
-                <span className={styles.headerTitleText}>{title.heading}</span>
-              </>
-            )}
+            <span className={styles.headerAppName}>SynapseIQ</span>
+            <span className={styles.headerTagline}>AI Knowledge Platform</span>
           </div>
           <div className={styles.profile}>
             <button type="button" className={styles.logout} onClick={handleLogout}>
