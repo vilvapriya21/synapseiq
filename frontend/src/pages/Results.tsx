@@ -9,7 +9,7 @@ import styles from "./Results.module.css";
 
 function ResultsPage() {
   const { projectId = "alpha-payments" } = useParams();
-  const role = normalizeRole(useAuthStore((state) => state.user?.roles[0]));
+  const role = normalizeRole(useAuthStore((state) => state.user?.role ?? state.user?.roles?.[0]));
   const [results, setResults] = useState<ResultResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");

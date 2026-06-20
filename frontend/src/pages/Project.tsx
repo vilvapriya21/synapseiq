@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button, EmptyState, Loader, PageHero } from "../components/common";
 import Card from "../components/common/Card";
 import Input from "../components/common/Input";
@@ -71,7 +71,9 @@ function fallbackRepositoriesFromAssignments(assignments: MyAssignment[]): Repos
 
 function ProjectPage() {
   const navigate = useNavigate();
-  const role = normalizeRole(useAuthStore((state) => state.user?.roles[0]));
+  const { projectId } = useParams();
+  const user = useAuthStore((state) => state.user);
+  const role = normalizeRole(user?.role ?? user?.roles?.[0]);
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -145,17 +147,21 @@ function ProjectPage() {
   return (
     <div className={styles.page}>
       <PageHero
-        eyebrow="REPOSITORIES"
-        heading="Project Workspace"
+        eyebrow="Project Workspace"
+        heading={projectId || "Repositories"}
         subtitle={
           role === "ADMIN"
-            ? "View and manage connected codebases."
-            : "Open repositories assigned to you for knowledge transfer."
+            ? "Manage connected repositories and knowledge readiness."
+            : "Open your assigned repositories and continue knowledge transfer."
         }
         action={
           role === "ADMIN" ? (
             <Button className={styles.connectButton} type="button" onClick={() => navigate(ROUTES.repositoryOnboard)}>
               Connect Repository
+            </Button>
+          ) : projectId ? (
+            <Button type="button" onClick={() => navigate(ROUTES.projectAssessment.replace(":projectId", projectId))}>
+              Take Assessment
             </Button>
           ) : null
         }

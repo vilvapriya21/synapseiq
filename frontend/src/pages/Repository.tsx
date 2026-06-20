@@ -6,6 +6,7 @@ import KTChecklist from "../components/KTChecklist";
 import { EmptyState, Modal, PageHero } from "../components/common";
 import Loader from "../components/common/Loader";
 import { ENV } from "../constants/env";
+import { ROUTES } from "../routes/routePaths";
 import { getUsers, type AdminUser } from "../services/adminService";
 import apiClient from "../services/api";
 import {
@@ -210,7 +211,7 @@ function RepositoryPage() {
   const { repoId } = useParams();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const role = normalizeRole(user?.roles[0]);
+  const role = normalizeRole(user?.role ?? user?.roles?.[0]);
   const [repository, setRepository] = useState<Repository | null>(null);
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBaseResponse | null>(null);
   const [contributors, setContributors] = useState<Contributor[]>([]);
@@ -226,6 +227,7 @@ function RepositoryPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [learners, setLearners] = useState<{ id: string; name: string; email: string }[]>([]);
   const [selectedLearnerId, setSelectedLearnerId] = useState("");
+  const [selectedTopicId, setSelectedTopicId] = useState("");
   const [assignError, setAssignError] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("file_tree");
   const [selectedFilePath, setSelectedFilePath] = useState("");
@@ -485,16 +487,17 @@ function RepositoryPage() {
   };
 
   const handleAssign = async () => {
-    if (!repoId || !selectedLearnerId) {
+    if (!repoId || !selectedLearnerId || !selectedTopicId) {
       return;
     }
 
     setAssignError("");
     try {
-      await assignLearner(repoId, selectedLearnerId);
+      await assignLearner(repoId, selectedLearnerId, selectedTopicId || undefined);
       const result = await getAssignments(repoId);
       setAssignments(result.assignments);
       setSelectedLearnerId("");
+      setSelectedTopicId("");
     } catch {
       setAssignError("Failed to assign learner. They may already be assigned to this repository.");
     }
@@ -1017,6 +1020,19 @@ function RepositoryPage() {
                           <button className={styles.linkButton} onClick={() => handleViewRecommendation(topic.id)} type="button">
                             Recommend Person
                           </button>
+                          <button
+                            className={styles.linkButton}
+                            onClick={() =>
+                              navigate(
+                                ROUTES.assessmentBuild
+                                  .replace(":repoId", repoId || "")
+                                  .replace(":topicId", topic.id),
+                              )
+                            }
+                            type="button"
+                          >
+                            Manage Assessment
+                          </button>
                           <button className={styles.deleteButton} onClick={() => handleDeleteTopic(topic.id)} type="button">
                             Remove
                           </button>
@@ -1116,6 +1132,16 @@ function RepositoryPage() {
                     <option value="">Select Learner...</option>
                     {learners.map((learner) => (
                       <option key={learner.id} value={learner.id}>{learner.name} ({learner.email})</option>
+                    ))}
+                  </select>
+                  <select
+                    className={styles.input}
+                    value={selectedTopicId}
+                    onChange={(event) => setSelectedTopicId(event.target.value)}
+                  >
+                    <option value="">Select Topic...</option>
+                    {topics.map((topic) => (
+                      <option key={topic.id} value={topic.id}>{topic.title}</option>
                     ))}
                   </select>
                   <button className={styles.primaryButton} onClick={handleAssign} type="button">Assign</button>

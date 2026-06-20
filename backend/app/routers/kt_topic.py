@@ -380,7 +380,7 @@ def complete_checklist_item(
     current_user: User = Depends(get_current_user),
 ) -> ChecklistItemResponse:
     topic = get_accessible_topic(db, repo_id, topic_id, current_user)
-    if not is_learner(current_user) or is_admin(current_user):
+    if not is_learner(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Learner access required")
 
     item = get_topic_checklist_item(db, topic.id, item_id)
@@ -415,7 +415,7 @@ def uncomplete_checklist_item(
     current_user: User = Depends(get_current_user),
 ) -> None:
     topic = get_accessible_topic(db, repo_id, topic_id, current_user)
-    if not is_learner(current_user) or is_admin(current_user):
+    if not is_learner(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Learner access required")
 
     item = get_topic_checklist_item(db, topic.id, item_id)

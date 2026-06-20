@@ -25,6 +25,7 @@ class UserRead(BaseModel):
     id: str
     email: EmailStr
     name: str
+    role: str
     roles: list[str] = []
 
 

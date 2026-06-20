@@ -23,6 +23,7 @@ const SIDEBAR_COLLAPSED_KEY = "synapseiq:sidebar-collapsed";
 const navigation: Array<{ label: string; roles: UserRole[]; to: string }> = [
   { label: "Dashboard", roles: ["ADMIN", "LEARNER"], to: ROUTES.dashboard },
   { label: "Project Workspace", roles: ["ADMIN", "LEARNER"], to: ROUTES.projectWorkspace },
+  { label: "Assessment", roles: ["ADMIN", "LEARNER"], to: ROUTES.assessments },
   { label: "Repository Onboarding", roles: ["ADMIN"], to: ROUTES.repositoryOnboard },
   { label: "User Management", roles: ["ADMIN"], to: ROUTES.adminUsers },
 ];
@@ -45,7 +46,7 @@ function DashboardLayout() {
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
-  const role = normalizeRole(user?.roles[0]);
+  const role = normalizeRole(user?.role ?? user?.roles?.[0]);
   const { title } = usePageTitle();
   const visibleNavigation = navigation.filter((item) => item.roles.includes(role));
 

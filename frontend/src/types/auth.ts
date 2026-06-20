@@ -4,6 +4,7 @@ export interface User {
   email: string;
   id: string;
   name: string;
+  role?: UserRole | string;
   roles: UserRole[];
 }
 

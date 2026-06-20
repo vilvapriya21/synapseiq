@@ -1,7 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { CloudUpload, Search, Upload } from "lucide-react";
-import { SiBitbucket, SiGithub, SiGitlab } from "react-icons/si";
-import { VscAzureDevops } from "react-icons/vsc";
+import { CloudUpload, GitBranch, GitFork, GitPullRequest, Search, Server, Upload } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ENV } from "../constants/env";
 import { EmptyState, Loader, PageHero } from "../components/common";
@@ -67,13 +65,13 @@ function getRepositoryIcon(repository: Repository) {
   const provider = getRepositoryProvider(repository);
   switch (provider) {
     case "gitlab":
-      return <SiGitlab size={19} />;
+      return <GitBranch size={19} />;
     case "bitbucket":
-      return <SiBitbucket size={19} />;
+      return <GitFork size={19} />;
     case "azure":
-      return <VscAzureDevops size={19} />;
+      return <Server size={19} />;
     case "github":
-      return <SiGithub size={19} />;
+      return <GitPullRequest size={19} />;
     case "upload":
     default:
       return <Upload size={19} />;
@@ -484,7 +482,7 @@ function RepositoryOnboardPage() {
             type="button"
             onClick={() => setProvider("github")}
           >
-            <span className={`${styles.providerMark} ${styles.githubMark}`}><SiGithub size={20} /></span>
+            <span className={`${styles.providerMark} ${styles.githubMark}`}><GitPullRequest size={20} /></span>
             <strong>GitHub</strong>
             <span className={`${styles.connectionBadge} ${githubStatus === "connected" ? styles.connected : styles.notConnected}`}>
               {formatProviderStatus(githubStatus)}
@@ -496,7 +494,7 @@ function RepositoryOnboardPage() {
             type="button"
             onClick={() => setProvider("gitlab")}
           >
-            <span className={`${styles.providerMark} ${styles.gitlabMark}`}><SiGitlab size={20} /></span>
+            <span className={`${styles.providerMark} ${styles.gitlabMark}`}><GitBranch size={20} /></span>
             <strong>GitLab</strong>
             <span className={`${styles.connectionBadge} ${gitlabStatus === "connected" ? styles.connected : styles.notConnected}`}>
               {formatProviderStatus(gitlabStatus)}
@@ -508,7 +506,7 @@ function RepositoryOnboardPage() {
             type="button"
             onClick={() => setProvider("bitbucket")}
           >
-            <span className={`${styles.providerMark} ${styles.bitbucketMark}`}><SiBitbucket size={20} /></span>
+            <span className={`${styles.providerMark} ${styles.bitbucketMark}`}><GitFork size={20} /></span>
             <strong>Bitbucket</strong>
             <span className={`${styles.connectionBadge} ${bitbucketStatus === "connected" ? styles.connected : styles.notConnected}`}>
               {formatProviderStatus(bitbucketStatus)}
@@ -520,7 +518,7 @@ function RepositoryOnboardPage() {
             type="button"
             onClick={() => setProvider("azure")}
           >
-            <span className={`${styles.providerMark} ${styles.azureMark}`}><VscAzureDevops size={20} /></span>
+            <span className={`${styles.providerMark} ${styles.azureMark}`}><Server size={20} /></span>
             <strong>Azure DevOps</strong>
             <span className={`${styles.connectionBadge} ${azureStatus === "connected" ? styles.patSaved : styles.notConnected}`}>
               {azureStatus === "connected" ? "PAT saved" : formatProviderStatus(azureStatus)}
@@ -543,7 +541,7 @@ function RepositoryOnboardPage() {
           <form className={styles.providerPanel} onSubmit={handleConnect}>
             <div className={styles.cardHeader}>
               <div className={`${styles.iconBox} ${styles.githubIcon}`}>
-                <SiGithub size={22} />
+                <GitPullRequest size={22} />
               </div>
               <div>
                 <h2>GitHub</h2>
@@ -619,7 +617,7 @@ type="text"
           <form className={styles.providerPanel} onSubmit={handleConnect}>
             <div className={styles.cardHeader}>
               <div className={`${styles.iconBox} ${styles.gitlabPanelIcon}`}>
-                <SiGitlab size={22} />
+                <GitBranch size={22} />
               </div>
               <div>
                 <h2>GitLab</h2>
@@ -695,7 +693,7 @@ type="text"
           <form className={styles.providerPanel} onSubmit={handleConnect}>
             <div className={styles.cardHeader}>
               <div className={`${styles.iconBox} ${styles.bitbucketPanelIcon}`}>
-                <SiBitbucket size={22} />
+                <GitFork size={22} />
               </div>
               <div>
                 <h2>Bitbucket</h2>
@@ -771,7 +769,7 @@ type="text"
           <form className={styles.providerPanel} onSubmit={handleAzureConnect}>
             <div className={styles.cardHeader}>
               <div className={`${styles.iconBox} ${styles.azurePanelIcon}`}>
-                <VscAzureDevops size={22} />
+                <Server size={22} />
               </div>
               <div>
                 <h2>Azure DevOps</h2>

@@ -34,7 +34,7 @@ PASSWORD_RULE_MESSAGE = (
 
 
 def serialize_user(user: User) -> UserRead:
-    return UserRead(id=user.id, email=user.email, name=user.name, roles=[user.role])
+    return UserRead(id=user.id, email=user.email, name=user.name, role=user.role, roles=[user.role])
 
 
 def find_user(db: Session, email: str) -> User | None:
