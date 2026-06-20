@@ -548,6 +548,7 @@ function RepositoryOnboardPage() {
   return (
     <div className={styles.page}>
       <PageHero
+        eyebrow="Repositories"
         heading="Repositories"
       />
 

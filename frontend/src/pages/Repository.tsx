@@ -876,7 +876,7 @@ function RepositoryPage() {
           <button
             className={styles.backButton}
             type="button"
-            onClick={() => navigate(role === "LEARNER" ? "/dashboard" : "/repositories")}
+            onClick={() => navigate("/repositories")}
           >
             &#8592; Repositories
           </button>

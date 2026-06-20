@@ -22,7 +22,7 @@ const SIDEBAR_COLLAPSED_KEY = "synapseiq:sidebar-collapsed";
 
 const navigation: Array<{ label: string; roles: UserRole[]; to: string }> = [
   { label: "Dashboard", roles: ["ADMIN", "LEARNER"], to: ROUTES.dashboard },
-  { label: "Repositories", roles: ["ADMIN"], to: ROUTES.repositories },
+  { label: "Repositories", roles: ["ADMIN", "LEARNER"], to: ROUTES.repositories },
   { label: "Assessment", roles: ["ADMIN", "LEARNER"], to: ROUTES.assessments },
   { label: "User Management", roles: ["ADMIN"], to: ROUTES.adminUsers },
 ];
