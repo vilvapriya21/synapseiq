@@ -16,7 +16,7 @@ function PageHero({ action, cornerAction, eyebrow, eyebrowContent, heading, subt
   const { setTitle } = usePageTitle();
 
   useEffect(() => {
-    setTitle({ eyebrow, heading });
+    setTitle({ eyebrow: eyebrow || "", heading });
   }, [eyebrow, heading, setTitle]);
 
   return (

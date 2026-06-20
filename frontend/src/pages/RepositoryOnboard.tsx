@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { CloudUpload, RefreshCw, Upload } from "lucide-react";
+import { AlertTriangle, CloudUpload, RefreshCw, Upload } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import azureDevopsIcon from "../assets/azure-devops.svg";
 import bitbucketIcon from "../assets/BitBucket.svg";
@@ -466,7 +466,7 @@ function RepositoryOnboardPage() {
           <span className={`${styles.repositoryIcon} ${getRepositoryIconClass(repository)}`}>
             {getRepositoryIcon(repository)}
           </span>
-          <div>
+          <div className={styles.repositoryText}>
             <div className={styles.repositoryName}>{repository.name}</div>
             <div className={styles.repositorySource}>{getRepositorySourceLabel(repository)}</div>
           </div>
@@ -479,44 +479,54 @@ function RepositoryOnboardPage() {
     {
       key: "status",
       header: "Status",
-      render: (repository) => (
-        <>
-          <span className={`${styles.badge} ${getStatusClass(repository.status)}`}>
-            {repository.status === "indexing" ? (
-              <svg aria-hidden="true" viewBox="0 0 24 24" width="12" height="12" style={{ marginRight: 6 }}>
-                <path
-                  d="M21 12a9 9 0 1 1-2.64-6.36"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeWidth="2"
-                />
-                <animateTransform
-                  attributeName="transform"
-                  dur="0.8s"
-                  from="0 12 12"
-                  repeatCount="indefinite"
-                  to="360 12 12"
-                  type="rotate"
-                />
-              </svg>
+      render: (repository) => {
+        const hasError = repository.status === "error";
+        const statusReason = hasError ? "Indexing failed" : getRepositoryStatusReason(repository);
+        const errorMessage = repository.error_message || "Analysis failed. Check backend logs for details.";
+
+        return (
+          <div className={styles.statusCell}>
+            <span className={`${styles.badge} ${getStatusClass(repository.status)}`}>
+              {repository.status === "indexing" ? (
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="12" height="12" style={{ marginRight: 6 }}>
+                  <path
+                    d="M21 12a9 9 0 1 1-2.64-6.36"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeWidth="2"
+                  />
+                  <animateTransform
+                    attributeName="transform"
+                    dur="0.8s"
+                    from="0 12 12"
+                    repeatCount="indefinite"
+                    to="360 12 12"
+                    type="rotate"
+                  />
+                </svg>
+              ) : null}
+              {hasError ? "Error" : repository.status}
+            </span>
+            {hasError ? (
+              <span className={styles.statusIcon} title={errorMessage} aria-label={errorMessage}>
+                <AlertTriangle size={14} />
+              </span>
             ) : null}
-            {repository.status}
-          </span>
-          {repository.status === "error" && repository.error_message ? (
-            <span title={repository.error_message}> &#9888;</span>
-          ) : null}
-          {getRepositoryStatusReason(repository) ? (
-            <div className={styles.statusReason}>{getRepositoryStatusReason(repository)}</div>
-          ) : null}
-        </>
-      ),
+            {statusReason ? (
+              <div className={styles.statusReason} title={hasError ? errorMessage : statusReason}>
+                {statusReason}
+              </div>
+            ) : null}
+          </div>
+        );
+      },
     },
     {
       key: "action",
       header: "Actions",
       render: (repository) => (
-        <>
+        <div className={styles.actionCell}>
           <button
             className={styles.viewButton}
             type="button"
@@ -540,7 +550,7 @@ function RepositoryOnboardPage() {
           >
             {deletingId === repository.id ? "..." : "Remove"}
           </button>
-        </>
+        </div>
       ),
     },
   ];
