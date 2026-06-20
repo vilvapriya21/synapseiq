@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { EmptyState, Loader } from "./common";
+import { Trash2 } from "lucide-react";
+import { ConfirmDialog, EmptyState, Loader } from "./common";
 import {
   addChecklistItem,
   completeChecklistItem,
@@ -29,6 +30,8 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
   const [saving, setSaving] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [regenerateError, setRegenerateError] = useState("");
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false);
   const [error, setError] = useState("");
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
@@ -117,10 +120,7 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
   };
 
   const handleDelete = async (itemId: string) => {
-    if (!window.confirm("Delete this checklist item?")) {
-      return;
-    }
-
+    setPendingDeleteId(null);
     setSaving(true);
     setError("");
     try {
@@ -134,10 +134,7 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
   };
 
   const handleRegenerate = async () => {
-    if (!window.confirm("Regenerate this checklist? This replaces all current items and clears learner progress.")) {
-      return;
-    }
-
+    setConfirmRegenerate(false);
     setRegenerating(true);
     setRegenerateError("");
     try {
@@ -194,7 +191,7 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
           </div>
         ) : null}
         {adminView ? (
-          <button className={styles.secondaryButton} type="button" onClick={handleRegenerate} disabled={regenerating}>
+          <button className={styles.secondaryButton} type="button" onClick={() => setConfirmRegenerate(true)} disabled={regenerating}>
             {regenerating ? "Generating..." : "Generate Checklist"}
           </button>
         ) : null}
@@ -276,8 +273,14 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
                       <button className={styles.linkButton} type="button" onClick={() => startEdit(item)}>
                         Edit
                       </button>
-                      <button className={styles.deleteButton} type="button" onClick={() => handleDelete(item.id)}>
-                        Delete
+                      <button
+                        aria-label={`Delete ${item.title}`}
+                        className={styles.deleteButton}
+                        title="Delete checklist item"
+                        type="button"
+                        onClick={() => setPendingDeleteId(item.id)}
+                      >
+                        <Trash2 aria-hidden="true" size={16} />
                       </button>
                     </div>
                   ) : null}
@@ -287,6 +290,24 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        confirmLabel="Delete"
+        isOpen={pendingDeleteId !== null}
+        message="Delete this checklist item? This action cannot be undone."
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={() => pendingDeleteId && handleDelete(pendingDeleteId)}
+        title="Delete checklist item"
+      />
+      <ConfirmDialog
+        confirmLabel="Regenerate"
+        isOpen={confirmRegenerate}
+        message="Regenerate this checklist? Current items and learner progress will be replaced."
+        onCancel={() => setConfirmRegenerate(false)}
+        onConfirm={handleRegenerate}
+        title="Regenerate checklist"
+        variant="primary"
+      />
     </div>
   );
 }

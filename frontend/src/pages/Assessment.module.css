@@ -126,12 +126,17 @@
 }
 
 .deleteAction {
-  border: 1px solid var(--color-danger-soft);
+  display: inline-flex;
+  width: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #fecaca;
   border-radius: 8px;
   background: var(--color-surface);
   color: var(--color-danger);
   cursor: pointer;
-  padding: 9px 12px;
+  padding: 9px;
   font-size: var(--font-size-sm);
   font-weight: 600;
 }

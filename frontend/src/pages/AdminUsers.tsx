@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 import {
   AdminUser,
   createUser,
@@ -6,7 +7,7 @@ import {
   getUsers,
   updateUserRole,
 } from "../services/adminService";
-import { EmptyState, PageHero } from "../components/common";
+import { ConfirmDialog, EmptyState, PageHero } from "../components/common";
 import Input from "../components/common/Input";
 import Loader from "../components/common/Loader";
 import Table, { type TableColumn } from "../components/common/Table";
@@ -41,6 +42,7 @@ function AdminUsersPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createForm, setCreateForm] = useState<CreateFormState>(initialCreateForm);
   const [saving, setSaving] = useState(false);
+  const [pendingRemoveUser, setPendingRemoveUser] = useState<AdminUser | null>(null);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -91,7 +93,7 @@ function AdminUsersPage() {
   };
 
   const handleRemove = async (user: AdminUser) => {
-    if (!window.confirm(`Remove ${user.name}? This cannot be undone.`)) return;
+    setPendingRemoveUser(null);
     setSaving(true);
     setError("");
     try {
@@ -135,6 +137,7 @@ function AdminUsersPage() {
       render: (user) => (
         <>
           <button
+            aria-label={`Remove ${user.name}`}
             className={styles.actionButton}
             type="button"
             onClick={() => handleRoleChange(user)}
@@ -145,10 +148,10 @@ function AdminUsersPage() {
           <button
             className={styles.removeButton}
             type="button"
-            onClick={() => handleRemove(user)}
+            onClick={() => setPendingRemoveUser(user)}
             disabled={saving}
           >
-            Remove
+            <Trash2 aria-hidden="true" size={16} />
           </button>
         </>
       ),
@@ -235,6 +238,14 @@ function AdminUsersPage() {
           />
         )}
       </section>
+      <ConfirmDialog
+        confirmLabel="Remove"
+        isOpen={pendingRemoveUser !== null}
+        message={`Remove ${pendingRemoveUser?.name || "this user"}? This action cannot be undone.`}
+        onCancel={() => setPendingRemoveUser(null)}
+        onConfirm={() => pendingRemoveUser && handleRemove(pendingRemoveUser)}
+        title="Remove user"
+      />
     </div>
   );
 }
