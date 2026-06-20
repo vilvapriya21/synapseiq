@@ -1,26 +1,38 @@
 # SynapseIQ
 
-SynapseIQ is an AI-powered Code Intelligence and Knowledge Transfer platform. It helps teams onboard repositories, manage KT workflows, track assessments, and access workspace intelligence through a modern enterprise dashboard.
+SynapseIQ is an AI-powered code intelligence and knowledge transfer platform for engineering teams. It helps teams connect or upload repositories, analyze project knowledge, identify subject-matter experts, build KT checklists, run assessments, and answer repository questions through a chat-based workspace.
+
+## Table of Contents
+
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Environment Setup](#environment-setup)
+- [Backend Setup](#backend-setup)
+- [Frontend Setup](#frontend-setup)
+- [Database Migrations](#database-migrations)
+- [API Overview](#api-overview)
+- [Useful Commands](#useful-commands)
+- [Troubleshooting](#troubleshooting)
 
 ## Features
 
-- User signup and login
-- JWT-based authentication
-- Token persistence with Zustand
-- Protected dashboard routes
-- Logout flow
-- Forgot password with verification code
-- Reset password with confirm password
-- Responsive login UI
-- Dashboard with project search, statistics, and project table
-- Mock dashboard API integration
-- SQLite-backed local database for authentication
+- Authentication with signup, login, logout, password reset, JWT sessions, and role-based access.
+- Admin user management for creating users, updating roles, and removing users.
+- Repository onboarding through connected Git providers or uploaded code archives.
+- Repository intelligence including file inventory, knowledge base generation, contributor analysis, and refresh flows.
+- Git provider integrations for GitHub, GitLab, Bitbucket, and Azure PAT-based access.
+- KT topic management with SME recommendations, generated checklists, completion tracking, and regeneration.
+- AI chat over repository knowledge with saved chat history.
+- Assessment generation, assignment, active assessment views, submissions, results, and attempt detail pages.
+- Dashboard and workspace screens for navigating projects, repositories, assessments, and results.
 
 ## Tech Stack
 
 ### Frontend
 
-- React
+- React 18
 - TypeScript
 - Vite
 - React Router
@@ -32,40 +44,119 @@ SynapseIQ is an AI-powered Code Intelligence and Knowledge Transfer platform. It
 
 - FastAPI
 - SQLAlchemy
-- SQLite
-- JWT authentication
-- Passlib password hashing
-- Pydantic schemas
+- Alembic
+- Pydantic and pydantic-settings
+- PostgreSQL-compatible database support
+- JWT authentication with python-jose
+- Passlib and bcrypt password hashing
+- PyGithub, GitPython, httpx, chardet, and scikit-learn
+- Groq or Ollama-backed LLM workflows
 
 ## Project Structure
 
 ```text
 synapseiq/
   backend/
+    alembic/                 Database migration environment and versions
     app/
-      api/
-      core/
-      db/
-      models/
-      routers/
-      schemas/
-    requirements.txt
+      api/                   Top-level API router and health routes
+      core/                  Configuration, constants, security, LLM dependencies
+      db/                    SQLAlchemy database base, engine, and sessions
+      middleware/            CORS configuration
+      models/                SQLAlchemy models
+      modules/               Repository analysis, RAG, search, LLM, checklist, questions
+      repositories/          Data-access helpers
+      routers/               Auth, admin, repository, KT, chat, assessment routes
+      schemas/               Pydantic request and response schemas
+      services/              Email and supporting services
+      utils/                 Pagination and path matching utilities
     .env.example
+    alembic.ini
+    requirements.txt
 
   frontend/
-    public/
     src/
-      components/
-      layouts/
-      pages/
-      routes/
-      services/
-      store/
-      styles/
-      types/
+      assets/                Images and brand assets
+      components/            Shared and feature components
+      constants/             Environment constants
+      context/               React contexts
+      hooks/                 Reusable hooks
+      layouts/               Auth and dashboard layouts
+      pages/                 Route-level screens
+      routes/                App route configuration and guards
+      services/              API client and domain services
+      store/                 Zustand stores
+      styles/                Global styles
+      types/                 Shared TypeScript types
+      utils/                 Formatting, role, and error helpers
+    .env.example
     package.json
     tsconfig.json
     vite.config.ts
+```
+
+## Prerequisites
+
+- Node.js 18 or newer
+- npm
+- Python 3.11 or newer
+- PostgreSQL-compatible database connection string, such as NeonDB
+- Optional: Ollama installed locally if using `LLM_PROVIDER=ollama`
+- Optional: Groq API key if using `LLM_PROVIDER=groq`
+- Optional: OAuth app credentials for GitHub, GitLab, or Bitbucket integrations
+
+## Environment Setup
+
+Create local environment files from the examples:
+
+```powershell
+Copy-Item backend\.env.example backend\.env
+Copy-Item frontend\.env.example frontend\.env
+```
+
+### Backend Variables
+
+`backend/.env`:
+
+```env
+APP_NAME=SynapseIQ
+APP_ENV=development
+API_V1_PREFIX=/api/v1
+DATABASE_URL=postgresql+psycopg://user:password@host:5432/database?sslmode=require
+JWT_SECRET_KEY=replace-with-a-long-random-secret
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+BACKEND_CORS_ORIGINS=["http://localhost:5173"]
+
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+GITLAB_CLIENT_ID=your-gitlab-client-id
+GITLAB_CLIENT_SECRET=your-gitlab-client-secret
+BITBUCKET_CLIENT_ID=your-bitbucket-client-id
+BITBUCKET_CLIENT_SECRET=your-bitbucket-client-secret
+
+LLM_PROVIDER=ollama
+GROQ_API_KEY=
+GROQ_MODEL=llama-3.3-70b-versatile
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.1
+OLLAMA_TIMEOUT_SECONDS=300
+```
+
+Important notes:
+
+- `DATABASE_URL` is required. The backend will fail to start if it is empty.
+- `JWT_SECRET_KEY` must be at least 8 characters. Use a strong value outside local development.
+- Set `LLM_PROVIDER=groq` only when `GROQ_API_KEY` is configured.
+- Keep real secrets out of source control.
+
+### Frontend Variables
+
+`frontend/.env`:
+
+```env
+VITE_APP_NAME=SynapseIQ
+VITE_API_BASE_URL=http://localhost:8000/api/v1
 ```
 
 ## Backend Setup
@@ -74,19 +165,20 @@ From the repository root:
 
 ```powershell
 cd backend
-..\venv\Scripts\activate 
-.\venv\Scripts\Activate.ps1(powershell)
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-Backend runs at:
+The backend runs at:
 
 ```text
 http://localhost:8000
 ```
 
-API documentation:
+Interactive API documentation is available at:
 
 ```text
 http://localhost:8000/docs
@@ -94,7 +186,7 @@ http://localhost:8000/docs
 
 ## Frontend Setup
 
-From the repository root:
+From a second terminal at the repository root:
 
 ```powershell
 cd frontend
@@ -102,138 +194,154 @@ npm install
 npm run dev
 ```
 
-Frontend runs at:
+The frontend runs at:
 
 ```text
 http://localhost:5173
 ```
 
-## Environment Variables
+## Database Migrations
 
-### Backend
+Alembic manages the database schema.
 
-Create `backend/.env` from `backend/.env.example` if you need local overrides.
+Apply all migrations:
 
-```env
-APP_NAME=SynapseIQ
-APP_ENV=development
-API_V1_PREFIX=/api/v1
-DATABASE_URL=sqlite:///./synapseiq.db
-JWT_SECRET_KEY=change-me
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=60
-BACKEND_CORS_ORIGINS=http://localhost:5173
+```powershell
+cd backend
+alembic upgrade head
 ```
 
-### Frontend
+Create a new migration after model changes:
 
-Create `frontend/.env` from `frontend/.env.example` if you need local overrides.
-
-```env
-VITE_APP_NAME=SynapseIQ
-VITE_API_BASE_URL=http://localhost:8000/api/v1
+```powershell
+cd backend
+alembic revision --autogenerate -m "describe change"
 ```
 
-## Authentication Flow
+Check the current migration:
 
-### Signup
+```powershell
+cd backend
+alembic current
+```
+
+## API Overview
+
+All backend routes are mounted under `/api/v1`.
+
+| Area | Routes |
+| --- | --- |
+| Health | `GET /health` |
+| Auth | `POST /auth/signup`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/forgot-password`, `POST /auth/verify-reset-code`, `POST /auth/reset-password` |
+| Admin | `GET /admin/users`, `POST /admin/users`, `PATCH /admin/users/{user_id}/role`, `DELETE /admin/users/{user_id}` |
+| Dashboard | `GET /dashboard` |
+| Git Auth | `/auth/github`, `/auth/gitlab`, `/auth/bitbucket`, `/auth/azure/pat` and related callback/status/delete routes |
+| Repositories | `POST /repositories/connect`, `POST /repositories/upload`, `GET /repositories`, `GET /repositories/assigned`, `GET /repositories/assigned-to-me`, `GET /repositories/{repo_id}`, `POST /repositories/{repo_id}/refresh`, `DELETE /repositories/{repo_id}` |
+| Repository Knowledge | `GET /repositories/{repo_id}/knowledge-base`, `GET /repositories/{repo_id}/files`, upload download/delete routes, contributor analysis, and assignments |
+| Chat | `GET /repositories/{repo_id}/chat`, `POST /repositories/{repo_id}/chat` |
+| KT Topics | `GET /repositories/{repo_id}/kt-topics`, `POST /repositories/{repo_id}/kt-topics`, checklist, recommendation, completion, regenerate, and delete routes |
+| Assessments | `POST /assessment/generate-questions`, `POST /assessment/`, `GET /assessment/active`, topic lookup, assign, start, submit, results, and attempt detail routes |
+
+Most application routes require a bearer token:
 
 ```http
-POST /api/v1/auth/signup
+Authorization: Bearer <token>
 ```
-
-```json
-{
-  "name": "User Name",
-  "email": "user@example.com",
-  "password": "Password123",
-  "role": "admin"
-}
-```
-
-### Login
-
-```http
-POST /api/v1/auth/login
-```
-
-```json
-{
-  "email": "user@example.com",
-  "password": "Password123"
-}
-```
-
-### Forgot Password
-
-```http
-POST /api/v1/auth/forgot-password
-```
-
-```json
-{
-  "email": "user@example.com"
-}
-```
-
-### Reset Password
-
-```http
-POST /api/v1/auth/reset-password
-```
-
-```json
-{
-  "email": "user@example.com",
-  "code": "123456",
-  "password": "Password123",
-  "confirm_password": "Password123"
-}
-```
-
-## Password Rules
-
-Passwords must include:
-
-- 8 to 72 characters
-- At least one uppercase letter
-- At least one lowercase letter
-- At least one number
-
-Example:
-
-```text
-Password123
-```
-
-## Dashboard API
-
-```http
-GET /api/v1/dashboard
-```
-
-This endpoint requires bearer token authentication.
 
 ## Useful Commands
 
-Run frontend type check:
+Run a frontend production build:
 
 ```powershell
 cd frontend
-npx.cmd tsc --noEmit
+npm run build
 ```
 
-Run backend compile check:
+Preview the built frontend:
+
+```powershell
+cd frontend
+npm run preview
+```
+
+Run a frontend type check:
+
+```powershell
+cd frontend
+npx tsc --noEmit
+```
+
+Compile-check the backend:
 
 ```powershell
 cd backend
 python -m compileall app
 ```
 
-Clear Vite cache and restart dev server:
+Start the backend:
+
+```powershell
+cd backend
+uvicorn app.main:app --reload
+```
+
+Start the frontend:
+
+```powershell
+cd frontend
+npm run dev
+```
+
+Clear Vite cache:
 
 ```powershell
 cd frontend
 Remove-Item -Recurse -Force node_modules\.vite
 npm run dev -- --force
 ```
+
+## Troubleshooting
+
+### Backend fails with `DATABASE_URL is not set`
+
+Add a valid PostgreSQL-compatible connection string to `backend/.env`, then restart the backend.
+
+### Frontend cannot reach the API
+
+Confirm the backend is running on `http://localhost:8000`, then verify:
+
+```env
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+```
+
+Also confirm `BACKEND_CORS_ORIGINS` includes the frontend origin:
+
+```env
+BACKEND_CORS_ORIGINS=["http://localhost:5173"]
+```
+
+### Groq provider fails at startup
+
+When using Groq, configure both values:
+
+```env
+LLM_PROVIDER=groq
+GROQ_API_KEY=your-groq-api-key
+```
+
+### Ollama responses fail or time out
+
+Make sure Ollama is running and the configured model is available:
+
+```powershell
+ollama pull llama3.1
+ollama serve
+```
+
+### Password reset email is not delivered
+
+In non-production environments, the password reset verification code is returned in the API response for debugging. In production, configure the email service before relying on email delivery.
+
+## License
+
+No license file is currently included in this repository. Add one before distributing or open-sourcing the project.
