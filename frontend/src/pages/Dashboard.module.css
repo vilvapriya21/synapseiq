@@ -37,7 +37,7 @@
 }
 
 .bannerGreeting strong {
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .bannerStats {
@@ -80,7 +80,7 @@
 .statLabel {
   color: var(--color-muted);
   font-size: var(--font-size-xs);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -88,7 +88,7 @@
 .statValue {
   color: var(--color-text);
   font-size: var(--font-size-2xl);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .statHint {
@@ -150,7 +150,7 @@
   border-radius: calc(var(--radius-lg) * 999);
   padding: 0 10px;
   font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .repoTag {
@@ -173,7 +173,7 @@
   color: var(--color-surface);
   cursor: pointer;
   padding: 0 14px;
-  font-weight: 800;
+  font-weight: 600;
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast),
@@ -235,12 +235,12 @@
 .table th {
   color: var(--color-muted);
   font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .projectName {
   color: var(--color-text);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .badgeActive {

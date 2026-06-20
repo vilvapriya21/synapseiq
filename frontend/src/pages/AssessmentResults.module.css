@@ -45,7 +45,7 @@
 .stats span {
   color: #526178;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .stats strong {
@@ -100,7 +100,7 @@
   color: #176b87;
   cursor: pointer;
   padding: 0 12px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .action:disabled {
@@ -117,7 +117,7 @@
   border-radius: 8px;
   padding: 0 10px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .passBadge {

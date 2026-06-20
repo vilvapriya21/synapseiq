@@ -14,7 +14,7 @@
   margin: 0 0 6px;
   color: var(--color-muted);
   font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -61,7 +61,7 @@
 .sectionHeader {
   color: var(--color-text);
   font-size: var(--font-size-xl);
-  font-weight: 700;
+  font-weight: 600;
   margin: 0 0 14px;
 }
 
@@ -84,7 +84,7 @@
 .searchBox span {
   color: var(--color-muted);
   font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -106,7 +106,7 @@
   margin: 0;
   color: var(--color-muted);
   font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -131,7 +131,7 @@
 .metaGrid span {
   color: var(--color-muted);
   font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -195,7 +195,7 @@
   border-radius: calc(var(--radius-lg) * 999);
   padding: 4px 11px;
   font-size: var(--font-size-sm);
-  font-weight: 700;
+  font-weight: 600;
   text-transform: capitalize;
   white-space: nowrap;
 }
@@ -235,7 +235,7 @@
   color: var(--color-surface);
   cursor: pointer;
   padding: 0 16px;
-  font-weight: 900;
+  font-weight: 600;
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast),
@@ -258,7 +258,7 @@
   color: var(--color-text);
   cursor: pointer;
   padding: 0 16px;
-  font-weight: 900;
+  font-weight: 600;
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast),
@@ -283,7 +283,7 @@
   margin: 0;
   color: var(--color-text);
   font-size: var(--font-size-xl);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .skeletonCard {

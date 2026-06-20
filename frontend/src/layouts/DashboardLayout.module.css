@@ -97,8 +97,8 @@
 }
 
 .logo img {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
 }
 
@@ -107,7 +107,7 @@
   height: 38px;
   border-radius: calc(var(--radius-lg) * 999);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .nav {
@@ -129,7 +129,7 @@
   padding: 0 14px 0 11px;
   border-radius: var(--radius-sm);
   font-size: 14px;
-  font-weight: 750;
+  font-weight: 600;
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast),
@@ -147,7 +147,7 @@
   border-left-color: var(--color-primary);
   background: var(--color-primary-soft-hover);
   color: var(--color-primary-hover);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .linkLabel {
@@ -285,7 +285,7 @@
 
 .headerTitleEyebrow {
   font-size: var(--font-size-sm);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-muted);
@@ -293,7 +293,7 @@
 
 .headerTitleText {
   font-size: var(--font-size-lg);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-text);
 }
 
@@ -324,7 +324,7 @@
   color: var(--color-primary);
   padding: 0 14px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast),

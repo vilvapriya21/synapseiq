@@ -15,17 +15,14 @@
 .brandMark {
   display: inline-grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-md);
-  background: var(--color-primary);
-  color: var(--color-surface);
-  font-size: var(--font-size-xl);
+  width: 56px;
+  height: 56px;
 }
 
 .brandMark img {
-  width: 28px;
-  height: 28px;
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
 }
 
 .brand h1 {
@@ -72,7 +69,7 @@
 
 .passwordLabel {
   color: var(--color-text-secondary);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .passwordShell {
@@ -152,7 +149,7 @@
   color: var(--color-primary);
   padding: 0;
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 600;
   transition:
     color var(--transition-fast),
     background-color var(--transition-fast);
@@ -177,7 +174,7 @@
   background: var(--color-surface);
   color: var(--color-text-secondary);
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 600;
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast),

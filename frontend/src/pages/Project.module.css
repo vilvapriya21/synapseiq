@@ -45,7 +45,7 @@
 .searchBox span {
   color: var(--color-muted);
   font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -79,7 +79,7 @@
   margin: 0;
   color: var(--color-muted);
   font-size: var(--font-size-base);
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -117,7 +117,7 @@
   margin: 0;
   color: var(--color-text);
   font-size: var(--font-size-xl);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .repoMain p,
@@ -147,7 +147,7 @@
 .metaGrid span {
   color: var(--color-muted);
   font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -155,7 +155,7 @@
   min-width: 0;
   color: var(--color-text);
   font-size: var(--font-size-base);
-  font-weight: 800;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -169,7 +169,7 @@
   border-radius: calc(var(--radius-lg) * 999);
   padding: 0 11px;
   font-size: var(--font-size-sm);
-  font-weight: 900;
+  font-weight: 600;
   text-transform: capitalize;
   white-space: nowrap;
 }
@@ -209,7 +209,7 @@
   cursor: pointer;
   padding: 0 16px;
   font-size: var(--font-size-base);
-  font-weight: 900;
+  font-weight: 600;
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast),

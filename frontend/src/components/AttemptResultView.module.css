@@ -35,14 +35,14 @@
   align-self: center;
   margin-top: -18px;
   font-size: 42px;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .scoreRing small {
   align-self: center;
   margin-top: 46px;
   color: #526178;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .resultGrid {
@@ -67,7 +67,7 @@
 .answerGrid span {
   color: #526178;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .metric strong {

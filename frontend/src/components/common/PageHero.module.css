@@ -38,7 +38,7 @@
   margin: 0 0 6px;
   color: var(--color-muted);
   font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -46,7 +46,7 @@
   margin: 0;
   color: var(--color-text);
   font-size: var(--font-size-3xl);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.12;
 }
 

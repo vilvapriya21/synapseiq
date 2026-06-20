@@ -21,7 +21,7 @@
   background: var(--color-surface);
   color: var(--color-muted);
   padding: 0 12px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .timer {
@@ -34,7 +34,7 @@
   background: var(--color-surface);
   color: var(--color-text);
   padding: 0 12px;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .panel,
@@ -111,7 +111,7 @@
 .assessmentName {
   margin-bottom: var(--space-2);
   color: var(--color-text);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .action {
@@ -121,7 +121,7 @@
   color: #176b87;
   cursor: pointer;
   padding: 9px 12px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .sourceBadge,
@@ -135,7 +135,7 @@
   color: var(--color-primary);
   padding: 0 10px;
   font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .attemptPanel {
@@ -152,7 +152,7 @@
 .progressHeader span {
   color: var(--color-muted);
   font-size: var(--font-size-sm);
-  font-weight: 900;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -189,7 +189,7 @@
 .questionCount {
   color: var(--color-muted);
   font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -275,14 +275,14 @@
   align-self: center;
   margin-top: -18px;
   font-size: var(--font-size-3xl);
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .scoreRing small {
   align-self: center;
   margin-top: 46px;
   color: var(--color-muted);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .resultGrid {
@@ -305,7 +305,7 @@
 .metric span {
   color: var(--color-muted);
   font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .metric strong {

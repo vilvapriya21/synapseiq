@@ -30,7 +30,7 @@
   background: var(--color-bg-subtle);
   color: var(--color-text-secondary);
   font-size: var(--font-size-base);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .table tr:last-child td {

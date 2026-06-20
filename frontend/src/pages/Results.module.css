@@ -22,7 +22,7 @@
 .category span {
   color: var(--color-muted);
   font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .scoreCard strong {
