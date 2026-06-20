@@ -17,12 +17,36 @@ logger = logging.getLogger(__name__)
 MAX_CONTEXT_CHARS = 12000
 
 
-@dataclass
-class CodeContextEntry:
-    """Minimal context entry shape used for prompt construction."""
-    entry_type: str
-    content: str
-    file_path: str | None = None
+def fallback_checklist_items(topic: KTTopic) -> list[dict]:
+    """Return a useful baseline checklist when AI generation is unavailable."""
+    scope = topic.path_patterns or "the relevant repository files"
+    return [
+        {
+            "title": f"Review the {topic.title} scope",
+            "description": f"Identify the main files and responsibilities related to {scope}.",
+            "source": scope,
+        },
+        {
+            "title": "Trace the main execution flow",
+            "description": "Follow the entry points, key functions, and data flow from input to output.",
+            "source": scope,
+        },
+        {
+            "title": "Review dependencies and integrations",
+            "description": "Document the internal modules and external services used by this topic.",
+            "source": scope,
+        },
+        {
+            "title": "Inspect validation and error handling",
+            "description": "Review expected failures, validation rules, logging, and recovery behavior.",
+            "source": scope,
+        },
+        {
+            "title": "Verify the topic with a practical walkthrough",
+            "description": "Run or test the relevant flow and record the important setup and troubleshooting steps.",
+            "source": scope,
+        },
+    ]
 
 
 def strip_markdown_fences(content: str) -> str:
@@ -114,7 +138,18 @@ def generate_checklist_items(topic: KTTopic, db: Session, llm: LLMProvider) -> l
 
         patterns = parse_path_patterns(topic.path_patterns)
         if patterns:
-            entries = scope_knowledge_base_entries(list(entries), patterns)
+            matching_entries = [
+                entry
+                for entry in entries
+                if entry.file_path and path_matches_patterns(entry.file_path, patterns)
+            ]
+            if matching_entries:
+                entries = matching_entries
+            else:
+                logger.warning(
+                    "No files matched path scope for kt_topic_id=%s; using repository context",
+                    topic.id,
+                )
 
         code_context = build_code_context(list(entries))
         system_prompt = "You generate precise knowledge-transfer checklists for software teams."
@@ -136,20 +171,20 @@ def generate_checklist_items(topic: KTTopic, db: Session, llm: LLMProvider) -> l
         response = llm.complete(system_prompt, user_prompt)
     except LLMError as exc:
         logger.warning("Checklist generation LLM call failed for kt_topic_id=%s: %s", topic.id, exc)
-        return []
+        return fallback_checklist_items(topic)
     except Exception:
         logger.exception("Checklist generation failed before parsing for kt_topic_id=%s", topic.id)
-        return []
+        return fallback_checklist_items(topic)
 
     try:
         parsed = json.loads(strip_markdown_fences(response))
     except json.JSONDecodeError:
         logger.warning("Checklist generation returned invalid JSON for kt_topic_id=%s", topic.id)
-        return []
+        return fallback_checklist_items(topic)
 
     if not isinstance(parsed, list):
         logger.warning("Checklist generation returned non-list JSON for kt_topic_id=%s", topic.id)
-        return []
+        return fallback_checklist_items(topic)
 
     items: list[dict] = []
     for item in parsed[:8]:
@@ -167,4 +202,4 @@ def generate_checklist_items(topic: KTTopic, db: Session, llm: LLMProvider) -> l
             }
         )
 
-    return items
+    return items or fallback_checklist_items(topic)

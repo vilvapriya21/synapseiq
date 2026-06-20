@@ -108,7 +108,7 @@ class ContributorListResponse(BaseModel):
 class AssignLearnerRequest(BaseModel):
     """Pydantic schema for AssignLearnerRequest payloads."""
     learner_id: str
-    kt_topic_id: str
+    kt_topic_id: str | None = None
 
 
 class AssignmentResponse(BaseModel):
@@ -122,6 +122,8 @@ class AssignmentResponse(BaseModel):
     learner_email: str
     status: str
     assigned_at: datetime
+    completed_items: int = 0
+    total_items: int = 0
 
 
 class AssignmentListResponse(BaseModel):

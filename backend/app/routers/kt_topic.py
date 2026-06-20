@@ -3,26 +3,20 @@
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy import delete as sql_delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.llm_dependency import get_llm
 from app.core.security import get_current_user
-from app.db.session import get_db
-from app.models.assessment import (
-    Assessment,
-    AssessmentAttempt,
-    AssessmentAttemptAnswer,
-    AssessmentOption,
-    AssessmentQuestion,
-)
+from app.db.session import SessionLocal, get_db
+from app.models.assessment import Assessment
 from app.models.contributor import Contributor
 from app.models.kt_checklist import KTChecklistItem, KTChecklistProgress
 from app.models.kt_topic import KTTopic
 from app.models.repository_assignment import RepositoryAssignment
 from app.models.user import User
-from app.modules.checklist_generator import generate_checklist_items
+from app.modules.checklist_generator import fallback_checklist_items, generate_checklist_items
 from app.modules.llm_client import LLMProvider
 from app.routers.repository import REPOSITORY_LEARNING_TOPIC_MARKER, get_owned_repository
 from app.schemas.kt_topic import (
@@ -40,6 +34,68 @@ from app.utils.path_matching import count_matching_paths, normalize_path_pattern
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+def _generate_topic_checklist(
+    topic_id: str,
+    created_by: str,
+    llm: LLMProvider,
+    replace_existing: bool = False,
+) -> None:
+    """Generate a new topic's checklist without delaying the create response."""
+    db = SessionLocal()
+    try:
+        topic = db.get(KTTopic, topic_id)
+        if topic is None:
+            return
+
+        existing_item = db.scalar(select(KTChecklistItem.id).where(KTChecklistItem.kt_topic_id == topic_id))
+        if existing_item is not None and not replace_existing:
+            return
+
+        checklist_items = generate_checklist_items(topic, db, llm)
+        if replace_existing:
+            existing_items = list(
+                db.scalars(
+                    select(KTChecklistItem)
+                    .where(KTChecklistItem.kt_topic_id == topic_id)
+                    .order_by(KTChecklistItem.order)
+                ).all()
+            )
+            for index, item in enumerate(checklist_items):
+                if index < len(existing_items):
+                    existing_items[index].title = item["title"]
+                    existing_items[index].description = item.get("description")
+                    existing_items[index].order = index
+                else:
+                    db.add(
+                        KTChecklistItem(
+                            kt_topic_id=topic.id,
+                            title=item["title"],
+                            description=item.get("description"),
+                            order=index,
+                            created_by=created_by,
+                        )
+                    )
+            db.commit()
+            return
+
+        for index, item in enumerate(checklist_items):
+            db.add(
+                KTChecklistItem(
+                    kt_topic_id=topic.id,
+                    title=item["title"],
+                    description=item.get("description"),
+                    order=index,
+                    created_by=created_by,
+                )
+            )
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("Background checklist generation failed for kt_topic_id=%s", topic_id)
+    finally:
+        db.close()
 
 
 def is_admin(user: User) -> bool:
@@ -185,6 +241,7 @@ def checklist_item_response(
 def create_kt_topic(
     repo_id: str,
     payload: CreateKTTopicRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     llm: LLMProvider = Depends(get_llm),
@@ -219,23 +276,7 @@ def create_kt_topic(
     db.commit()
     db.refresh(topic)
 
-    try:
-        checklist_items = generate_checklist_items(topic, db, llm)
-        for index, item in enumerate(checklist_items):
-            db.add(
-                KTChecklistItem(
-                    kt_topic_id=topic.id,
-                    title=item["title"],
-                    description=item.get("description"),
-                    order=index,
-                    created_by=current_user.id,
-                )
-            )
-        if checklist_items:
-            db.commit()
-    except Exception:
-        db.rollback()
-        logger.exception("Best-effort checklist generation failed for kt_topic_id=%s", topic.id)
+    background_tasks.add_task(_generate_topic_checklist, topic.id, current_user.id, llm)
 
     return topic
 
@@ -502,6 +543,7 @@ def delete_checklist_item(
 def regenerate_checklist(
     repo_id: str,
     topic_id: str,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     llm: LLMProvider = Depends(get_llm),
@@ -530,7 +572,7 @@ def regenerate_checklist(
         )
     db.execute(sql_delete(KTChecklistItem).where(KTChecklistItem.kt_topic_id == topic.id))
 
-    generated_items = generate_checklist_items(topic, db, llm)
+    generated_items = fallback_checklist_items(topic)
     created_items = []
     for index, generated_item in enumerate(generated_items):
         item = KTChecklistItem(
@@ -546,6 +588,14 @@ def regenerate_checklist(
     db.commit()
     for item in created_items:
         db.refresh(item)
+
+    background_tasks.add_task(
+        _generate_topic_checklist,
+        topic.id,
+        current_user.id,
+        llm,
+        True,
+    )
 
     responses = [checklist_item_response(item) for item in created_items]
     return ChecklistListResponse(items=responses, total=len(responses))
@@ -659,52 +709,22 @@ def delete_kt_topic(
     if topic is None or topic.repository_id != repo_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
 
-    assessment_ids = list(
-        db.scalars(select(Assessment.id).where(Assessment.kt_topic_id == topic_id)).all()
-    )
-    if assessment_ids:
-        question_ids = list(
-            db.scalars(
-                select(AssessmentQuestion.id).where(
-                    AssessmentQuestion.assessment_id.in_(assessment_ids)
-                )
-            ).all()
+    active_assignments = db.scalars(
+        select(RepositoryAssignment).where(RepositoryAssignment.kt_topic_id == topic_id)
+    ).all()
+    if active_assignments:
+        learner_count = len(active_assignments)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot remove this KT topic — {learner_count} learner(s) are currently assigned to it. Remove all learner assignments first.",
         )
-        attempt_ids = list(
-            db.scalars(
-                select(AssessmentAttempt.id).where(
-                    AssessmentAttempt.assessment_id.in_(assessment_ids)
-                )
-            ).all()
+
+    has_assessment = db.scalar(select(Assessment).where(Assessment.kt_topic_id == topic_id))
+    if has_assessment:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot remove this KT topic — an active assessment is linked to it. Delete the assessment first.",
         )
-        if attempt_ids:
-            db.execute(
-                sql_delete(AssessmentAttemptAnswer).where(
-                    AssessmentAttemptAnswer.attempt_id.in_(attempt_ids)
-                )
-            )
-        if question_ids:
-            db.execute(
-                sql_delete(AssessmentAttemptAnswer).where(
-                    AssessmentAttemptAnswer.question_id.in_(question_ids)
-                )
-            )
-            db.execute(
-                sql_delete(AssessmentOption).where(
-                    AssessmentOption.question_id.in_(question_ids)
-                )
-            )
-        db.execute(
-            sql_delete(AssessmentAttempt).where(
-                AssessmentAttempt.assessment_id.in_(assessment_ids)
-            )
-        )
-        db.execute(
-            sql_delete(AssessmentQuestion).where(
-                AssessmentQuestion.assessment_id.in_(assessment_ids)
-            )
-        )
-        db.execute(sql_delete(Assessment).where(Assessment.id.in_(assessment_ids)))
 
     checklist_item_ids = db.scalars(
         select(KTChecklistItem.id).where(KTChecklistItem.kt_topic_id == topic_id)

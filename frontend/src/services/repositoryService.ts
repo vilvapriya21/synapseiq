@@ -114,6 +114,8 @@ export interface Assignment {
   learner_email: string;
   status: string;
   assigned_at: string;
+  completed_items: number;
+  total_items: number;
 }
 
 export interface AssignmentListResponse {

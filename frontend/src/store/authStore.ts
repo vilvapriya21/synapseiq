@@ -8,6 +8,7 @@ interface AuthState {
   user: User | null;
   rememberMe: boolean;
   login: (user: User, tokens: AuthTokens, rememberMe?: boolean) => void;
+  setUser: (user: User) => void;
   logout: () => void;
 }
 
@@ -35,6 +36,7 @@ export const useAuthStore = create<AuthState>()(
         alternateStorage.removeItem(rememberMe ? SESSION_REFRESH_TOKEN_KEY : REFRESH_TOKEN_KEY);
         set({ isAuthenticated: true, tokens, user, rememberMe });
       },
+      setUser: (user) => set({ user }),
       logout: () => {
         localStorage.removeItem(ACCESS_TOKEN_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);
