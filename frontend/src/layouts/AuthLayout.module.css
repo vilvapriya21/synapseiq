@@ -1,38 +1,27 @@
 .shell {
   position: relative;
-  min-height: 100vh;
+  width: 100%;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 32px 18px;
+  padding: 32px clamp(18px, 4vw, 64px);
   background:
-    radial-gradient(circle at 18% 16%, rgb(36 84 214 / 10%), transparent 28%),
-    linear-gradient(135deg, var(--color-bg) 0%, var(--color-primary-soft) 54%, var(--color-bg) 100%);
-  overflow-x: hidden;
-}
-
-.shell::before {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background-image: url("../assets/auth-knowledge-bg.png");
-  background-position: center 44%;
-  background-repeat: no-repeat;
-  background-size: min(980px, 92vw) auto;
-  content: "";
-  opacity: 0.18;
-  pointer-events: none;
-}
-
-.shell::after {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background: rgb(255 255 255 / 48%);
-  content: "";
-  pointer-events: none;
+    radial-gradient(circle at 84% 0%, rgb(248 250 252 / 95%) 0 170px, transparent 171px),
+    radial-gradient(circle at 38% 100%, #ffffff 0 140px, transparent 141px),
+    linear-gradient(112deg, #70aed1 0 34%, #f8fafc 34% 100%);
+  overflow: hidden;
 }
 
 .shell > * {
   position: relative;
   z-index: 1;
+}
+
+@media (max-width: 820px) {
+  .shell {
+    align-items: start;
+    padding-block: 24px;
+    background:
+      linear-gradient(180deg, #3f4f75 0 170px, #f8fafc 170px 100%);
+  }
 }

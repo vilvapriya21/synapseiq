@@ -4,7 +4,7 @@ import styles from "./Input.module.css";
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   fieldClassName?: string;
-  label?: string;
+  label?: ReactNode;
   startAdornment?: ReactNode;
 }
 

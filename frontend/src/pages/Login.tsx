@@ -1,8 +1,8 @@
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FocusEvent, FormEvent, ReactNode, useEffect, useState } from "react";
 import { isAxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { Button, Input } from "../components/common";
-import synapseLogo from "../assets/synapse-logo.svg";
+import authKnowledgeImage from "../assets/logo-synapse.jpg";
 import { ROUTES } from "../routes/routePaths";
 import { authService } from "../services/authService";
 import { useAuthStore } from "../store/authStore";
@@ -40,14 +40,37 @@ function readError(error: unknown) {
   return "Something went wrong. Please try again.";
 }
 
-interface PasswordFieldProps {
-  label: string;
-  name: string;
-  placeholder: string;
-  showHint?: boolean;
+function requiredLabel(label: string) {
+  return (
+    <>
+      {label} <span className={styles.requiredMark}>*</span>
+    </>
+  );
 }
 
-function PasswordField({ label, name, placeholder, showHint = false }: PasswordFieldProps) {
+interface PasswordFieldProps {
+  autoComplete: string;
+  label: ReactNode;
+  name: string;
+  onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
+  onFocus?: (event: FocusEvent<HTMLInputElement>) => void;
+  placeholder: string;
+  readOnly?: boolean;
+  showHint?: boolean;
+  value?: string;
+}
+
+function PasswordField({
+  autoComplete,
+  label,
+  name,
+  onChange,
+  onFocus,
+  placeholder,
+  readOnly = false,
+  showHint = false,
+  value,
+}: PasswordFieldProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   return (
@@ -58,10 +81,16 @@ function PasswordField({ label, name, placeholder, showHint = false }: PasswordF
       <div className={styles.passwordShell}>
         <input
           className={styles.passwordInput}
+          autoComplete={autoComplete}
           id={name}
           name={name}
+          onChange={onChange}
+          onFocus={onFocus}
           placeholder={placeholder}
+          readOnly={readOnly}
+          required
           type={isVisible ? "text" : "password"}
+          value={value}
         />
         <button
           aria-label={isVisible ? "Hide password" : "Show password"}
@@ -97,13 +126,30 @@ function PasswordField({ label, name, placeholder, showHint = false }: PasswordF
 function LoginPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<AuthMode>("login");
-  const [role, setRole] = useState<UserRole>("ADMIN");
+  const [role, setRole] = useState<UserRole>("LEARNER");
+  const [emailValue, setEmailValue] = useState("");
+  const [passwordValue, setPasswordValue] = useState("");
+  const [emailReadOnly, setEmailReadOnly] = useState(true);
+  const [passwordReadOnly, setPasswordReadOnly] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const loginUser = useAuthStore((state) => state.login);
+
+  useEffect(() => {
+    const clearCredentials = () => {
+      setEmailValue("");
+      setPasswordValue("");
+      setEmailReadOnly(true);
+      setPasswordReadOnly(true);
+    };
+    const timers = [window.setTimeout(clearCredentials, 50), window.setTimeout(clearCredentials, 300)];
+
+    clearCredentials();
+    return () => timers.forEach(window.clearTimeout);
+  }, [mode]);
 
   const clearAlerts = () => {
     setError("");
@@ -139,7 +185,7 @@ function LoginPage() {
       setError("First name is required");
       return;
     }
-    if (mode === "reset" && !isValidPassword(password)) {
+    if ((mode === "signup" || mode === "reset") && !isValidPassword(password)) {
       setError(passwordRules);
       return;
     }
@@ -194,62 +240,90 @@ function LoginPage() {
   };
 
   return (
-    <div className={styles.page}>
-      <div className={styles.brand}>
-        <span className={styles.brandMark}>
-          <img alt="" src={synapseLogo} />
-        </span>
-        <h1>SynapseIQ</h1>
-        <p>Code Intelligence & Knowledge Transfer</p>
-      </div>
+    <div className={styles.authView}>
+      <div className={styles.page}>
+        <aside className={styles.illustrationPanel}>
+          <img
+            alt="Knowledge transfer illustration"
+            className={styles.illustration}
+            src={authKnowledgeImage}
+          />
+        </aside>
 
-      <section className={styles.card}>
+        <section className={styles.card}>
+        {mode !== "signup" && (
+          <div className={styles.brand}>
+            <p>SynapseIQ</p>
+            <span>Code Intelligence & Knowledge Transfer</span>
+          </div>
+        )}
         <h2 className={styles.title}>
-          {mode === "login" && "Welcome back"}
-          {mode === "signup" && "Create your workspace account"}
+          {mode === "login" && "Hello, welcome back"}
+          {mode === "signup" && "Create account"}
           {mode === "forgot" && "Recover your password"}
           {mode === "reset" && "Set a new password"}
         </h2>
         <p className={styles.subtitle}>
           {mode === "login" && "Sign in to continue to your dashboard"}
-          {mode === "signup" && "Sign up first, then access SynapseIQ"}
+          {mode === "signup" && "Join your SynapseIQ workspace"}
           {mode === "forgot" && "We will generate a verification code for this workspace"}
           {mode === "reset" && "Enter the code and confirm your new password"}
         </p>
 
-        <form className={styles.form} onSubmit={handleSubmit}>
+        <form autoComplete="off" className={styles.form} onSubmit={handleSubmit}>
           {mode === "signup" && (
-            <>
-              <Input label="First name" name="first_name" placeholder="Aarav" />
-              <Input label="Last name" name="last_name" placeholder="Mehta" />
-            </>
+            <div className={styles.nameGrid}>
+              <Input autoComplete="given-name" className={styles.authInput} label={requiredLabel("First name")} name="first_name" placeholder="First name" required />
+              <Input autoComplete="family-name" className={styles.authInput} label="Last name" name="last_name" placeholder="Last name" />
+            </div>
           )}
-          <Input label="Email address" name="email" type="email" placeholder="admin@company.com" />
-          {mode === "reset" && <Input label="Verification code" name="code" defaultValue={verificationCode} />}
+          <Input
+            autoComplete="new-password"
+            className={styles.authInput}
+            label={requiredLabel("Email address")}
+            name="email"
+            onChange={(event) => setEmailValue(event.target.value)}
+            onFocus={() => setEmailReadOnly(false)}
+            placeholder="you@company.com"
+            readOnly={emailReadOnly}
+            required
+            type="email"
+            value={emailValue}
+          />
+          {mode === "reset" && <Input autoComplete="one-time-code" className={styles.authInput} label="Verification code" name="code" defaultValue={verificationCode} required />}
           {mode !== "forgot" && (
             <PasswordField
-              label={mode === "reset" ? "New password" : "Password"}
+              autoComplete="new-password"
+              key={`${mode}-password`}
+              label={mode === "reset" ? "New password" : requiredLabel("Password")}
               name="password"
+              onChange={(event) => setPasswordValue(event.target.value)}
+              onFocus={() => setPasswordReadOnly(false)}
               placeholder="Enter password"
+              readOnly={passwordReadOnly}
               showHint={mode === "signup" || mode === "reset"}
+              value={passwordValue}
             />
           )}
           {mode === "reset" && (
-            <PasswordField label="Confirm password" name="confirmPassword" placeholder="Confirm password" />
+            <PasswordField autoComplete="new-password" label="Confirm password" name="confirmPassword" placeholder="Confirm password" />
           )}
 
           {mode === "signup" && (
-            <div className={styles.roleGrid} aria-label="Account role">
-              {(["ADMIN", "LEARNER"] as UserRole[]).map((item) => (
-                <button
-                  className={`${styles.roleButton} ${role === item ? styles.roleButtonActive : ""}`}
-                  key={item}
-                  onClick={() => setRole(item)}
-                  type="button"
-                >
-                  {item === "ADMIN" ? "Admin" : "Learner"}
-                </button>
-              ))}
+            <div className={styles.roleSection}>
+              <span>Account role</span>
+              <div className={styles.roleGrid} aria-label="Account role">
+                {(["LEARNER", "ADMIN"] as UserRole[]).map((item) => (
+                  <button
+                    className={`${styles.roleButton} ${role === item ? styles.roleButtonActive : ""}`}
+                    key={item}
+                    onClick={() => setRole(item)}
+                    type="button"
+                  >
+                    {item === "ADMIN" ? "Admin" : "Learner"}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -277,14 +351,16 @@ function LoginPage() {
 
           <Button isLoading={isLoading} type="submit">
             {mode === "login" && "Sign In"}
-            {mode === "signup" && "Create Account"}
+            {mode === "signup" && "Sign Up"}
             {mode === "forgot" && "Send Verification Code"}
             {mode === "reset" && "Reset Password"}
           </Button>
         </form>
 
         <p className={styles.footer}>
-          {mode === "login" ? "No account yet? " : "Already have an account? "}
+          {mode === "login" && "New to SynapseIQ? "}
+          {mode === "signup" && "Already have an account? "}
+          {(mode === "forgot" || mode === "reset") && "Remember your password? "}
           <button
             className={styles.link}
             onClick={() => {
@@ -293,10 +369,11 @@ function LoginPage() {
             }}
             type="button"
           >
-            {mode === "login" ? "Sign up" : "Sign in"}
+            {mode === "login" ? "Create account" : "Sign in"}
           </button>
         </p>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
