@@ -141,7 +141,9 @@ class PerQuestionResult(BaseModel):
     question_text: str
     question_type: str
     selected_option_ids: List[str]
+    selected_option_labels: List[str]
     correct_option_ids: List[str]
+    correct_option_labels: List[str]
     is_correct: bool
     explanation: str | None
 

@@ -80,7 +80,9 @@ export interface PerQuestionResult {
   question_text: string;
   question_type: string;
   selected_option_ids: string[];
+  selected_option_labels: string[];
   correct_option_ids: string[];
+  correct_option_labels: string[];
   is_correct: boolean;
   explanation: string | null;
 }
