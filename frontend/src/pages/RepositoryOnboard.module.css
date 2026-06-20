@@ -97,6 +97,12 @@
   border-radius: var(--radius-md);
 }
 
+.providerLogo {
+  display: block;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
 .githubMark {
   background: var(--accent-indigo-soft);
   color: var(--color-text);
