@@ -55,11 +55,11 @@ function AttemptResultView({ result }: AttemptResultViewProps) {
             <div className={styles.answerGrid}>
               <div>
                 <span>Selected Options</span>
-                <p>{question.selected_option_ids.length ? question.selected_option_ids.join(", ") : "No answer selected"}</p>
+                <p>{question.selected_option_labels.length ? question.selected_option_labels.join(", ") : "No answer selected"}</p>
               </div>
               <div>
                 <span>Correct Options</span>
-                <p>{question.correct_option_ids.join(", ")}</p>
+                <p>{question.correct_option_labels.join(", ")}</p>
               </div>
             </div>
             {question.explanation ? <p className={styles.explanation}>{question.explanation}</p> : null}

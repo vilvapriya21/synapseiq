@@ -119,6 +119,15 @@ function AssessmentBuilder() {
     [learners, selectedLearnerId],
   );
 
+  useEffect(() => {
+    if (savedAssessment) {
+      const timer = setTimeout(() => {
+        navigate(ROUTES.repository.replace(":repoId", repoId || ""));
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [savedAssessment, navigate, repoId]);
+
   const generate = async (force = false) => {
     if (!topicId || !title.trim()) {
       setError("Title is required before generating questions.");

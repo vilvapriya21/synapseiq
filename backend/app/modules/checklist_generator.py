@@ -17,6 +17,14 @@ logger = logging.getLogger(__name__)
 MAX_CONTEXT_CHARS = 12000
 
 
+@dataclass
+class CodeContextEntry:
+    """Minimal context entry shape used for prompt construction."""
+    entry_type: str
+    content: str
+    file_path: str | None = None
+
+
 def fallback_checklist_items(topic: KTTopic) -> list[dict]:
     """Return a useful baseline checklist when AI generation is unavailable."""
     scope = topic.path_patterns or "the relevant repository files"

@@ -361,6 +361,17 @@ def save_assessment(
     get_owned_repository(db, topic.repository_id, current_user.id)
     if payload.assigned_to:
         _validate_assessment_learner_assignment(db, topic.id, payload.assigned_to)
+        existing_assessment = db.scalar(
+            select(Assessment).where(
+                Assessment.kt_topic_id == payload.kt_topic_id,
+                Assessment.assigned_to == payload.assigned_to,
+            )
+        )
+        if existing_assessment is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This learner already has an assessment assigned for this topic.",
+            )
 
     assessment = Assessment(
         id=str(uuid4()),
@@ -372,7 +383,8 @@ def save_assessment(
         assigned_to=payload.assigned_to,
     )
 
-    records: list[object] = [assessment]
+    question_records: list[AssessmentQuestion] = []
+    option_records: list[AssessmentOption] = []
     for index, question_text, question_type, explanation, difficulty, options in validated_questions:
         question_id = str(uuid4())
         question_record = AssessmentQuestion(
@@ -384,22 +396,24 @@ def save_assessment(
             difficulty=difficulty,
             order=index,
         )
-        records.append(question_record)
+        question_records.append(question_record)
 
-        records.extend(
-            [
-                AssessmentOption(
-                    question_id=question_id,
-                    label=label,
-                    is_correct=is_correct,
-                    order=option_index,
-                )
-                for option_index, label, is_correct in options
-            ]
+        option_records.extend(
+            AssessmentOption(
+                question_id=question_id,
+                label=label,
+                is_correct=is_correct,
+                order=option_index,
+            )
+            for option_index, label, is_correct in options
         )
 
-    db.add_all(records)
     try:
+        db.add(assessment)
+        db.flush()
+        db.add_all(question_records)
+        db.flush()
+        db.add_all(option_records)
         db.commit()
     except SQLAlchemyError as exc:
         db.rollback()
@@ -749,10 +763,11 @@ def submit_attempt(
     selected_ids_map: dict[str, list[str]] = {}
 
     for question in questions:
-        correct_option_ids = db.scalars(
-            select(AssessmentOption.id)
-            .where(AssessmentOption.question_id == question.id, AssessmentOption.is_correct.is_(True))
+        all_options = db.scalars(
+            select(AssessmentOption).where(AssessmentOption.question_id == question.id)
         ).all()
+        option_label_map = {option.id: option.label for option in all_options}
+        correct_option_ids = [option.id for option in all_options if option.is_correct]
         selected_ids = payload.answers.get(question.id, [])
         selected_ids_map[question.id] = selected_ids
         is_correct = set(selected_ids) == set(correct_option_ids)
@@ -764,7 +779,9 @@ def submit_attempt(
                 question_text=question.question_text,
                 question_type=question.question_type,
                 selected_option_ids=selected_ids,
+                selected_option_labels=[option_label_map.get(opt_id, "Unknown option") for opt_id in selected_ids],
                 correct_option_ids=list(correct_option_ids),
+                correct_option_labels=[option_label_map.get(opt_id, "Unknown option") for opt_id in correct_option_ids],
                 is_correct=is_correct,
                 explanation=question.explanation,
             )
@@ -929,10 +946,11 @@ def _build_attempt_result(db: Session, attempt: AssessmentAttempt) -> AttemptRes
 
     per_question = []
     for question in questions:
-        correct_options = db.scalars(
-            select(AssessmentOption.id)
-            .where(AssessmentOption.question_id == question.id, AssessmentOption.is_correct.is_(True))
+        all_options = db.scalars(
+            select(AssessmentOption).where(AssessmentOption.question_id == question.id)
         ).all()
+        option_label_map = {option.id: option.label for option in all_options}
+        correct_options = [option.id for option in all_options if option.is_correct]
         selected = (
             answer_map.get(question.id).selected_option_ids.split(",")
             if answer_map.get(question.id) and answer_map.get(question.id).selected_option_ids
@@ -945,7 +963,9 @@ def _build_attempt_result(db: Session, attempt: AssessmentAttempt) -> AttemptRes
                 question_text=question.question_text,
                 question_type=question.question_type,
                 selected_option_ids=selected,
+                selected_option_labels=[option_label_map.get(opt_id, "Unknown option") for opt_id in selected],
                 correct_option_ids=list(correct_options),
+                correct_option_labels=[option_label_map.get(opt_id, "Unknown option") for opt_id in correct_options],
                 is_correct=is_correct,
                 explanation=question.explanation,
             )
