@@ -43,11 +43,10 @@
 
 .editForm {
   grid-column: 1 / -1;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 76px auto auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto auto;
 }
 
-.input,
-.orderInput {
+.input {
   width: 100%;
   height: 38px;
   box-sizing: border-box;
@@ -130,6 +129,11 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
+}
+
+.adminItem {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
 }
 
 .checkbox {
@@ -225,6 +229,10 @@
 
   .item {
     grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .adminItem {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .actions {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { EmptyState } from "../components/common";
+import { EmptyState, SearchInput } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
 import { getUsers } from "../services/adminService";
 import { assessmentService, type AssessmentListItem } from "../services/assessmentService";
@@ -102,11 +102,10 @@ function AssessmentsPage() {
           <p className={styles.eyebrow}>{role === "ADMIN" ? "Assessment Management" : "Assigned Assessments"}</p>
           <h1 className={styles.heading}>{role === "ADMIN" ? "Active Assessments" : "My Assessments"}</h1>
         </div>
-        <input
-          className={styles.search}
+        <SearchInput
+          wrapperClassName={styles.search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search assessments"
-          type="search"
           value={search}
         />
       </section>

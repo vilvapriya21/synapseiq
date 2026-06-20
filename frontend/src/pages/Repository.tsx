@@ -4,7 +4,7 @@ import { Info } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import FloatingChatWidget from "../components/FloatingChatWidget";
 import KTChecklist from "../components/KTChecklist";
-import { EmptyState, Modal, PageHero } from "../components/common";
+import { EmptyState, Modal, PageHero, SearchInput } from "../components/common";
 import Loader from "../components/common/Loader";
 import { ENV } from "../constants/env";
 import { ROUTES } from "../routes/routePaths";
@@ -236,6 +236,7 @@ function RepositoryPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("file_tree");
   const [selectedFilePath, setSelectedFilePath] = useState("");
   const [selectedFile, setSelectedFile] = useState<RepositoryFileResponse | null>(null);
+  const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
   const [fileLoading, setFileLoading] = useState(false);
   const [fileError, setFileError] = useState("");
   const [fileSearch, setFileSearch] = useState("");
@@ -635,6 +636,7 @@ function RepositoryPage() {
 
     setSelectedFilePath(path);
     setSelectedFile(null);
+    setImagePreviewOpen(false);
     setFileError("");
     setFileLoading(true);
     try {
@@ -703,7 +705,14 @@ function RepositoryPage() {
     if (selectedFile.entry_type === "image_file") {
       return selectedFile.content.startsWith("data:") ? (
         <div className={styles.imagePreviewWrap}>
-          <img className={styles.imagePreview} src={selectedFile.content} alt={selectedFile.path} />
+          <button
+            aria-label={`Enlarge ${selectedFile.path}`}
+            className={styles.imagePreviewButton}
+            onClick={() => setImagePreviewOpen(true)}
+            type="button"
+          >
+            <img className={styles.imagePreview} src={selectedFile.content} alt={selectedFile.path} />
+          </button>
         </div>
       ) : (
         <p className={styles.muted}>{selectedFile.content}</p>
@@ -755,11 +764,11 @@ function RepositoryPage() {
               <strong>Files</strong>
               <span>{repository?.branch || "main"}</span>
             </div>
-            <input
-              className={styles.fileSearch}
+            <SearchInput
+              aria-label="Search repository files"
+              wrapperClassName={styles.fileSearch}
               onChange={(event) => setFileSearch(event.target.value)}
               placeholder="Go to file"
-              type="search"
               value={fileSearch}
             />
             <div className={styles.fileTree}>{renderFileTreeNodes(fileTreeNodes, Boolean(fileSearch.trim()))}</div>
@@ -933,6 +942,18 @@ function RepositoryPage() {
             <dd>{formatDate(repository.created_at)}</dd>
           </div>
         </dl>
+      </Modal>
+
+      <Modal
+        isOpen={imagePreviewOpen && selectedFile?.entry_type === "image_file"}
+        onClose={() => setImagePreviewOpen(false)}
+        title={selectedFile?.path.split("/").pop() || "Image Preview"}
+      >
+        {selectedFile?.entry_type === "image_file" && selectedFile.content.startsWith("data:") ? (
+          <div className={styles.enlargedImageWrap}>
+            <img className={styles.enlargedImage} src={selectedFile.content} alt={selectedFile.path} />
+          </div>
+        ) : null}
       </Modal>
 
       <Modal

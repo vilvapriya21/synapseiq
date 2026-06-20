@@ -1,8 +1,8 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { CloudUpload, GitBranch, GitFork, GitPullRequest, RefreshCw, Search, Server, Upload } from "lucide-react";
+import { CloudUpload, GitBranch, GitFork, GitPullRequest, RefreshCw, Server, Upload } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ENV } from "../constants/env";
-import { ConfirmDialog, EmptyState, Loader, PageHero } from "../components/common";
+import { ConfirmDialog, EmptyState, Loader, PageHero, SearchInput } from "../components/common";
 import Input from "../components/common/Input";
 import Table, { type TableColumn } from "../components/common/Table";
 import {
@@ -1009,14 +1009,11 @@ type="text"
             <p>Repositories you have connected and indexed</p>
           </div>
           <div className={styles.repositoryTools}>
-            <Input
+            <SearchInput
               aria-label="Search connected repositories"
-              className={styles.repositorySearchInput}
-              fieldClassName={styles.repositorySearch}
+              wrapperClassName={styles.repositorySearch}
               onChange={(event) => setRepoSearch(event.target.value)}
               placeholder="Search repositories..."
-              startAdornment={<Search size={16} />}
-              type="search"
               value={repoSearch}
             />
             <button

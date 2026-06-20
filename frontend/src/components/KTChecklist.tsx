@@ -34,7 +34,6 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
-  const [editOrder, setEditOrder] = useState("");
 
   const completedCount = useMemo(() => items.filter((item) => item.completed).length, [items]);
   const progressPercent = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0;
@@ -83,14 +82,12 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
     setEditingId(item.id);
     setEditTitle(item.title);
     setEditDescription(item.description || "");
-    setEditOrder(String(item.order));
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setEditTitle("");
     setEditDescription("");
-    setEditOrder("");
   };
 
   const saveEdit = async (itemId: string) => {
@@ -104,7 +101,6 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
       const updated = await updateChecklistItem(repoId, topicId, itemId, {
         title: editTitle.trim(),
         description: editDescription.trim() || null,
-        order: editOrder ? Number(editOrder) : undefined,
       });
       setItems((current) =>
         current
@@ -232,7 +228,10 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
       ) : (
         <div className={styles.itemList}>
           {items.map((item) => (
-            <div key={item.id} className={styles.item}>
+            <div
+              key={item.id}
+              className={`${styles.item} ${adminView ? styles.adminItem : ""}`}
+            >
               {adminView ? null : (
                 <input
                   className={styles.checkbox}
@@ -254,13 +253,6 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
                     className={styles.input}
                     value={editDescription}
                     onChange={(event) => setEditDescription(event.target.value)}
-                  />
-                  <input
-                    className={styles.orderInput}
-                    type="number"
-                    value={editOrder}
-                    onChange={(event) => setEditOrder(event.target.value)}
-                    aria-label="Checklist item order"
                   />
                   <button className={styles.primaryButton} type="button" onClick={() => saveEdit(item.id)} disabled={saving}>
                     Save
