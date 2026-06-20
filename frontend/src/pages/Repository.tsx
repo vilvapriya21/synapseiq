@@ -1,10 +1,14 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import ChatPanel from "../components/ChatPanel";
 import KTChecklist from "../components/KTChecklist";
-import { EmptyState } from "../components/common";
+import { EmptyState, Modal, PageHero } from "../components/common";
+import Loader from "../components/common/Loader";
+import { ENV } from "../constants/env";
 import { ROUTES } from "../routes/routePaths";
 import { getUsers, type AdminUser } from "../services/adminService";
+import apiClient from "../services/api";
 import {
   analyzeContributors,
   assignLearner,
@@ -29,12 +33,14 @@ import {
   type KnowledgeBaseEntry,
   type KnowledgeBaseResponse,
   type KTTopic,
+  type ProviderAuthError,
+  type RepositoryProvider,
   type Repository,
   type RepositoryFileResponse,
   type RepositoryUpload,
   type RecommendedContributor,
 } from "../services/repositoryService";
-import { useAuthStore } from "../store/authStore";
+import { ACCESS_TOKEN_KEY, SESSION_ACCESS_TOKEN_KEY, useAuthStore } from "../store/authStore";
 import { normalizeRole } from "../utils/roles";
 import styles from "./Repository.module.css";
 
@@ -52,6 +58,35 @@ const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "dependencies", label: "Dependencies" },
   { key: "uploads", label: "Uploads" },
 ];
+
+const PENDING_REFRESH_REPO_KEY = "synapseiq.pendingRefreshRepoId";
+const PENDING_REFRESH_PROVIDER_KEY = "synapseiq.pendingRefreshProvider";
+
+const providerReconnectTitle: Record<RepositoryProvider, string> = {
+  github: "Reconnect GitHub Account",
+  gitlab: "Reconnect GitLab Account",
+  bitbucket: "Reconnect Bitbucket Account",
+  azure: "Provide Azure DevOps PAT",
+};
+
+const providerLabels: Record<RepositoryProvider, string> = {
+  github: "GitHub",
+  gitlab: "GitLab",
+  bitbucket: "Bitbucket",
+  azure: "Azure DevOps",
+};
+
+const topicAccentClasses = [
+  styles.topicAccentCobalt,
+  styles.topicAccentMint,
+  styles.topicAccentIndigo,
+  styles.topicAccentSky,
+  styles.topicAccentAmber,
+];
+
+function getTopicAccentClass(index: number) {
+  return topicAccentClasses[index % topicAccentClasses.length];
+}
 
 function getStatusClass(status: Repository["status"] | Repository["knowledge_base_status"]) {
   switch (status) {
@@ -137,6 +172,41 @@ function formatFileSize(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatTopFiles(topFiles?: string) {
+  if (!topFiles) {
+    return "-";
+  }
+
+  return topFiles
+    .split(",")
+    .map((entry) => entry.split(":")[0])
+    .filter(Boolean)
+    .slice(0, 3)
+    .join(", ") || "-";
+}
+
+function getStoredAccessToken() {
+  return localStorage.getItem(ACCESS_TOKEN_KEY) || sessionStorage.getItem(SESSION_ACCESS_TOKEN_KEY) || "";
+}
+
+function getRefreshAuthError(error: unknown): ProviderAuthError | null {
+  if (!axios.isAxiosError(error)) {
+    return null;
+  }
+
+  const detail = error.response?.data?.detail;
+  if (
+    error.response?.status === 409 &&
+    detail &&
+    (detail.code === "AUTH_REQUIRED" || detail.code === "AUTH_INVALID") &&
+    ["github", "gitlab", "bitbucket", "azure"].includes(detail.provider)
+  ) {
+    return detail as ProviderAuthError;
+  }
+
+  return null;
+}
+
 function RepositoryPage() {
   const { repoId } = useParams();
   const navigate = useNavigate();
@@ -172,6 +242,11 @@ function RepositoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState("");
+  const [refreshAuthError, setRefreshAuthError] = useState<ProviderAuthError | null>(null);
+  const [azurePat, setAzurePat] = useState("");
+  const [azurePatError, setAzurePatError] = useState("");
+  const [savingAzurePat, setSavingAzurePat] = useState(false);
 
   const fetchAssignments = async () => {
     if (!repoId || role !== "ADMIN") {
@@ -289,13 +364,68 @@ function RepositoryPage() {
     }
 
     setRefreshing(true);
+    setRefreshError("");
     try {
       await refreshRepository(repoId);
+      setRefreshAuthError(null);
       await fetchRepositoryData();
+    } catch (err) {
+      const authError = getRefreshAuthError(err);
+      if (authError) {
+        setRefreshAuthError(authError);
+        return;
+      }
+      setRefreshError("Unable to refresh repository.");
     } finally {
       setRefreshing(false);
     }
   };
+
+  const handleProviderReconnect = () => {
+    if (!repoId || !refreshAuthError || refreshAuthError.provider === "azure") {
+      return;
+    }
+
+    const token = getStoredAccessToken();
+    localStorage.setItem(PENDING_REFRESH_REPO_KEY, repoId);
+    localStorage.setItem(PENDING_REFRESH_PROVIDER_KEY, refreshAuthError.provider);
+    window.location.href = `${ENV.apiBaseUrl}/auth/${refreshAuthError.provider}?token=${encodeURIComponent(token)}`;
+  };
+
+  const handleSaveAzurePatAndRetry = async () => {
+    if (!azurePat.trim()) {
+      return;
+    }
+
+    setSavingAzurePat(true);
+    setAzurePatError("");
+    try {
+      await apiClient.post(`/auth/azure/pat?pat=${encodeURIComponent(azurePat)}`);
+      setAzurePat("");
+      setRefreshAuthError(null);
+      await handleReanalyze();
+    } catch {
+      setAzurePatError("Failed to save Azure DevOps PAT.");
+    } finally {
+      setSavingAzurePat(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!repoId) {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("retryRefresh") !== "1") {
+      return;
+    }
+
+    window.history.replaceState({}, "", window.location.pathname);
+    localStorage.removeItem(PENDING_REFRESH_REPO_KEY);
+    localStorage.removeItem(PENDING_REFRESH_PROVIDER_KEY);
+    handleReanalyze();
+  }, [repoId]);
 
   const handleAnalyzeContributors = async () => {
     if (!repoId) {
@@ -521,7 +651,7 @@ function RepositoryPage() {
     if (fileLoading) {
       return (
         <div className={styles.emptyPreview}>
-          <p>Loading {selectedFilePath}&hellip;</p>
+          <Loader label={`Loading ${selectedFilePath}...`} />
         </div>
       );
     }
@@ -537,7 +667,7 @@ function RepositoryPage() {
     if (!selectedFile) {
       return (
         <div className={styles.emptyPreview}>
-          <p>No preview available for {selectedFilePath}.</p>
+          <EmptyState title="No preview available" description={`${selectedFilePath} cannot be previewed.`} />
         </div>
       );
     }
@@ -618,7 +748,7 @@ function RepositoryPage() {
           </section>
         </div>
       ) : (
-        <p className={styles.muted}>No files matched your search.</p>
+        <EmptyState title="No files matched your search" description="Try a different file name or path." />
       );
     }
 
@@ -664,9 +794,9 @@ function RepositoryPage() {
           {uploadError ? <p className={styles.error}>{uploadError}</p> : null}
 
           {uploadsLoading ? (
-            <p className={styles.muted}>Loading uploaded files&hellip;</p>
+            <Loader label="Loading uploaded files..." />
           ) : uploads.length === 0 ? (
-            <p className={styles.emptyText}>No extra KT files uploaded yet.</p>
+            <EmptyState title="No uploaded KT files" description="Extra sheets, docs, images, and reference files will appear here." />
           ) : (
             <div className={styles.uploadList}>
               {uploads.map((upload) => (
@@ -699,7 +829,7 @@ function RepositoryPage() {
   };
 
   if (loading && !repository) {
-    return <div className={styles.state}>Loading repository&hellip;</div>;
+    return <div className={styles.state}><Loader label="Loading repository..." /></div>;
   }
 
   if (error || !repository) {
@@ -708,41 +838,83 @@ function RepositoryPage() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.headerCard}>
-        <button
-          className={styles.backButton}
-          type="button"
-          onClick={() => navigate(role === "LEARNER" ? "/dashboard" : "/repositories")}
-        >
-          &#8592; Repositories
-        </button>
-        <div className={styles.headerMain}>
-          <div>
-            <h1>{repository.name}</h1>
-            {repository.url ? (
-              <a className={styles.repoUrl} href={repository.url} rel="noreferrer" target="_blank">
-                {repository.url}
-              </a>
+      <PageHero
+        eyebrow="Repository"
+        heading={repository.name}
+        subtitle={repository.url || "Local upload"}
+        action={
+          <div className={styles.headerActions}>
+            <button
+              className={styles.backButton}
+              type="button"
+              onClick={() => navigate(role === "LEARNER" ? "/dashboard" : "/repositories")}
+            >
+              &#8592; Repositories
+            </button>
+            <span className={`${styles.badge} ${getStatusClass(repository.status)}`}>{repository.status}</span>
+            <button className={styles.outlineButton} type="button" onClick={handleReanalyze} disabled={refreshing}>
+              Re-analyze
+            </button>
+          </div>
+        }
+      />
+      <div className={styles.stats}>
+        <span className={`${styles.statChip} ${styles.providerChip}`}>{repository.provider || "local"}</span>
+        <span className={styles.statChip}>Language: {repository.language || "-"}</span>
+        <span className={styles.statChip}>Modules: {repository.module_count}</span>
+        <span className={styles.statChip}>Files: {repository.file_count}</span>
+        <span className={styles.statChip}>Branch: {repository.branch || "-"}</span>
+        <span className={styles.statChip}>Source: {repository.source_type}</span>
+        <span className={styles.statChip}>KB Entries: {knowledgeBase?.total ?? 0}</span>
+        <span className={styles.statChip}>Created: {formatDate(repository.created_at)}</span>
+      </div>
+      {refreshError ? <p className={styles.error}>{refreshError}</p> : null}
+
+      <Modal
+        isOpen={Boolean(refreshAuthError)}
+        onClose={() => {
+          setRefreshAuthError(null);
+          setAzurePatError("");
+        }}
+        title={refreshAuthError ? providerReconnectTitle[refreshAuthError.provider] : "Reconnect Account"}
+      >
+        {refreshAuthError ? (
+          <div className={styles.authModalBody}>
+            <p>{refreshAuthError.message}</p>
+            {refreshAuthError.provider === "azure" ? (
+              <>
+                <input
+                  className={styles.input}
+                  onChange={(event) => setAzurePat(event.target.value)}
+                  placeholder="Paste your Azure DevOps Personal Access Token"
+                  type="password"
+                  value={azurePat}
+                />
+                <div className={styles.modalActions}>
+                  <button
+                    className={styles.primaryButton}
+                    disabled={savingAzurePat || !azurePat.trim()}
+                    onClick={handleSaveAzurePatAndRetry}
+                    type="button"
+                  >
+                    {savingAzurePat ? "Saving..." : "Save PAT and Retry"}
+                  </button>
+                </div>
+                {azurePatError ? <p className={styles.error}>{azurePatError}</p> : null}
+              </>
             ) : (
-              <span className={styles.repoUrl}>Local upload</span>
+              <div className={styles.modalActions}>
+                <button className={styles.primaryButton} onClick={handleProviderReconnect} type="button">
+                  {providerReconnectTitle[refreshAuthError.provider]}
+                </button>
+                <span className={styles.muted}>
+                  Refresh will resume automatically after {providerLabels[refreshAuthError.provider]} reconnects.
+                </span>
+              </div>
             )}
           </div>
-          <span className={`${styles.badge} ${getStatusClass(repository.status)}`}>{repository.status}</span>
-        </div>
-        <div className={styles.stats}>
-          <span className={`${styles.statChip} ${styles.providerChip}`}>{repository.provider || "local"}</span>
-          <span className={styles.statChip}>Language: {repository.language || "-"}</span>
-          <span className={styles.statChip}>Modules: {repository.module_count}</span>
-          <span className={styles.statChip}>Files: {repository.file_count}</span>
-          <span className={styles.statChip}>Branch: {repository.branch || "-"}</span>
-          <span className={styles.statChip}>Source: {repository.source_type}</span>
-          <span className={styles.statChip}>KB Entries: {knowledgeBase?.total ?? 0}</span>
-          <span className={styles.statChip}>Created: {formatDate(repository.created_at)}</span>
-        </div>
-        <button className={styles.outlineButton} type="button" onClick={handleReanalyze} disabled={refreshing}>
-          Re-analyze
-        </button>
-      </section>
+        ) : null}
+      </Modal>
 
       <div className={styles.workspaceLayout}>
         <main className={styles.workspaceMain}>
@@ -822,15 +994,18 @@ function RepositoryPage() {
             ) : null}
 
             {topics.length === 0 ? (
-              <p className={styles.emptyText}>
-                {role === "ADMIN"
-                  ? "No KT topics yet. Add one to start organizing knowledge transfer."
-                  : "No KT topics assigned yet."}
-              </p>
+              <EmptyState
+                title={role === "ADMIN" ? "No KT topics yet" : "No KT topics assigned yet"}
+                description={
+                  role === "ADMIN"
+                    ? "Add one to start organizing knowledge transfer."
+                    : "Assigned KT topics will appear here."
+                }
+              />
             ) : (
               <div className={styles.topicList}>
-                {topics.map((topic) => (
-                  <div key={topic.id} className={styles.topicItem}>
+                {topics.map((topic, index) => (
+                  <div key={topic.id} className={`${styles.topicItem} ${getTopicAccentClass(index)}`}>
                     <div>
                       <strong>{topic.title}</strong>
                       {topic.description ? <p className={styles.topicDescription}>{topic.description}</p> : null}
@@ -867,9 +1042,10 @@ function RepositoryPage() {
                     {recommendations[topic.id] ? (
                       <div className={styles.recommendationBox}>
                         {recommendations[topic.id].length === 0 ? (
-                          <p className={styles.emptyText}>
-                            No matching contributors found. Run "Analyze Contributors" first, or check the path patterns.
-                          </p>
+                          <EmptyState
+                            title="No matching contributors found"
+                            description="Run Analyze Contributors first, or check the path patterns."
+                          />
                         ) : (
                           recommendations[topic.id].map((recommendation, index) => (
                             <div key={`${recommendation.email}-${index}`} className={styles.recommendationRow}>
@@ -895,7 +1071,12 @@ function RepositoryPage() {
             <>
               <section className={styles.card}>
                 <div className={styles.cardHeader}>
-                  <h2>Contributors</h2>
+                  <div>
+                    <h2>Code Contributors</h2>
+                    <p className={styles.helperText}>
+                      Contributor analysis is based on commit authorship, not PR approvers.
+                    </p>
+                  </div>
                   <button
                     className={styles.secondaryButton}
                     onClick={handleAnalyzeContributors}
@@ -907,9 +1088,10 @@ function RepositoryPage() {
                 </div>
                 {contributorError ? <p className={styles.error}>{contributorError}</p> : null}
                 {contributors.length === 0 ? (
-                  <p className={styles.emptyText}>
-                    No contributor data yet. Click "Analyze Contributors" to extract commit history.
-                  </p>
+                  <EmptyState
+                    title="No contributor data yet"
+                    description="Click Analyze Contributors to extract commit history."
+                  />
                 ) : (
                   <table className={styles.table}>
                     <thead>
@@ -917,6 +1099,9 @@ function RepositoryPage() {
                         <th>Name</th>
                         <th>Email</th>
                         <th>Commits</th>
+                        <th>Files touched</th>
+                        <th>Top files</th>
+                        <th>PRs authored</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -925,6 +1110,9 @@ function RepositoryPage() {
                           <td>{contributor.name}</td>
                           <td>{contributor.email}</td>
                           <td>{contributor.commit_count}</td>
+                          <td>{contributor.files_touched ?? "-"}</td>
+                          <td>{formatTopFiles(contributor.top_files)}</td>
+                          <td>{contributor.prs_authored ?? "-"}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -961,7 +1149,7 @@ function RepositoryPage() {
                 {assignError ? <p className={styles.error}>{assignError}</p> : null}
 
                 {assignments.length === 0 ? (
-                  <p className={styles.emptyText}>No learners assigned yet.</p>
+                  <EmptyState title="No learners assigned yet" description="Assigned learners will appear here." />
                 ) : (
                   <table className={styles.table}>
                     <thead>

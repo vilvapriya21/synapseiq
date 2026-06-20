@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Clock, Send } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import AttemptResultView from "../components/AttemptResultView";
-import { Button, Modal } from "../components/common";
+import { Button, EmptyState, Modal } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
 import {
   assessmentService,
@@ -133,7 +133,7 @@ function AssessmentPage() {
   }
 
   if (error) {
-    return <div className={styles.state}>{error}</div>;
+    return <EmptyState title="Unable to load assessments" description={error} />;
   }
 
   if (assessment && result) {

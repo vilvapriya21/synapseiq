@@ -3,24 +3,46 @@
   gap: 22px;
 }
 
-.connectButton {
-  min-height: 40px;
-  border-color: var(--color-primary) !important;
-  border-radius: var(--radius-md) !important;
-  background: var(--color-primary) !important;
-  padding: 0 16px !important;
-  font-size: var(--font-size-base) !important;
-  white-space: nowrap;
+.hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.heading {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-3xl);
+  line-height: 1.15;
+}
+
+.subtitle {
+  max-width: 620px;
+  margin: 8px 0 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
 }
 
 .toolbar,
+.section,
 .repoCard,
 .stateCard,
 .skeletonCard {
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  padding: 18px 20px;
 }
 
 .toolbar {
@@ -31,14 +53,31 @@
   padding: 14px;
 }
 
+.section {
+  display: grid;
+  gap: 14px;
+}
+
+.sectionHeader {
+  color: var(--color-text);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  margin: 0 0 14px;
+}
+
+.muted {
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}
+
 .searchBox {
-  width: min(440px, 100%);
+  min-width: min(420px, 100%);
   display: flex;
   align-items: center;
   gap: 10px;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
   padding: 0 13px;
 }
 
@@ -56,19 +95,7 @@
   outline: 0;
   background: transparent;
   color: var(--color-text);
-  font-size: var(--font-size-base);
-}
-
-.searchField {
-  width: 100%;
-  display: block;
-}
-
-.searchInput {
-  min-height: 42px;
-  border: 0;
-  box-shadow: none;
-  padding: 0;
+  font: inherit;
 }
 
 .searchBox input::placeholder {
@@ -78,21 +105,54 @@
 .count {
   margin: 0;
   color: var(--color-muted);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: 800;
+  white-space: nowrap;
+}
+
+.statsGrid,
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-3);
+}
+
+.statCard,
+.metaGrid div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  padding: 11px 12px;
+}
+
+.statCard span,
+.metaGrid span {
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.statCard strong,
+.metaGrid strong {
+  min-width: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .list {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-4);
+  gap: 14px;
 }
 
 .repoCard {
   display: grid;
   gap: 18px;
-  padding: var(--space-5);
   cursor: pointer;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
@@ -100,13 +160,14 @@
 .repoCard:hover,
 .repoCard:focus-visible {
   border-color: var(--color-primary-soft-hover);
-  box-shadow: 0 16px 34px rgba(47, 111, 237, 0.10);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.1);
   transform: translateY(-1px);
   outline: 0;
 }
 
 .repoMain,
-.cardFooter {
+.cardFooter,
+.actions {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -117,59 +178,24 @@
   margin: 0;
   color: var(--color-text);
   font-size: var(--font-size-xl);
-  font-weight: 800;
 }
 
 .repoMain p,
 .cardFooter p {
   margin: 6px 0 0;
   color: var(--color-muted);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   overflow-wrap: anywhere;
 }
 
-.metaGrid {
-  display: grid;
-  grid-template-columns: 1.25fr 0.9fr 1fr 0.8fr 0.8fr 1.25fr 1fr;
-  gap: 10px;
-}
-
-.metaGrid div {
-  min-width: 0;
-  display: grid;
-  gap: 5px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
-  padding: 11px 12px;
-}
-
-.metaGrid span {
-  color: var(--color-muted);
-  font-size: var(--font-size-sm);
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.metaGrid strong {
-  min-width: 0;
-  color: var(--color-text);
-  font-size: var(--font-size-base);
-  font-weight: 800;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .badge {
-  min-height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: calc(var(--radius-lg) * 999);
-  padding: 0 11px;
+  padding: 4px 11px;
   font-size: var(--font-size-sm);
-  font-weight: 900;
+  font-weight: 700;
   text-transform: capitalize;
   white-space: nowrap;
 }
@@ -181,7 +207,7 @@
 
 .indexing {
   background: var(--color-primary-soft);
-  color: var(--color-primary);
+  color: var(--color-primary-hover);
 }
 
 .error {
@@ -190,7 +216,7 @@
 }
 
 .pending {
-  background: var(--color-bg-subtle);
+  background: var(--color-border);
   color: var(--color-text-secondary);
 }
 
@@ -200,15 +226,15 @@
   padding-top: var(--space-4);
 }
 
+.primaryButton,
 .viewButton {
-  min-height: 40px;
-  border: 1px solid var(--color-primary);
-  border-radius: var(--radius-md);
-  background: var(--color-primary);
+  min-height: 38px;
+  border: 1px solid var(--color-primary-hover);
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-hover);
   color: var(--color-surface);
   cursor: pointer;
   padding: 0 16px;
-  font-size: var(--font-size-base);
   font-weight: 900;
   transition:
     background-color var(--transition-fast),
@@ -216,12 +242,34 @@
     box-shadow var(--transition-fast);
 }
 
+.primaryButton:hover,
 .viewButton:hover,
+.primaryButton:focus-visible,
 .viewButton:focus-visible {
   background: var(--color-primary-hover);
-  border-color: var(--color-primary-hover);
-  outline: 0;
   box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.secondaryButton {
+  min-height: 38px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 0 16px;
+  font-weight: 900;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.secondaryButton:hover,
+.secondaryButton:focus-visible {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary-soft-hover);
+  color: var(--color-primary);
 }
 
 .stateCard {
@@ -229,59 +277,18 @@
   justify-items: start;
   gap: 14px;
   color: var(--color-muted);
-  padding: var(--space-5);
 }
 
 .stateCard h2 {
   margin: 0;
   color: var(--color-text);
   font-size: var(--font-size-xl);
-}
-
-.repositoryEmptyState {
-  animation: emptyStateEnter 360ms ease-out both;
-}
-
-.repositoryEmptyState > section {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-
-.repositoryEmptyState > section::before {
-  position: absolute;
-  inset: -34px;
-  z-index: 0;
-  background-image: url("../assets/auth-knowledge-bg.png");
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: min(620px, 88vw) auto;
-  content: "";
-  opacity: 0.08;
-  pointer-events: none;
-}
-
-.repositoryEmptyState > section > * {
-  position: relative;
-  z-index: 1;
-}
-
-@keyframes emptyStateEnter {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  font-weight: 700;
 }
 
 .skeletonCard {
   display: grid;
   gap: 14px;
-  padding: var(--space-5);
 }
 
 .skeletonCard span {
@@ -302,33 +309,28 @@
   width: 52%;
 }
 
-@media (max-width: 1280px) {
-  .metaGrid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 980px) {
-  .metaGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 760px) {
+  .hero,
   .toolbar,
   .repoMain,
-  .cardFooter {
+  .cardFooter,
+  .actions {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .metaGrid {
-    grid-template-columns: 1fr;
+  .searchBox {
+    min-width: 0;
+    width: 100%;
   }
 
-  .searchBox,
-  .viewButton,
-  .connectButton {
+  .count {
+    white-space: normal;
+  }
+
+  .primaryButton,
+  .secondaryButton,
+  .viewButton {
     width: 100%;
   }
 }

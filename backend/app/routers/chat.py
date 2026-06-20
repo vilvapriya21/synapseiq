@@ -14,6 +14,7 @@ from app.modules.rag_chat import answer_question
 from app.routers.repository import get_accessible_repository
 from app.schemas.chat import (
     ChatHistoryResponse,
+    ChatMessageItem,
     ChatMessageResponse,
     PostChatMessageRequest,
 )
@@ -91,7 +92,7 @@ def post_chat_message(
     )
 
     try:
-        answer_text = answer_question(
+        answer_text, sources = answer_question(
             repository_id=repo_id,
             repository_name=repository.name,
             language=repository.language,
@@ -117,7 +118,10 @@ def post_chat_message(
     db.commit()
     db.refresh(assistant_message)
 
+    response_assistant = ChatMessageItem.model_validate(assistant_message)
+    response_assistant.sources = sources
+
     return ChatMessageResponse(
         user_message=user_message,
-        assistant_message=assistant_message,
+        assistant_message=response_assistant,
     )

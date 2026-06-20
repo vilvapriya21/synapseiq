@@ -1,12 +1,13 @@
 import styles from "./Loader.module.css";
 
 export interface LoaderProps {
+  className?: string;
   label?: string;
 }
 
-function Loader({ label = "Loading" }: LoaderProps) {
+function Loader({ className = "", label = "Loading" }: LoaderProps) {
   return (
-    <div className={styles.loader} role="status" aria-live="polite">
+    <div className={`${styles.loader} ${className}`} role="status" aria-live="polite">
       <span className={styles.spinner} aria-hidden="true" />
       <span>{label}</span>
     </div>

@@ -3,6 +3,7 @@ export const ROUTES = {
   dashboard: "/dashboard",
   assessments: "/assessments",
   adminUsers: "/admin/users",
+  projectWorkspace: "/workspace",
   repositories: "/repositories",
   repositoryOnboard: "/repositories/onboard",
   repository: "/repositories/:repoId",

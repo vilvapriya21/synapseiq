@@ -28,6 +28,7 @@ function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path={ROUTES.dashboard} element={<DashboardPage />} />
+          <Route path={ROUTES.projectWorkspace} element={<ProjectPage />} />
           <Route path={ROUTES.assessments} element={<AssessmentsPage />} />
           <Route path={ROUTES.project} element={<ProjectPage />} />
           <Route path={ROUTES.projectResults} element={<ResultsPage />} />
