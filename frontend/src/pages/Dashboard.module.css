@@ -25,14 +25,15 @@
 }
 
 .bannerGreeting {
-  font-size: var(--font-size-lg);
-  font-weight: 600;
+  font-size: var(--font-size-2xl);
+  font-weight: 800;
   color: var(--color-text);
   margin: 0;
 }
 
 .bannerGreeting strong {
   font-weight: 600;
+  color: var(--color-primary);
 }
 
 .bannerStats {
@@ -46,7 +47,26 @@
 .statTile {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  min-height: 118px;
+  border: 1px solid var(--color-border);
+  border-top: 3px solid var(--accent-cobalt);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  padding: var(--space-4);
+}
+
+.statTile:nth-child(2) {
+  border-top-color: var(--accent-mint);
+}
+
+.statTile:nth-child(3) {
+  border-top-color: var(--accent-amber);
+}
+
+.statTile:nth-child(4) {
+  border-top-color: var(--accent-indigo);
 }
 
 .stats {
@@ -99,11 +119,18 @@
   padding: 20px 22px;
 }
 
-.card h2,
-.panelHeader h2 {
+.card h2 {
   margin: 0;
   color: var(--color-text);
   font-size: var(--font-size-xl);
+  font-weight: 600;
+}
+
+.panelHeader h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
 }
 
 .assignmentGrid {
@@ -146,6 +173,7 @@
   padding: 0 10px;
   font-size: var(--font-size-sm);
   font-weight: 600;
+  text-transform: capitalize;
 }
 
 .repoTag {
@@ -214,6 +242,12 @@
   width: min(320px, 40vw);
 }
 
+.panelActions .addRepositoryButton {
+  min-height: 38px;
+  padding: 0 13px;
+  font-size: var(--font-size-sm);
+}
+
 .panelHeader p,
 .emptyText,
 .repository {
@@ -241,14 +275,27 @@
 }
 
 .table th {
-  color: var(--color-muted);
+  background: var(--color-primary-soft);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+  font-weight: 700;
+}
+
+.table td {
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
-  font-weight: 600;
 }
 
 .projectName {
   color: var(--color-text);
+  font-size: var(--font-size-base);
   font-weight: 600;
+}
+
+.table .action {
+  min-height: 34px;
+  padding: 0 11px;
+  font-size: var(--font-size-sm);
 }
 
 .badgeActive {

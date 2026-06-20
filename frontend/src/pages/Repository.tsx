@@ -495,7 +495,7 @@ function RepositoryPage() {
     if (!repoId) {
       return;
     }
-    if (!window.confirm("Delete this KT topic? Any assignments to it will also be removed.")) {
+    if (!window.confirm("Delete this KT topic? Its assignments, checklist progress, assessments, and results will also be removed.")) {
       return;
     }
 
@@ -506,15 +506,15 @@ function RepositoryPage() {
   };
 
   const handleAssign = async () => {
-    if (!repoId || !selectedLearnerId) {
-      setAssignError("Please select a learner.");
+    if (!repoId || !selectedLearnerId || !selectedTopicId) {
+      setAssignError("Please select a learner and a KT topic.");
       return;
     }
 
     setAssigning(true);
     setAssignError("");
     try {
-      await assignLearner(repoId, selectedLearnerId, selectedTopicId || undefined);
+      await assignLearner(repoId, selectedLearnerId, selectedTopicId);
       const result = await getAssignments(repoId);
       setAssignments(result.assignments);
       setSelectedLearnerId("");
@@ -777,7 +777,6 @@ function RepositoryPage() {
             <div className={styles.filePreviewHeader}>
               <div>
                 <strong>{selectedFilePath ? selectedFilePath.split("/").pop() : "Select a file"}</strong>
-                {selectedFilePath ? <span>{selectedFilePath}</span> : null}
               </div>
               {selectedFile ? <span>{selectedFile.size.toLocaleString()} bytes</span> : null}
             </div>
@@ -816,10 +815,6 @@ function RepositoryPage() {
       return (
         <div className={styles.uploadPanel}>
           <div className={styles.uploadHeader}>
-            <div>
-              <h3>Uploaded KT Files</h3>
-              <p>Extra sheets, docs, images, and reference files for this repository.</p>
-            </div>
             {role === "ADMIN" ? (
               <label className={`${styles.primaryButton} ${styles.uploadButton}`}>
                 {uploadingDocument ? "Uploading..." : "Upload File"}
@@ -877,6 +872,15 @@ function RepositoryPage() {
     <div className={styles.page}>
       <PageHero
         eyebrow="Repository"
+        eyebrowContent={
+          <button
+            className={styles.backButton}
+            type="button"
+            onClick={() => navigate(role === "LEARNER" ? "/dashboard" : "/repositories")}
+          >
+            &#8592; Repositories
+          </button>
+        }
         heading={repository.name}
         subtitle={repository.url || "Local upload"}
         cornerAction={
@@ -887,13 +891,6 @@ function RepositoryPage() {
         }
         action={
           <div className={styles.headerActions}>
-            <button
-              className={styles.backButton}
-              type="button"
-              onClick={() => navigate(role === "LEARNER" ? "/dashboard" : "/repositories")}
-            >
-              &#8592; Repositories
-            </button>
             <span className={`${styles.badge} ${getStatusClass(repository.status)}`}>{repository.status}</span>
             <button className={styles.outlineButton} type="button" onClick={handleReanalyze} disabled={refreshing}>
               Re-analyze
@@ -1008,9 +1005,6 @@ function RepositoryPage() {
             <article className={`${styles.card} ${styles.knowledgeCard}`}>
               <div className={styles.cardHeader}>
                 <h2>Knowledge Base</h2>
-                <span className={`${styles.badge} ${getStatusClass(repository.knowledge_base_status ?? "none")}`}>
-                  {repository.knowledge_base_status ?? "none"}
-                </span>
               </div>
 
               {repository.knowledge_base_status === "none" ? (
@@ -1227,8 +1221,9 @@ function RepositoryPage() {
                     className={styles.input}
                     value={selectedTopicId}
                     onChange={(event) => setSelectedTopicId(event.target.value)}
+                    required
                   >
-                    <option value="">Select Topic...</option>
+                    <option value="">Select Topic... *</option>
                     {topics.map((topic) => (
                       <option key={topic.id} value={topic.id}>{topic.title}</option>
                     ))}
@@ -1237,7 +1232,7 @@ function RepositoryPage() {
                     className={styles.primaryButton}
                     onClick={handleAssign}
                     type="button"
-                    disabled={assigning || !selectedLearnerId}
+                    disabled={assigning || !selectedLearnerId || !selectedTopicId}
                   >
                     {assigning ? "Assigning..." : "Assign"}
                   </button>

@@ -3,6 +3,29 @@
   gap: var(--space-5);
 }
 
+.hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.heading {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  line-height: 1.12;
+}
+
 .search {
   width: min(100%, 420px);
 }
@@ -57,9 +80,9 @@
 }
 
 .panelHeader p {
-  margin: 4px 0 0;
+  margin: 0;
   color: var(--color-muted);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
 }
 
 .panelIcon {
@@ -104,7 +127,6 @@
 }
 
 .assessmentName {
-  margin-bottom: var(--space-2);
   color: var(--color-text);
   font-weight: 600;
 }
@@ -116,6 +138,7 @@
   color: #176b87;
   cursor: pointer;
   padding: 9px 12px;
+  font-size: var(--font-size-sm);
   font-weight: 600;
 }
 
@@ -132,7 +155,8 @@
   color: #b91c1c;
   cursor: pointer;
   padding: 9px 12px;
-  font-weight: 800;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
 }
 
 .deleteAction:hover:not(:disabled) {
@@ -366,6 +390,7 @@
 }
 
 @media (max-width: 840px) {
+  .hero,
   .questionHeader,
   .navigation {
     align-items: stretch;

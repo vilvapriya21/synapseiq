@@ -7,11 +7,12 @@ export interface PageHeroProps {
   action?: ReactNode;
   cornerAction?: ReactNode;
   eyebrow: string;
+  eyebrowContent?: ReactNode;
   heading: string;
   subtitle?: string;
 }
 
-function PageHero({ action, cornerAction, eyebrow, heading, subtitle }: PageHeroProps) {
+function PageHero({ action, cornerAction, eyebrow, eyebrowContent, heading, subtitle }: PageHeroProps) {
   const { setTitle } = usePageTitle();
 
   useEffect(() => {
@@ -21,7 +22,7 @@ function PageHero({ action, cornerAction, eyebrow, heading, subtitle }: PageHero
   return (
     <section className={styles.hero}>
       <div className={styles.content}>
-        <p className={styles.eyebrow}>{eyebrow}</p>
+        <p className={styles.eyebrow}>{eyebrowContent ?? eyebrow}</p>
         <h1 className={styles.heading}>{heading}</h1>
         {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
       </div>
