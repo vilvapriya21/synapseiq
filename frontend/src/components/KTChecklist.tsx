@@ -22,7 +22,7 @@ interface KTChecklistProps {
 
 function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
   const user = useAuthStore((state) => state.user);
-  const role = normalizeRole(user?.role ?? user?.roles?.[0]);
+  const role = normalizeRole(user?.role ?? "");
   const adminView = isAdmin ?? role === "ADMIN";
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -274,6 +274,7 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
                   <div className={styles.itemBody}>
                     <strong className={item.completed ? styles.completedTitle : ""}>{item.title}</strong>
                     {item.description ? <p>{item.description}</p> : null}
+                    {item.source ? <span className={styles.sourceTag}>{item.source}</span> : null}
                   </div>
                   {adminView ? (
                     <div className={styles.actions}>

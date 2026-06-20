@@ -724,31 +724,31 @@ def create_assignment(
 
     repository = get_owned_repository(db, repo_id, current_user.id)
 
+    kt_topic_id = payload.kt_topic_id.strip() if payload.kt_topic_id else None
     topic = None
-    if payload.kt_topic_id is not None:
-        topic = db.get(KTTopic, payload.kt_topic_id)
+    if kt_topic_id is not None:
+        topic = db.get(KTTopic, kt_topic_id)
         if topic is None or topic.repository_id != repo_id:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
-    else:
-        topic = get_or_create_repository_learning_topic(db, repository, current_user)
 
     learner = db.get(User, payload.learner_id)
     if learner is None or not is_learner(learner):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Learner not found")
 
-    existing = db.scalar(
-        select(RepositoryAssignment).where(
-            RepositoryAssignment.repository_id == repo_id,
-            RepositoryAssignment.kt_topic_id == topic.id,
-            RepositoryAssignment.learner_id == payload.learner_id,
+    if kt_topic_id is not None:
+        existing = db.scalar(
+            select(RepositoryAssignment).where(
+                RepositoryAssignment.repository_id == repo_id,
+                RepositoryAssignment.kt_topic_id == kt_topic_id,
+                RepositoryAssignment.learner_id == payload.learner_id,
+            )
         )
-    )
-    if existing is not None:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Learner already assigned to this KT topic")
+        if existing is not None:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Learner already assigned to this KT topic")
 
     assignment = RepositoryAssignment(
         repository_id=repo_id,
-        kt_topic_id=topic.id,
+        kt_topic_id=kt_topic_id,
         learner_id=payload.learner_id,
         assigned_by=current_user.id,
         status="assigned",
@@ -761,7 +761,7 @@ def create_assignment(
         id=assignment.id,
         repository_id=assignment.repository_id,
         kt_topic_id=assignment.kt_topic_id,
-        kt_topic_title=None if topic.path_patterns == REPOSITORY_LEARNING_TOPIC_MARKER else topic.title,
+        kt_topic_title=topic.title if topic else None,
         learner_id=assignment.learner_id,
         learner_name=learner.name,
         learner_email=learner.email,

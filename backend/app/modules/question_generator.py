@@ -114,36 +114,42 @@ def generate_assessment_questions(
 
         code_context = build_code_context(list(entries))
         system_prompt = (
-            "You are an expert technical trainer creating rigorous multiple-choice "
-            "assessments for software engineering teams."
+            "You are an expert technical trainer. You create multiple-choice assessment questions "
+            "STRICTLY based on the actual source code and documentation provided to you. "
+            "Every question must reference real functions, classes, endpoints, models, or patterns "
+            "found in the provided code context. Do not generate generic or theoretical questions "
+            "that are not grounded in the provided codebase."
         )
         parsed_items: list[dict] = []
 
         for offset in range(0, num_questions, MAX_BATCH_QUESTIONS):
             batch_size = min(MAX_BATCH_QUESTIONS, num_questions - offset)
-            user_prompt = f"""
-Topic: {topic.title}
-Description: {topic.description or 'N/A'}
+            user_prompt = f"""Repository: {topic.repository_id}
+KT Topic: {topic.title}
+Topic Description: {topic.description or 'N/A'}
+Path Scope: {topic.path_patterns or 'Entire repository'}
 
-Code context from the repository:
+The following is the actual source code and documentation from the repository scoped to this KT topic:
+
 {code_context}
 
-Generate exactly {batch_size} multiple-choice questions to assess a learner's understanding of this KT topic.
-This is batch {offset // MAX_BATCH_QUESTIONS + 1}; avoid repeating question ideas from earlier batches.
+Generate exactly {batch_size} multiple-choice questions that test a learner's understanding of the ABOVE codebase.
 
-Rules:
-- Each question must have exactly 4 options (labeled as short answer strings, not A/B/C/D).
-- question_type must be "single" if exactly one option is correct, "multi" if two or more are correct.
-- At least 30% of questions should be "multi" type.
-- Vary difficulty: roughly 40% Easy, 40% Medium, 20% Hard.
-- explanation: a 1-2 sentence explanation of the correct answer(s).
-- Base questions on the actual code context provided. Do not invent features not present.
+STRICT RULES:
+- Every question MUST reference something visible in the code context above (a real function name, class, endpoint path, variable, config key, error type, pattern, or architectural decision).
+- Do NOT ask about general programming concepts not demonstrated in the code.
+- Do NOT invent features, endpoints, or classes not present in the context.
+- question_type = "single" if exactly one option is correct; "multi" if two or more are correct.
+- At least 30% of questions must be "multi" type.
+- Difficulty distribution: ~40% Easy, ~40% Medium, ~20% Hard.
+- explanation: 1-2 sentences explaining the correct answer, referencing the specific code.
+- This is batch {offset // MAX_BATCH_QUESTIONS + 1}; do not repeat question ideas from earlier batches.
 
-Respond ONLY as a valid JSON array. No markdown. No explanation. Only JSON.
+Respond ONLY as a valid JSON array. No markdown, no explanation, only JSON.
 Schema:
 [
   {{
-    "question_text": "string",
+    "question_text": "string - must reference specific code/endpoint/class",
     "question_type": "single" | "multi",
     "options": [
       {{"label": "string", "is_correct": true | false}},
@@ -151,7 +157,7 @@ Schema:
       {{"label": "string", "is_correct": false}},
       {{"label": "string", "is_correct": false}}
     ],
-    "explanation": "string",
+    "explanation": "string - cite the specific code element that makes this correct",
     "difficulty": "Easy" | "Medium" | "Hard"
   }}
 ]

@@ -61,10 +61,17 @@ def generate_checklist_items(topic: KTTopic, db: Session, llm: LLMProvider) -> l
         code_context = build_code_context(list(entries))
         system_prompt = "You generate precise knowledge-transfer checklists for software teams."
         user_prompt = (
-            f"Given this topic '{topic.title}' ({topic.description}) and this code context, "
-            "generate 5-8 knowledge-transfer checklist items a new team member should complete "
-            "to understand this part of the codebase. Respond ONLY as a JSON array of objects: "
-            '[{"title": str, "description": str}]. No markdown. No explanation. Only JSON.\n\n'
+            f"KT Topic: '{topic.title}'\n"
+            f"Description: {topic.description or 'N/A'}\n"
+            f"Path scope: {topic.path_patterns or 'Entire repository'}\n\n"
+            "Based on the source code below, generate 5-8 checklist items a new team member must "
+            "complete to understand this KT topic. Each item should be directly traceable to a "
+            "specific file, module, class, or pattern in the code.\n\n"
+            "Respond ONLY as a JSON array. No markdown. Only JSON.\n"
+            'Schema: [{"title": str, "description": str, "source": str}]\n'
+            "- title: short action phrase (e.g. 'Review the AuthService class')\n"
+            "- description: 1-2 sentences explaining what to look at and why\n"
+            "- source: the specific file path or module name from the code that this item relates to\n\n"
             f"Code context:\n{code_context}"
         )
 
@@ -98,6 +105,7 @@ def generate_checklist_items(topic: KTTopic, db: Session, llm: LLMProvider) -> l
             {
                 "title": title.strip(),
                 "description": description.strip() if isinstance(description, str) else None,
+                "source": item.get("source", "").strip() if isinstance(item.get("source"), str) else None,
             }
         )
 

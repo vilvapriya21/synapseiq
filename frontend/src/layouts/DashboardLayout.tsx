@@ -45,7 +45,8 @@ function DashboardLayout() {
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
-  const role = normalizeRole(user?.role ?? user?.roles?.[0]);
+  const role = normalizeRole(user?.role ?? "");
+  const { title } = usePageTitle();
   const visibleNavigation = navigation.filter((item) => item.roles.includes(role));
 
   useEffect(() => {
