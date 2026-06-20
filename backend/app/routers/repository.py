@@ -371,6 +371,7 @@ def upload_repository(
     repository = Repository(
         name=get_repository_name_from_filename(filename),
         source_type="upload",
+        provider="upload",
         url=None,
         branch=None,
         status="pending",

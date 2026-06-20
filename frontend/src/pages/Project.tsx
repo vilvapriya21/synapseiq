@@ -49,6 +49,17 @@ function getBadgeTone(repository: Repository): BadgeTone {
   return "pending";
 }
 
+function getRepositorySourceLabel(repository: Repository) {
+  if (repository.source_type === "upload") return "Local upload";
+
+  const source = `${repository.provider || repository.source_type || ""}`.toLowerCase();
+  if (source.includes("gitlab")) return "GitLab";
+  if (source.includes("bitbucket")) return "Bitbucket";
+  if (source.includes("azure")) return "Azure DevOps";
+  if (source.includes("github") || repository.source_type === "git") return "GitHub";
+  return "Repository";
+}
+
 function fallbackRepositoriesFromAssignments(assignments: MyAssignment[]): Repository[] {
   const repositories = new Map<string, Repository>();
 
@@ -126,7 +137,9 @@ function ProjectPage() {
     return repositories.filter((repository) =>
       [
         repository.name,
+        getRepositorySourceLabel(repository),
         repository.provider,
+        repository.source_type,
         repository.language,
         repository.branch,
         repository.url,
@@ -215,7 +228,7 @@ function ProjectPage() {
         <section className={styles.list} aria-label="Repository list">
           {filteredRepositories.map((repository) => {
             const badgeTone = getBadgeTone(repository);
-            const source = repository.provider || repository.source_type || "Repository";
+            const source = getRepositorySourceLabel(repository);
 
             return (
               <Card

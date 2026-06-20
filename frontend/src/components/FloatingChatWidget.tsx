@@ -14,6 +14,9 @@ function FloatingChatWidget({ repoId }: FloatingChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [hasBeenOpened, setHasBeenOpened] = useState(() => sessionStorage.getItem(CHAT_OPENED_KEY) === "true");
+  const [isTriggerHovered, setIsTriggerHovered] = useState(false);
+
+  const shouldShowHint = !isOpen && (!hasBeenOpened || isTriggerHovered);
 
   const handleToggle = () => {
     setIsOpen((current) => {
@@ -34,7 +37,7 @@ function FloatingChatWidget({ repoId }: FloatingChatWidgetProps) {
         <ChatPanel repoId={repoId} />
       </div>
       <div
-        className={`${styles.assistantHint} ${!hasBeenOpened && !isOpen ? styles.assistantHintVisible : ""}`}
+        className={`${styles.assistantHint} ${shouldShowHint ? styles.assistantHintVisible : ""}`}
         aria-hidden="true"
       >
         Hi, I&apos;m your AI assistant. How can I help?
@@ -43,6 +46,10 @@ function FloatingChatWidget({ repoId }: FloatingChatWidgetProps) {
         className={styles.trigger}
         type="button"
         onClick={handleToggle}
+        onBlur={() => setIsTriggerHovered(false)}
+        onFocus={() => setIsTriggerHovered(true)}
+        onMouseEnter={() => setIsTriggerHovered(true)}
+        onMouseLeave={() => setIsTriggerHovered(false)}
         aria-label={isOpen ? "Close repository assistant" : "Open repository assistant"}
         aria-expanded={isOpen}
       >
