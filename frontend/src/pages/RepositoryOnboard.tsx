@@ -46,6 +46,13 @@ function getStatusReason(repository: Repository) {
   return "";
 }
 
+function getRepositoryStatusReason(repository: Repository) {
+  if (repository.source_type === "upload" && repository.status === "indexing") {
+    return "Extracting and analyzing local archive.";
+  }
+  return getStatusReason(repository);
+}
+
 function formatProviderStatus(status: "unknown" | "connected" | "disconnected") {
   if (status === "connected") return "Connected";
   if (status === "disconnected") return "Not connected";
@@ -53,12 +60,31 @@ function formatProviderStatus(status: "unknown" | "connected" | "disconnected") 
 }
 
 function getRepositoryProvider(repository: Repository) {
+  if (repository.source_type === "upload") return "upload";
+
   const source = `${repository.provider || repository.source_type || ""}`.toLowerCase();
   if (source.includes("gitlab")) return "gitlab";
   if (source.includes("bitbucket")) return "bitbucket";
   if (source.includes("azure")) return "azure";
   if (source.includes("github") || repository.source_type === "git") return "github";
   return "upload";
+}
+
+function getRepositorySourceLabel(repository: Repository) {
+  const provider = getRepositoryProvider(repository);
+  switch (provider) {
+    case "gitlab":
+      return "GitLab";
+    case "bitbucket":
+      return "Bitbucket";
+    case "azure":
+      return "Azure DevOps";
+    case "github":
+      return "GitHub";
+    case "upload":
+    default:
+      return "Local upload";
+  }
 }
 
 function getRepositoryIcon(repository: Repository) {
@@ -217,7 +243,7 @@ function RepositoryOnboardPage() {
           id: repository.id,
           name: repository.name,
           status: repository.status,
-          reason: getStatusReason(repository),
+          reason: getRepositoryStatusReason(repository),
         });
       }
     });
@@ -383,7 +409,7 @@ function RepositoryOnboardPage() {
           </span>
           <div>
             <div className={styles.repositoryName}>{repository.name}</div>
-            <div className={styles.repositorySource}>{repository.provider || repository.source_type}</div>
+            <div className={styles.repositorySource}>{getRepositorySourceLabel(repository)}</div>
           </div>
         </div>
       ),
@@ -421,8 +447,8 @@ function RepositoryOnboardPage() {
           {repository.status === "error" && repository.error_message ? (
             <span title={repository.error_message}> &#9888;</span>
           ) : null}
-          {getStatusReason(repository) ? (
-            <div className={styles.statusReason}>{getStatusReason(repository)}</div>
+          {getRepositoryStatusReason(repository) ? (
+            <div className={styles.statusReason}>{getRepositoryStatusReason(repository)}</div>
           ) : null}
         </>
       ),
