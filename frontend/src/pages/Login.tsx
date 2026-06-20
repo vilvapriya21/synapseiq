@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { isAxiosError } from "axios";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button, Input } from "../components/common";
 import synapseLogo from "../assets/synapse-logo.svg";
 import { ROUTES } from "../routes/routePaths";
@@ -96,7 +96,6 @@ function PasswordField({ label, name, placeholder, showHint = false }: PasswordF
 
 function LoginPage() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [mode, setMode] = useState<AuthMode>("login");
   const [role, setRole] = useState<UserRole>("ADMIN");
   const [isLoading, setIsLoading] = useState(false);
@@ -105,8 +104,6 @@ function LoginPage() {
   const [message, setMessage] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const loginUser = useAuthStore((state) => state.login);
-
-  const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || ROUTES.dashboard;
 
   const clearAlerts = () => {
     setError("");
@@ -160,7 +157,7 @@ function LoginPage() {
           { accessToken: response.token },
           rememberMe,
         );
-        navigate(redirectTo, { replace: true });
+        navigate(ROUTES.dashboard, { replace: true });
       }
       if (mode === "signup") {
         const resp = await authService.signup({

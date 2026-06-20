@@ -254,7 +254,7 @@ export const getRepositoryAssignments = async (repoId: string): Promise<Assignme
   return response.data.assignments;
 };
 
-export const assignLearner = async (repoId: string, learnerId: string, ktTopicId?: string): Promise<Assignment> => {
+export const assignLearner = async (repoId: string, learnerId: string, ktTopicId: string): Promise<Assignment> => {
   const response = await apiClient.post<Assignment>(`/repositories/${repoId}/assignments`, {
     kt_topic_id: ktTopicId,
     learner_id: learnerId,

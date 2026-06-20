@@ -108,7 +108,7 @@ class ContributorListResponse(BaseModel):
 class AssignLearnerRequest(BaseModel):
     """Pydantic schema for AssignLearnerRequest payloads."""
     learner_id: str
-    kt_topic_id: str | None = None
+    kt_topic_id: str
 
 
 class AssignmentResponse(BaseModel):

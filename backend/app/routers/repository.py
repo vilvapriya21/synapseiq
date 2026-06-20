@@ -1149,27 +1149,26 @@ def create_assignment(
 
     repository = get_owned_repository(db, repo_id, current_user.id)
 
-    kt_topic_id = payload.kt_topic_id.strip() if payload.kt_topic_id else None
-    topic = None
-    if kt_topic_id is not None:
-        topic = db.get(KTTopic, kt_topic_id)
-        if topic is None or topic.repository_id != repo_id:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
+    kt_topic_id = payload.kt_topic_id.strip()
+    if not kt_topic_id:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="KT topic is required")
+    topic = db.get(KTTopic, kt_topic_id)
+    if topic is None or topic.repository_id != repo_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
 
     learner = db.get(User, payload.learner_id)
     if learner is None or not is_learner(learner):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Learner not found")
 
-    if kt_topic_id is not None:
-        existing = db.scalar(
-            select(RepositoryAssignment).where(
-                RepositoryAssignment.repository_id == repo_id,
-                RepositoryAssignment.kt_topic_id == kt_topic_id,
-                RepositoryAssignment.learner_id == payload.learner_id,
-            )
+    existing = db.scalar(
+        select(RepositoryAssignment).where(
+            RepositoryAssignment.repository_id == repo_id,
+            RepositoryAssignment.kt_topic_id == kt_topic_id,
+            RepositoryAssignment.learner_id == payload.learner_id,
         )
-        if existing is not None:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Learner already assigned to this KT topic")
+    )
+    if existing is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Learner already assigned to this KT topic")
 
     assignment = RepositoryAssignment(
         repository_id=repo_id,

@@ -173,14 +173,13 @@ function DashboardPage() {
                   <th>Language</th>
                   <th>Modules</th>
                   <th>Status</th>
-                  <th>KB Status</th>
-                  <th>Actions</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredAssignedRepositories.length === 0 ? (
                   <tr>
-                    <td colSpan={7}>
+                    <td colSpan={6}>
                       <EmptyState title="No assigned repositories" description="No repositories matched your search." />
                     </td>
                   </tr>
@@ -196,16 +195,13 @@ function DashboardPage() {
                     <td>
                       <span className={badgeClass(repository.status)}>{repository.status}</span>
                     </td>
-                    <td className={repository.knowledge_base_status === "none" ? styles.repository : undefined}>
-                      {repository.knowledge_base_status || "none"}
-                    </td>
                     <td>
                       <button
                         className={styles.action}
                         onClick={() => navigate(`/repositories/${repository.id}`)}
                         type="button"
                       >
-                        Open
+                        View
                       </button>
                     </td>
                   </tr>
@@ -255,7 +251,7 @@ function DashboardPage() {
               placeholder="Search repositories"
               value={search}
             />
-            <Button onClick={() => navigate(ROUTES.repositoryOnboard)} type="button">
+            <Button className={styles.addRepositoryButton} onClick={() => navigate(ROUTES.repositoryOnboard)} type="button">
               Add Repository
             </Button>
           </div>
@@ -269,14 +265,13 @@ function DashboardPage() {
                 <th>Language</th>
                 <th>Modules</th>
                 <th>Status</th>
-                <th>KB Status</th>
-                <th>Actions</th>
+                <th>Action</th>
               </tr>
             </thead>
               <tbody>
               {filteredProjects.length === 0 ? (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={6}>
                     <EmptyState title="No repositories found" description="No repositories matched your search." />
                   </td>
                 </tr>
@@ -292,16 +287,13 @@ function DashboardPage() {
                   <td>
                     <span className={badgeClass(project.status)}>{project.status}</span>
                   </td>
-                  <td className={project.knowledge_base_status === "none" ? styles.repository : undefined}>
-                    {project.knowledge_base_status}
-                  </td>
                   <td>
                     <button
                       className={styles.action}
                       onClick={() => navigate(`/repositories/${project.id}`)}
                       type="button"
                     >
-                      Open
+                      View
                     </button>
                   </td>
                 </tr>

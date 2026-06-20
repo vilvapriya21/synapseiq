@@ -514,7 +514,7 @@ function RepositoryOnboardPage() {
     },
     {
       key: "action",
-      header: "Action",
+      header: "Actions",
       render: (repository) => (
         <div className={styles.actionCell}>
           <button
@@ -529,7 +529,7 @@ function RepositoryOnboardPage() {
               console.log(repository.id);
             }}
           >
-            Open Workspace
+            View
           </button>
           <button
             className={styles.deleteButton}

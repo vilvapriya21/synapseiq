@@ -10,6 +10,13 @@ from sqlalchemy.orm import Session
 from app.core.llm_dependency import get_llm
 from app.core.security import get_current_user
 from app.db.session import get_db
+from app.models.assessment import (
+    Assessment,
+    AssessmentAttempt,
+    AssessmentAttemptAnswer,
+    AssessmentOption,
+    AssessmentQuestion,
+)
 from app.models.contributor import Contributor
 from app.models.kt_checklist import KTChecklistItem, KTChecklistProgress
 from app.models.kt_topic import KTTopic
@@ -651,6 +658,53 @@ def delete_kt_topic(
     topic = db.get(KTTopic, topic_id)
     if topic is None or topic.repository_id != repo_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
+
+    assessment_ids = list(
+        db.scalars(select(Assessment.id).where(Assessment.kt_topic_id == topic_id)).all()
+    )
+    if assessment_ids:
+        question_ids = list(
+            db.scalars(
+                select(AssessmentQuestion.id).where(
+                    AssessmentQuestion.assessment_id.in_(assessment_ids)
+                )
+            ).all()
+        )
+        attempt_ids = list(
+            db.scalars(
+                select(AssessmentAttempt.id).where(
+                    AssessmentAttempt.assessment_id.in_(assessment_ids)
+                )
+            ).all()
+        )
+        if attempt_ids:
+            db.execute(
+                sql_delete(AssessmentAttemptAnswer).where(
+                    AssessmentAttemptAnswer.attempt_id.in_(attempt_ids)
+                )
+            )
+        if question_ids:
+            db.execute(
+                sql_delete(AssessmentAttemptAnswer).where(
+                    AssessmentAttemptAnswer.question_id.in_(question_ids)
+                )
+            )
+            db.execute(
+                sql_delete(AssessmentOption).where(
+                    AssessmentOption.question_id.in_(question_ids)
+                )
+            )
+        db.execute(
+            sql_delete(AssessmentAttempt).where(
+                AssessmentAttempt.assessment_id.in_(assessment_ids)
+            )
+        )
+        db.execute(
+            sql_delete(AssessmentQuestion).where(
+                AssessmentQuestion.assessment_id.in_(assessment_ids)
+            )
+        )
+        db.execute(sql_delete(Assessment).where(Assessment.id.in_(assessment_ids)))
 
     checklist_item_ids = db.scalars(
         select(KTChecklistItem.id).where(KTChecklistItem.kt_topic_id == topic_id)

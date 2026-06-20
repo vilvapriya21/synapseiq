@@ -112,10 +112,9 @@ function AssessmentsPage() {
 
       <section className={styles.panel}>
         <div className={styles.panelHeader}>
-          <div>
-            <h2>{role === "ADMIN" ? "Active Assessments" : "My Assessments"}</h2>
-            <p>{filteredAssessments.length} assessments matched</p>
-          </div>
+          <p>
+            {filteredAssessments.length} {filteredAssessments.length === 1 ? "assessment" : "assessments"} matched
+          </p>
         </div>
         {deleteError ? <div className={styles.inlineError} role="alert">{deleteError}</div> : null}
         {filteredAssessments.length === 0 ? (
