@@ -48,7 +48,6 @@
 }
 
 .brandNameText,
-.brandSubtitle,
 .linkLabel,
 .sidebarProfileText,
 .sidebarProfileChevron {
@@ -57,8 +56,7 @@
     width 220ms ease;
 }
 
-.brandNameText,
-.brandSubtitle {
+.brandNameText {
   display: block;
   overflow: hidden;
   white-space: nowrap;
@@ -66,15 +64,6 @@
 
 .brandNameText {
   width: 112px;
-}
-
-.brandSubtitle {
-  display: block;
-  width: 150px;
-  margin-top: var(--space-1);
-  color: var(--color-muted);
-  font-size: 12px;
-  font-weight: 600;
 }
 
 .logo,
@@ -239,7 +228,6 @@
 
 .collapsed .brandText,
 .collapsed .brandNameText,
-.collapsed .brandSubtitle,
 .collapsed .linkLabel,
 .collapsed .sidebarProfileText,
 .collapsed .sidebarProfileChevron {
@@ -283,23 +271,18 @@
   gap: var(--space-2);
 }
 
-.headerTitleEyebrow {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-}
-
-.headerTitleText {
+.headerAppName {
   font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--color-text);
 }
 
-.headerTitleDivider {
-  color: var(--color-border);
-  font-size: var(--font-size-lg);
+.headerTagline {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+  margin-left: var(--space-2);
+  padding-left: var(--space-2);
+  border-left: 1px solid var(--color-border);
 }
 
 .profile {
@@ -369,7 +352,6 @@
 
   .collapsed .brandText,
   .collapsed .brandNameText,
-  .collapsed .brandSubtitle,
   .collapsed .linkLabel {
     width: revert;
     opacity: 1;
@@ -378,10 +360,6 @@
 
   .collapsed .brandNameText {
     width: 112px;
-  }
-
-  .collapsed .brandSubtitle {
-    width: 150px;
   }
 
   .collapsed .link,

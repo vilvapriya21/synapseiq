@@ -1,0 +1,181 @@
+.trigger {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border: 1px solid var(--color-primary);
+  border-radius: calc(var(--radius-lg) * 999);
+  background: var(--color-primary);
+  color: var(--color-surface);
+  cursor: pointer;
+  isolation: isolate;
+  overflow: visible;
+  box-shadow:
+    0 16px 32px rgba(47, 111, 237, 0.28),
+    0 0 0 6px rgba(47, 111, 237, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.trigger::before {
+  position: absolute;
+  inset: 5px;
+  z-index: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 48%);
+  content: "";
+  pointer-events: none;
+}
+
+.trigger:hover,
+.trigger:focus-visible {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  box-shadow:
+    0 20px 42px rgba(47, 111, 237, 0.38),
+    0 0 0 9px rgba(47, 111, 237, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34);
+  transform: translateY(-2px) scale(1.03);
+}
+
+.trigger:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.assistantHint {
+  position: fixed;
+  right: 98px;
+  bottom: 36px;
+  z-index: 50;
+  max-width: 250px;
+  border: 1px solid var(--color-primary-soft-hover);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.14);
+  opacity: 0;
+  padding: 10px 12px;
+  pointer-events: none;
+  transform: translateX(8px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.assistantHint::after {
+  position: absolute;
+  top: 50%;
+  right: -7px;
+  width: 12px;
+  height: 12px;
+  border-top: 1px solid var(--color-primary-soft-hover);
+  border-right: 1px solid var(--color-primary-soft-hover);
+  background: var(--color-surface);
+  content: "";
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.assistantHintVisible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.trigger svg,
+.triggerAvatar {
+  position: relative;
+  z-index: 1;
+}
+
+.triggerAvatar {
+  width: 38px;
+  height: 38px;
+  filter: drop-shadow(0 3px 5px rgba(17, 24, 39, 0.22));
+  object-fit: contain;
+}
+
+.pulseRing {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--color-primary);
+  opacity: 0;
+}
+
+.pulseActive {
+  animation:
+    synapsePulse 2.4s ease-out infinite,
+    synapseFloat 2.4s ease-in-out infinite;
+}
+
+.panel {
+  position: fixed;
+  right: 28px;
+  bottom: 96px;
+  z-index: 49;
+  width: 380px;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.92);
+  transform-origin: bottom right;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.panelOpen {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+@keyframes synapsePulse {
+  0% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+
+  70% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+
+@keyframes synapseFloat {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(47, 111, 237, 0));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 12px rgba(47, 111, 237, 0.45));
+  }
+}
+
+@media (max-width: 480px) {
+  .panel {
+    width: calc(100vw - 32px);
+  }
+
+  .assistantHint {
+    right: 96px;
+    max-width: calc(100vw - 128px);
+  }
+}

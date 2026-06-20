@@ -94,6 +94,10 @@
   gap: var(--space-4);
 }
 
+.spaciousCard {
+  padding: 26px 28px;
+}
+
 .sideColumn {
   display: grid;
   gap: var(--space-4);
@@ -778,6 +782,8 @@
 .topicForm { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-4); }
 .topicList { display: flex; flex-direction: column; gap: var(--space-3); }
 .topicItem { border: 1px solid var(--color-border); border-left: 4px solid var(--accent-cobalt); border-radius: var(--radius-sm); padding: var(--space-3); }
+.topicsCard .topicList { gap: var(--space-4); }
+.topicsCard .topicItem { padding: 16px 18px; }
 .topicAccentCobalt { border-left-color: var(--accent-cobalt); }
 .topicAccentMint { border-left-color: var(--accent-mint); }
 .topicAccentIndigo { border-left-color: var(--accent-indigo); }
@@ -803,9 +809,24 @@
 .table th,
 .table td {
   border-bottom: 1px solid var(--color-border);
-  padding: 10px 8px;
+  padding: 12px 14px;
   text-align: left;
   vertical-align: top;
+}
+
+.contributorsTable th:nth-child(5),
+.contributorsTable td:nth-child(5) {
+  width: 32%;
+}
+
+.assignmentsTable th:first-child,
+.assignmentsTable td:first-child {
+  width: 44%;
+}
+
+.assignmentsTable th:nth-child(2),
+.assignmentsTable td:nth-child(2) {
+  width: 32%;
 }
 
 .table th {

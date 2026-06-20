@@ -1,6 +1,7 @@
 from pathlib import Path
 from urllib.parse import quote, urlparse
 import base64
+import logging
 import re
 import shutil
 import subprocess
@@ -13,6 +14,8 @@ from sqlalchemy.orm import Session
 from app.models.contributor import Contributor
 from app.models.repository import Repository
 from app.modules.git_provider import build_authenticated_url
+
+logger = logging.getLogger(__name__)
 
 
 def sanitize_git_error(value: str) -> str:
@@ -88,7 +91,7 @@ def get_or_create_contributor(authorship: dict[str, dict], name: str, email: str
     )
 
 
-def extract_commit_authorship(repo_dir: Path) -> dict[str, dict]:
+def extract_commit_authorship(repo_dir: Path, seen_commit_shas: set[str] | None = None) -> dict[str, dict]:
     result = subprocess.run(
         ["git", "log", "--all", "--numstat", '--format=COMMIT|%H|%an|%ae|%cn|%ce'],
         cwd=repo_dir,
@@ -112,7 +115,9 @@ def extract_commit_authorship(repo_dir: Path) -> dict[str, dict]:
                 current_contributor = None
                 continue
 
-            _, _commit_hash, author_name, author_email, _committer_name, _committer_email = parts
+            _, commit_hash, author_name, author_email, _committer_name, _committer_email = parts
+            if seen_commit_shas is not None:
+                seen_commit_shas.add(commit_hash.lower())
             current_contributor = get_or_create_contributor(authorship, author_name, author_email)
             if current_contributor is not None:
                 current_contributor["commit_count"] += 1
@@ -152,7 +157,66 @@ def parse_azure_repo_url(url: str) -> tuple[str, str, str] | None:
     return None
 
 
-def enrich_with_azure_pr_authors(authorship: dict[str, dict], repository_url: str, azure_token: str | None) -> None:
+def get_azure_auth_header(azure_token: str) -> dict[str, str]:
+    auth_token = base64.b64encode(f":{azure_token}".encode("utf-8")).decode("ascii")
+    return {"Authorization": f"Basic {auth_token}"}
+
+
+def get_azure_paginated_values(
+    api_url: str,
+    azure_token: str,
+    params: dict[str, str | int],
+) -> list[dict]:
+    values: list[dict] = []
+    continuation_token: str | None = None
+    headers = get_azure_auth_header(azure_token)
+
+    while True:
+        request_params = {**params, "$top": 100}
+        if continuation_token:
+            request_params["continuationToken"] = continuation_token
+
+        response = httpx.get(
+            api_url,
+            params=request_params,
+            headers=headers,
+            timeout=20,
+        )
+        response.raise_for_status()
+        values.extend(response.json().get("value", []))
+
+        continuation_token = response.headers.get("x-ms-continuationtoken")
+        if not continuation_token:
+            return values
+
+
+def get_pull_request_commits(
+    org: str,
+    project: str,
+    repo: str,
+    pr_id: int | str,
+    azure_token: str,
+) -> list[dict]:
+    api_url = (
+        f"https://dev.azure.com/{quote(org, safe='')}/{quote(project, safe='')}"
+        f"/_apis/git/repositories/{quote(repo, safe='')}/pullRequests/{quote(str(pr_id), safe='')}/commits"
+    )
+    return get_azure_paginated_values(
+        api_url,
+        azure_token,
+        {"api-version": "7.1-preview.1"},
+    )
+
+
+# Azure Code (Read) PAT scope covers clone plus these PR/commit APIs. If this
+# consistently logs 401/403, re-verify the stored PAT under User Settings >
+# Personal Access Tokens and ensure Code (Read) is enabled.
+def enrich_with_azure_commit_history(
+    authorship: dict[str, dict],
+    repository_url: str,
+    azure_token: str | None,
+    seen_commit_shas: set[str],
+) -> None:
     if not azure_token:
         return
 
@@ -165,18 +229,21 @@ def enrich_with_azure_pr_authors(authorship: dict[str, dict], repository_url: st
         f"https://dev.azure.com/{quote(org, safe='')}/{quote(project, safe='')}"
         f"/_apis/git/repositories/{quote(repo, safe='')}/pullrequests"
     )
-    auth_token = base64.b64encode(f":{azure_token}".encode("utf-8")).decode("ascii")
 
     try:
-        response = httpx.get(
+        pull_requests = get_azure_paginated_values(
             api_url,
-            params={"searchCriteria.status": "completed", "api-version": "7.1-preview.1"},
-            headers={"Authorization": f"Basic {auth_token}"},
-            timeout=20,
+            azure_token,
+            {"searchCriteria.status": "completed", "api-version": "7.1-preview.1"},
         )
-        response.raise_for_status()
-        pull_requests = response.json().get("value", [])
-    except Exception:
+    except httpx.HTTPStatusError as exc:
+        logger.warning(
+            f"Azure PR enrichment failed for repo {repository_url}: "
+            f"{exc.response.status_code} {exc.response.text[:200]}"
+        )
+        return
+    except Exception as exc:
+        logger.warning(f"Azure PR enrichment failed for repo {repository_url}: {exc}")
         return
 
     for pull_request in pull_requests:
@@ -186,6 +253,37 @@ def enrich_with_azure_pr_authors(authorship: dict[str, dict], repository_url: st
         contributor = get_or_create_contributor(authorship, name, email)
         if contributor is not None:
             contributor["prs_authored"] += 1
+
+        pr_id = pull_request.get("pullRequestId")
+        if pr_id is None:
+            continue
+
+        try:
+            pull_request_commits = get_pull_request_commits(org, project, repo, pr_id, azure_token)
+        except httpx.HTTPStatusError as exc:
+            logger.warning(
+                f"Azure PR enrichment failed for repo {repository_url}: "
+                f"{exc.response.status_code} {exc.response.text[:200]}"
+            )
+            return
+        except Exception as exc:
+            logger.warning(f"Azure PR enrichment failed for repo {repository_url}: {exc}")
+            return
+
+        for commit in pull_request_commits:
+            commit_id = (commit.get("commitId") or "").lower()
+            if not commit_id or commit_id in seen_commit_shas:
+                continue
+
+            author = commit.get("author") or {}
+            commit_author = get_or_create_contributor(
+                authorship,
+                author.get("name") or "",
+                author.get("email") or "",
+            )
+            if commit_author is not None:
+                commit_author["commit_count"] += 1
+                seen_commit_shas.add(commit_id)
 
 
 def top_files_string(file_counts: dict[str, int], limit: int = 10) -> str:
@@ -217,9 +315,10 @@ def analyze_contributors(
         auth_url = build_authenticated_url(repository.url, token_for_provider, repository.provider)
 
         clone_with_history(auth_url, temp_dir / "repo")
-        authorship = extract_commit_authorship(temp_dir / "repo")
+        seen_commit_shas: set[str] = set()
+        authorship = extract_commit_authorship(temp_dir / "repo", seen_commit_shas)
         if repository.provider == "azure":
-            enrich_with_azure_pr_authors(authorship, repository.url or "", azure_token)
+            enrich_with_azure_commit_history(authorship, repository.url or "", azure_token, seen_commit_shas)
 
         db.execute(sql_delete(Contributor).where(Contributor.repository_id == repo_id))
         for email, data in authorship.items():
