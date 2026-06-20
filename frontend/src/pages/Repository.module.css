@@ -46,7 +46,7 @@
   color: var(--color-text-secondary);
   padding: 12px 14px;
   font-size: var(--font-size-sm);
-  font-weight: 750;
+  font-weight: 600;
 }
 
 .providerChip {
@@ -122,7 +122,7 @@
   border-radius: calc(var(--radius-lg) * 999);
   padding: 0 10px;
   font-size: var(--font-size-sm);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .badgeIndexed {
@@ -230,7 +230,7 @@
   white-space: nowrap;
   color: var(--color-muted);
   font-size: var(--font-size-sm);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .fileSearch {
@@ -581,7 +581,7 @@
   background: var(--color-bg-subtle);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .outlineButton {
@@ -720,7 +720,7 @@
   background: var(--color-primary-soft);
   color: var(--color-primary) !important;
   padding: 4px 8px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .assignmentItem {
@@ -785,7 +785,7 @@
 .table th {
   color: var(--color-muted);
   font-size: var(--font-size-sm);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .deleteButton {

@@ -24,7 +24,7 @@
   margin: 0;
   color: var(--color-text);
   font-size: var(--font-size-xl);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .header p {
@@ -60,7 +60,7 @@
   cursor: pointer;
   padding: 0 12px;
   font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-weight: 600;
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast),
@@ -200,7 +200,7 @@
   cursor: pointer;
   padding: 0 18px;
   font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-weight: 600;
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast),
