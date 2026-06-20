@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, EmptyState } from "../components/common";
+import { Button, EmptyState, SearchInput } from "../components/common";
 import Card from "../components/common/Card";
 import Loader from "../components/common/Loader";
 import { ROUTES } from "../routes/routePaths";
@@ -155,12 +155,11 @@ function DashboardPage() {
               <p>{filteredAssignedRepositories.length} repositories matched</p>
             </div>
             <div className={styles.panelActions}>
-              <input
+              <SearchInput
                 aria-label="Search repositories"
-                className={styles.search}
+                wrapperClassName={styles.search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search repositories"
-                type="search"
                 value={search}
               />
             </div>
@@ -249,12 +248,11 @@ function DashboardPage() {
             <p>{filteredProjects.length} repositories matched</p>
           </div>
           <div className={styles.panelActions}>
-            <input
+            <SearchInput
               aria-label="Search repositories"
-              className={styles.search}
+              wrapperClassName={styles.search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search repositories"
-              type="search"
               value={search}
             />
             <Button onClick={() => navigate(ROUTES.repositoryOnboard)} type="button">

@@ -5,4 +5,5 @@ export { default as Input } from "./Input";
 export { default as Loader } from "./Loader";
 export { default as Modal } from "./Modal";
 export { default as PageHero } from "./PageHero";
+export { default as SearchInput } from "./SearchInput";
 export { default as Table } from "./Table";
