@@ -91,13 +91,14 @@
 }
 
 .logo {
-  border: 1px solid var(--color-border);
-  background: #FFFFFF;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .logo img {
-  width: 24px;
-  height: 24px;
+  width: 38px;
+  height: 38px;
   object-fit: contain;
 }
 
@@ -269,11 +270,36 @@
   min-height: 78px;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 0 32px;
   border-bottom: 1px solid var(--color-border);
   background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(12px);
+}
+
+.headerTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.headerTitleEyebrow {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.headerTitleText {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.headerTitleDivider {
+  color: var(--color-border);
+  font-size: var(--font-size-lg);
 }
 
 .profile {

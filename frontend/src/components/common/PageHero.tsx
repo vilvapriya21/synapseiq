@@ -1,4 +1,6 @@
 import { ReactNode } from "react";
+import { useEffect } from "react";
+import { usePageTitle } from "../../context/PageTitleContext";
 import styles from "./PageHero.module.css";
 
 export interface PageHeroProps {
@@ -9,6 +11,12 @@ export interface PageHeroProps {
 }
 
 function PageHero({ action, eyebrow, heading, subtitle }: PageHeroProps) {
+  const { setTitle } = usePageTitle();
+
+  useEffect(() => {
+    setTitle({ eyebrow, heading });
+  }, [eyebrow, heading, setTitle]);
+
   return (
     <section className={styles.hero}>
       <div className={styles.content}>

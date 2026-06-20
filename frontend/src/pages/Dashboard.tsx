@@ -241,10 +241,9 @@ function DashboardPage() {
     <div className={styles.page}>
       <div className={styles.banner}>
         <div className={styles.bannerTop}>
-          <div>
-            <span className={styles.welcomeLabel}>WELCOME {user?.name || "User"}</span>
-            <h1 className={styles.bannerTitle}>Admin Dashboard</h1>
-          </div>
+          <p className={styles.bannerGreeting}>
+            Welcome back, <strong>{user?.name || "User"}</strong>
+          </p>
           <input
             className={styles.search}
             onChange={(event) => setSearch(event.target.value)}

@@ -29,18 +29,15 @@
   flex-wrap: wrap;
 }
 
-.bannerTitle {
-  margin: 4px 0 0;
-  font-size: var(--font-size-3xl);
-  font-weight: 800;
+.bannerGreeting {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
   color: var(--color-text);
+  margin: 0;
 }
 
-.welcomeLabel {
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--color-muted);
+.bannerGreeting strong {
+  font-weight: 800;
 }
 
 .bannerStats {
