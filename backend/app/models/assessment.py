@@ -69,6 +69,7 @@ class AssessmentAttempt(Base):
     score_percentage: Mapped[float | None] = mapped_column(Float, nullable=True)
     total_questions: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     correct_answers: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_late: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 class AssessmentAttemptAnswer(Base):

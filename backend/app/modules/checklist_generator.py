@@ -2,6 +2,7 @@
 
 import json
 import logging
+from dataclasses import dataclass
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -9,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.models.knowledge_base import KnowledgeBase
 from app.models.kt_topic import KTTopic
 from app.modules.llm_client import LLMError, LLMProvider
-from app.utils.path_matching import parse_path_patterns, path_matches_patterns
+from app.utils.path_matching import filter_matching_path_lines, parse_path_patterns, path_matches_patterns
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +70,7 @@ def strip_markdown_fences(content: str) -> str:
     return "\n".join(lines).strip()
 
 
-def build_code_context(entries: list[KnowledgeBase]) -> str:
+def build_code_context(entries: list[KnowledgeBase | CodeContextEntry]) -> str:
     """Build code context for the current operation.
 
     Args:
@@ -90,6 +91,31 @@ def build_code_context(entries: list[KnowledgeBase]) -> str:
         remaining -= len(chunks[-1])
 
     return "\n".join(chunks)
+
+
+def scope_knowledge_base_entries(
+    entries: list[KnowledgeBase],
+    patterns: list[str],
+) -> list[KnowledgeBase | CodeContextEntry]:
+    """Return knowledge-base entries scoped to matching file paths."""
+    scoped_entries: list[KnowledgeBase | CodeContextEntry] = []
+    for entry in entries:
+        if entry.file_path and path_matches_patterns(entry.file_path, patterns):
+            scoped_entries.append(entry)
+            continue
+
+        if entry.entry_type == "file_tree":
+            matching_lines = filter_matching_path_lines(entry.content, patterns)
+            if matching_lines:
+                scoped_entries.append(
+                    CodeContextEntry(
+                        entry_type="file_tree",
+                        file_path=", ".join(patterns),
+                        content="\n".join(matching_lines),
+                    )
+                )
+
+    return scoped_entries
 
 
 def generate_checklist_items(topic: KTTopic, db: Session, llm: LLMProvider) -> list[dict]:

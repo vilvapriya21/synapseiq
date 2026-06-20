@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ConfirmDialog } from "../components/common";
+import { PageHero } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
 import { getUsers, type AdminUser } from "../services/adminService";
 import {
@@ -225,12 +226,7 @@ function AssessmentBuilder() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
-        <div>
-          <p className={styles.eyebrow}>Assessment Builder</p>
-          <h1 className={styles.heading}>Manage Assessment</h1>
-        </div>
-      </section>
+      <PageHero eyebrow="Assessment Builder" heading="Manage Assessment" />
 
       {error ? <div className={styles.state}>{error}</div> : null}
 

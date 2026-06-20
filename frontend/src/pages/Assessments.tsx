@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { ConfirmDialog, EmptyState, SearchInput } from "../components/common";
+import { ConfirmDialog, EmptyState, PageHero, SearchInput } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
 import { getUsers } from "../services/adminService";
 import { assessmentService, type AssessmentListItem } from "../services/assessmentService";
@@ -96,18 +96,18 @@ function AssessmentsPage() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
-        <div>
-          <p className={styles.eyebrow}>{role === "ADMIN" ? "Assessment Management" : "Assigned Assessments"}</p>
-          <h1 className={styles.heading}>{role === "ADMIN" ? "Active Assessments" : "My Assessments"}</h1>
-        </div>
-        <SearchInput
-          wrapperClassName={styles.search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search assessments"
-          value={search}
-        />
-      </section>
+      <PageHero
+        eyebrow={role === "ADMIN" ? "Assessment Management" : "Assigned Assessments"}
+        heading={role === "ADMIN" ? "Active Assessments" : "My Assessments"}
+        action={
+          <SearchInput
+            wrapperClassName={styles.search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search assessments"
+            value={search}
+          />
+        }
+      />
 
       <section className={styles.panel}>
         <div className={styles.panelHeader}>

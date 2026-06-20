@@ -1,10 +1,13 @@
 """API endpoints for assessment generation, assignment, submission, and results."""
 
+import logging
 from datetime import datetime, timezone
 from typing import cast
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete as sql_delete, select
+from sqlalchemy import delete as sql_delete, func, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.llm_dependency import get_llm
@@ -19,6 +22,7 @@ from app.models.assessment import (
 )
 from app.models.kt_topic import KTTopic
 from app.models.repository import Repository
+from app.models.repository_assignment import RepositoryAssignment
 from app.models.user import User
 from app.modules.llm_client import LLMProvider
 from app.modules.question_generator import AssessmentGenerationError, generate_assessment_questions
@@ -39,12 +43,14 @@ from app.schemas.assessment import (
     GenerateQuestionsResponse,
     GeneratedQuestion,
     LearnerAttemptSummary,
+    OrphanedAssessmentReport,
     PerQuestionResult,
     SaveAssessmentRequest,
     SubmitAttemptRequest,
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _serialize_option(option: AssessmentOption) -> AssessmentOptionResponse:
@@ -216,6 +222,35 @@ def _require_assigned_learner(assessment: Assessment, current_user: User) -> Non
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Assessment is not assigned to this learner")
 
 
+def _validate_assessment_learner_assignment(db: Session, kt_topic_id: str, learner_id: str) -> None:
+    """Ensure the target learner can receive an assessment for the KT topic.
+
+    Args:
+        db: Database session used for persistence and queries.
+        kt_topic_id: KT topic that owns the assessment.
+        learner_id: Candidate learner id.
+
+    Raises:
+        HTTPException: If the user is missing, not a learner, or lacks the topic assignment.
+    """
+    learner = db.get(User, learner_id)
+    if learner is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Learner not found")
+    if not is_learner(learner):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Assigned user must be a learner")
+    has_assignment = db.scalar(
+        select(RepositoryAssignment).where(
+            RepositoryAssignment.kt_topic_id == kt_topic_id,
+            RepositoryAssignment.learner_id == learner_id,
+        )
+    )
+    if not has_assignment:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This learner is not assigned to the topic this assessment belongs to",
+        )
+
+
 @router.post("/generate-questions", response_model=GenerateQuestionsResponse)
 def generate_questions(
     payload: GenerateQuestionsRequest,
@@ -294,58 +329,132 @@ def save_assessment(
     Raises:
         HTTPException: If validation, authorization, or lookup fails.
     """
-    topic = db.get(KTTopic, payload.kt_topic_id)
-    if topic is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
-
-    get_owned_repository(db, topic.repository_id, current_user.id)
-
-    if not payload.title.strip():
+    title = payload.title.strip()
+    if not title:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Title is required")
 
-    assessment = Assessment(
-        kt_topic_id=payload.kt_topic_id,
-        repository_id=topic.repository_id,
-        title=payload.title.strip(),
-        duration_minutes=payload.duration_minutes,
-        created_by=current_user.id,
-        assigned_to=payload.assigned_to,
-    )
-    db.add(assessment)
-    db.commit()
-    db.refresh(assessment)
-
+    validated_questions = []
     for index, question in enumerate(payload.questions):
-        if not question.question_text.strip():
+        question_text = question.question_text.strip()
+        if not question_text:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Question text is required")
         if len(question.options) != 4 or any(not option.label.strip() for option in question.options):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Each question requires exactly 4 non-empty options")
         if not any(option.is_correct for option in question.options):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Each question requires at least one correct option")
 
+        validated_questions.append(
+            (
+                index,
+                question_text,
+                question.question_type,
+                question.explanation.strip() if question.explanation else None,
+                question.difficulty,
+                [(option_index, option.label.strip(), option.is_correct) for option_index, option in enumerate(question.options)],
+            )
+        )
+
+    topic = db.get(KTTopic, payload.kt_topic_id)
+    if topic is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
+
+    get_owned_repository(db, topic.repository_id, current_user.id)
+    if payload.assigned_to:
+        _validate_assessment_learner_assignment(db, topic.id, payload.assigned_to)
+
+    assessment = Assessment(
+        id=str(uuid4()),
+        kt_topic_id=payload.kt_topic_id,
+        repository_id=topic.repository_id,
+        title=title,
+        duration_minutes=payload.duration_minutes,
+        created_by=current_user.id,
+        assigned_to=payload.assigned_to,
+    )
+
+    records: list[object] = [assessment]
+    for index, question_text, question_type, explanation, difficulty, options in validated_questions:
+        question_id = str(uuid4())
         question_record = AssessmentQuestion(
+            id=question_id,
             assessment_id=assessment.id,
-            question_text=question.question_text.strip(),
-            question_type=question.question_type,
-            explanation=question.explanation.strip() if question.explanation else None,
-            difficulty=question.difficulty,
+            question_text=question_text,
+            question_type=question_type,
+            explanation=explanation,
+            difficulty=difficulty,
             order=index,
         )
-        db.add(question_record)
-        db.commit()
-        db.refresh(question_record)
+        records.append(question_record)
 
-        for option_index, option in enumerate(question.options):
-            db.add(
+        records.extend(
+            [
                 AssessmentOption(
-                    question_id=question_record.id,
-                    label=option.label.strip(),
-                    is_correct=option.is_correct,
+                    question_id=question_id,
+                    label=label,
+                    is_correct=is_correct,
                     order=option_index,
                 )
-            )
-    db.commit()
+                for option_index, label, is_correct in options
+            ]
+        )
+
+    db.add_all(records)
+    try:
+        db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Assessment could not be saved. No assessment data was written.",
+        ) from exc
+
+    db.refresh(assessment)
     return cast(AssessmentResponse, _assessment_response(db, assessment, include_correct=True))
+
+
+@router.get("/maintenance/orphaned-assessments", response_model=list[OrphanedAssessmentReport])
+def list_orphaned_assessments(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> list[OrphanedAssessmentReport]:
+    """List assessments with no linked questions for manual review.
+
+    Args:
+        current_user: Authenticated admin associated with the request.
+        db: Database session used for persistence and queries.
+
+    Returns:
+        Assessments that have zero question rows.
+    """
+    question_count = func.count(AssessmentQuestion.id).label("question_count")
+    rows = db.execute(
+        select(Assessment, question_count)
+        .outerjoin(AssessmentQuestion, AssessmentQuestion.assessment_id == Assessment.id)
+        .group_by(Assessment.id)
+        .having(question_count == 0)
+        .order_by(Assessment.created_at.desc())
+    ).all()
+
+    reports = []
+    for assessment, count in rows:
+        topic = db.get(KTTopic, assessment.kt_topic_id)
+        repo = db.get(Repository, assessment.repository_id)
+        reports.append(
+            OrphanedAssessmentReport(
+                id=assessment.id,
+                kt_topic_id=assessment.kt_topic_id,
+                repository_id=assessment.repository_id,
+                title=assessment.title,
+                created_at=assessment.created_at,
+                created_by=assessment.created_by,
+                assigned_to=assessment.assigned_to,
+                question_count=count,
+                kt_topic_title=topic.title if topic else "",
+                repository_name=repo.name if repo else "",
+            )
+        )
+
+    return reports
 
 
 @router.get("/active", response_model=list[AssessmentListItem])
@@ -476,9 +585,7 @@ def assign_assessment(
     """
     assessment = _get_assessment_or_404(db, assessment_id)
     get_owned_repository(db, assessment.repository_id, current_user.id)
-    learner = db.get(User, payload.assigned_to)
-    if learner is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Learner not found")
+    _validate_assessment_learner_assignment(db, assessment.kt_topic_id, payload.assigned_to)
 
     assessment.assigned_to = payload.assigned_to
     db.commit()
@@ -555,6 +662,23 @@ def start_attempt(
     assessment = _get_assessment_or_404(db, assessment_id)
     _require_assigned_learner(assessment, current_user)
 
+    existing = db.scalar(
+        select(AssessmentAttempt).where(
+            AssessmentAttempt.assessment_id == assessment_id,
+            AssessmentAttempt.learner_id == current_user.id,
+        )
+    )
+    if existing is not None and existing.submitted_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You have already completed this assessment.",
+        )
+    if existing is not None:
+        return {
+            "attempt_id": existing.id,
+            "assessment": _assessment_response(db, assessment, include_correct=False),
+        }
+
     attempt = AssessmentAttempt(
         assessment_id=assessment.id,
         learner_id=current_user.id,
@@ -600,6 +724,21 @@ def submit_attempt(
     if attempt is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attempt not found")
 
+    now = datetime.now(timezone.utc)
+    started_at = attempt.started_at
+    if started_at.tzinfo is None:
+        started_at = started_at.replace(tzinfo=timezone.utc)
+    elapsed_minutes = (now - started_at).total_seconds() / 60
+    grace_period_minutes = 2
+    is_late = elapsed_minutes > assessment.duration_minutes + grace_period_minutes
+    if is_late:
+        logger.warning(
+            "Attempt %s submitted %.1f minutes after its %d-minute limit",
+            attempt.id,
+            elapsed_minutes,
+            assessment.duration_minutes,
+        )
+
     questions = db.scalars(
         select(AssessmentQuestion).where(AssessmentQuestion.assessment_id == assessment_id)
     ).all()
@@ -633,12 +772,13 @@ def submit_attempt(
 
     total_questions = len(questions)
     score = round((correct_answers / total_questions) * 100, 1) if total_questions else 0.0
-    submitted_at = datetime.now(timezone.utc)
+    submitted_at = now
 
     attempt.submitted_at = submitted_at
     attempt.score_percentage = score
     attempt.total_questions = total_questions
     attempt.correct_answers = correct_answers
+    attempt.is_late = is_late
     db.commit()
 
     for question in questions:
@@ -658,6 +798,7 @@ def submit_attempt(
         correct_answers=correct_answers,
         wrong_answers=total_questions - correct_answers,
         submitted_at=submitted_at,
+        is_late=is_late,
         per_question=per_question,
     )
 
@@ -728,6 +869,7 @@ def get_admin_results(
                 score_percentage=attempt.score_percentage,
                 correct_answers=attempt.correct_answers,
                 total_questions=attempt.total_questions,
+                is_late=attempt.is_late,
             )
         )
     return results
@@ -819,5 +961,6 @@ def _build_attempt_result(db: Session, attempt: AssessmentAttempt) -> AttemptRes
         correct_answers=attempt.correct_answers,
         wrong_answers=attempt.total_questions - attempt.correct_answers,
         submitted_at=attempt.submitted_at,
+        is_late=attempt.is_late,
         per_question=per_question,
     )

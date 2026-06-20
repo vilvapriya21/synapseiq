@@ -30,7 +30,7 @@ from app.schemas.kt_topic import (
     RecommendedContributor,
     TopicRecommendationResponse,
 )
-from app.utils.path_matching import count_matching_paths, parse_path_patterns
+from app.utils.path_matching import count_matching_paths, normalize_path_patterns, parse_path_patterns
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -269,7 +269,7 @@ def create_kt_topic(
         repository_id=repo_id,
         title=payload.title,
         description=payload.description,
-        path_patterns=payload.path_patterns,
+        path_patterns=normalize_path_patterns(payload.path_patterns),
         created_by=current_user.id,
     )
     db.add(topic)
