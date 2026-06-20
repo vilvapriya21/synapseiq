@@ -8,6 +8,7 @@ export interface ConfirmDialogProps {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  showCancel?: boolean;
   variant?: "danger" | "primary";
   onConfirm: () => void;
   onCancel: () => void;
@@ -19,6 +20,7 @@ function ConfirmDialog({
   message,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
+  showCancel = true,
   variant = "danger",
   onConfirm,
   onCancel,
@@ -31,10 +33,18 @@ function ConfirmDialog({
     <Modal isOpen={isOpen} title={title} onClose={onCancel}>
       <p>{message}</p>
       <div className={styles.footer}>
-        <Button type="button" variant="ghost" onClick={onCancel}>
-          {cancelLabel}
-        </Button>
-        <Button type="button" variant={variant} onClick={onConfirm}>
+        {showCancel ? (
+          <Button type="button" variant="ghost" onClick={onCancel}>
+            {cancelLabel}
+          </Button>
+        ) : null}
+        <Button
+          aria-label={confirmLabel}
+          title={confirmLabel}
+          type="button"
+          variant={variant}
+          onClick={onConfirm}
+        >
           {confirmLabel}
         </Button>
       </div>

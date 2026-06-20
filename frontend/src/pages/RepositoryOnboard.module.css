@@ -241,6 +241,12 @@
 }
 
 .deleteButton {
+  display: inline-flex;
+  width: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0;
   margin-left: var(--space-2);
   border: 1px solid var(--color-danger-soft);
   background: var(--color-surface);
@@ -591,6 +597,7 @@
 
 .actionCell .deleteButton {
   margin-left: 0;
+  padding: 0;
 }
 
 .emptyCell {

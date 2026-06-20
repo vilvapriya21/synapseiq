@@ -87,6 +87,12 @@
 }
 
 .deleteButton {
+  display: inline-flex;
+  width: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
   border: 1px solid var(--color-danger-soft);
   background: var(--color-surface);
   color: var(--color-danger);

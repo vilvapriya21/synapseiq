@@ -908,18 +908,28 @@
 }
 
 .deleteButton {
+  display: inline-flex;
+  width: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   cursor: pointer;
   border: 1px solid var(--color-danger-soft);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-danger);
-  padding: 7px 10px;
+  padding: 7px;
   font-size: var(--font-size-sm);
   font-weight: 600;
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast),
     color var(--transition-fast);
+}
+
+.topicRemoveButton {
+  width: auto;
+  padding: 7px 12px;
 }
 
 .deleteButton:hover,

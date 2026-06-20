@@ -1,10 +1,10 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import axios from "axios";
-import { Info } from "lucide-react";
+import { Info, Trash2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import FloatingChatWidget from "../components/FloatingChatWidget";
 import KTChecklist from "../components/KTChecklist";
-import { EmptyState, Modal, PageHero, SearchInput } from "../components/common";
+import { ConfirmDialog, EmptyState, Modal, PageHero, SearchInput } from "../components/common";
 import Loader from "../components/common/Loader";
 import { ENV } from "../constants/env";
 import { ROUTES } from "../routes/routePaths";
@@ -253,6 +253,10 @@ function RepositoryPage() {
   const [azurePat, setAzurePat] = useState("");
   const [azurePatError, setAzurePatError] = useState("");
   const [savingAzurePat, setSavingAzurePat] = useState(false);
+  const [pendingDeleteTopicId, setPendingDeleteTopicId] = useState<string | null>(null);
+  const [pendingDeleteUploadId, setPendingDeleteUploadId] = useState<string | null>(null);
+  const [pendingUnassignId, setPendingUnassignId] = useState<string | null>(null);
+  const [dialogMessage, setDialogMessage] = useState("");
 
   const fetchAssignments = async () => {
     if (!repoId || role !== "ADMIN") {
@@ -495,10 +499,7 @@ function RepositoryPage() {
     if (!repoId) {
       return;
     }
-    if (!window.confirm("Delete this KT topic? Its assignments, checklist progress, assessments, and results will also be removed.")) {
-      return;
-    }
-
+    setPendingDeleteTopicId(null);
     try {
       await deleteKTTopic(repoId, topicId);
       const result = await getKTTopics(repoId);
@@ -506,7 +507,7 @@ function RepositoryPage() {
       await fetchAssignments();
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
-      window.alert(detail || "Failed to remove KT topic.");
+      setDialogMessage(detail || "Failed to remove KT topic.");
     }
   };
 
@@ -537,13 +538,14 @@ function RepositoryPage() {
       return;
     }
 
+    setPendingUnassignId(null);
     try {
       await unassignLearner(repoId, assignmentId);
       const result = await getAssignments(repoId);
       setAssignments(result.assignments);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
-      window.alert(detail || "Failed to remove assignment.");
+      setDialogMessage(detail || "Failed to remove assignment.");
     }
   };
 
@@ -592,10 +594,7 @@ function RepositoryPage() {
       return;
     }
 
-    if (!window.confirm("Delete this uploaded KT file?")) {
-      return;
-    }
-
+    setPendingDeleteUploadId(null);
     try {
       await deleteRepositoryUpload(repoId, uploadId);
       await fetchUploads();
@@ -854,8 +853,14 @@ function RepositoryPage() {
                       Download
                     </button>
                     {role === "ADMIN" ? (
-                      <button className={styles.deleteButton} onClick={() => handleDeleteUpload(upload.id)} type="button">
-                        Delete
+                      <button
+                        aria-label={`Delete ${upload.filename}`}
+                        className={styles.deleteButton}
+                        onClick={() => setPendingDeleteUploadId(upload.id)}
+                        title="Delete uploaded file"
+                        type="button"
+                      >
+                        <Trash2 aria-hidden="true" size={16} />
                       </button>
                     ) : null}
                   </div>
@@ -1126,7 +1131,13 @@ function RepositoryPage() {
                           >
                             Manage Assessment
                           </button>
-                          <button className={styles.deleteButton} onClick={() => handleDeleteTopic(topic.id)} type="button">
+                          <button
+                            aria-label={`Remove ${topic.title}`}
+                            className={`${styles.deleteButton} ${styles.topicRemoveButton}`}
+                            onClick={() => setPendingDeleteTopicId(topic.id)}
+                            title="Remove KT topic"
+                            type="button"
+                          >
                             Remove
                           </button>
                         </>
@@ -1288,8 +1299,14 @@ function RepositoryPage() {
                             </div>
                           </td>
                           <td>
-                            <button className={styles.deleteButton} onClick={() => handleUnassign(assignment.id)} type="button">
-                              Remove
+                            <button
+                              aria-label={`Remove assignment for ${assignment.learner_name}`}
+                              className={styles.deleteButton}
+                              onClick={() => setPendingUnassignId(assignment.id)}
+                              title="Remove learner assignment"
+                              type="button"
+                            >
+                              <Trash2 aria-hidden="true" size={16} />
                             </button>
                           </td>
                         </tr>
@@ -1303,6 +1320,40 @@ function RepositoryPage() {
         </main>
 
       </div>
+      <ConfirmDialog
+        confirmLabel="Delete"
+        isOpen={pendingDeleteUploadId !== null}
+        message="Delete this uploaded KT file? This action cannot be undone."
+        onCancel={() => setPendingDeleteUploadId(null)}
+        onConfirm={() => pendingDeleteUploadId && handleDeleteUpload(pendingDeleteUploadId)}
+        title="Delete uploaded file"
+      />
+      <ConfirmDialog
+        confirmLabel="Remove"
+        isOpen={pendingDeleteTopicId !== null}
+        message="Remove this KT topic? Remove linked learner assignments and assessments first."
+        onCancel={() => setPendingDeleteTopicId(null)}
+        onConfirm={() => pendingDeleteTopicId && handleDeleteTopic(pendingDeleteTopicId)}
+        title="Remove KT topic"
+      />
+      <ConfirmDialog
+        confirmLabel="Remove"
+        isOpen={pendingUnassignId !== null}
+        message="Remove this learner assignment? Their checklist access will be revoked."
+        onCancel={() => setPendingUnassignId(null)}
+        onConfirm={() => pendingUnassignId && handleUnassign(pendingUnassignId)}
+        title="Remove learner assignment"
+      />
+      <ConfirmDialog
+        confirmLabel="OK"
+        isOpen={Boolean(dialogMessage)}
+        message={dialogMessage}
+        onCancel={() => setDialogMessage("")}
+        onConfirm={() => setDialogMessage("")}
+        showCancel={false}
+        title="Unable to complete action"
+        variant="primary"
+      />
       {repoId ? <FloatingChatWidget repoId={repoId} /> : null}
     </div>
   );

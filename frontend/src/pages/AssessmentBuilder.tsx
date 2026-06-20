@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
+import { ConfirmDialog } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
 import { getUsers, type AdminUser } from "../services/adminService";
 import {
@@ -76,6 +77,8 @@ function AssessmentBuilder() {
   const [learners, setLearners] = useState<{ id: string; name: string; email: string }[]>([]);
   const [selectedLearnerId, setSelectedLearnerId] = useState("");
   const [savedAssessment, setSavedAssessment] = useState<AssessmentFull | null>(null);
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false);
+  const [pendingQuestionIndex, setPendingQuestionIndex] = useState<number | null>(null);
 
   useEffect(() => {
     getUsers()
@@ -123,9 +126,7 @@ function AssessmentBuilder() {
       setError("Title is required before generating questions.");
       return;
     }
-    if (force && questions.length > 0 && !window.confirm("Regenerate questions? Current edits will be replaced.")) {
-      return;
-    }
+    if (force) setConfirmRegenerate(false);
     setGenerating(true);
     setError("");
     setSuccessMessage("");
@@ -315,7 +316,13 @@ function AssessmentBuilder() {
                     <button className={styles.typeBadge} type="button" onClick={() => toggleType(index)}>
                       {question.question_type === "multi" ? "Multi" : "Single"}
                     </button>
-                    <button className={styles.iconButton} type="button" onClick={() => setQuestions((current) => current.filter((_, itemIndex) => itemIndex !== index))} title="Delete question">
+                    <button
+                      aria-label={`Delete question ${index + 1}`}
+                      className={styles.iconButton}
+                      type="button"
+                      onClick={() => setPendingQuestionIndex(index)}
+                      title="Delete question"
+                    >
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -339,7 +346,7 @@ function AssessmentBuilder() {
               <Plus size={16} />
               Add Question
             </button>
-            <button className={styles.secondaryButton} type="button" onClick={() => generate(true)} disabled={generating}>
+            <button className={styles.secondaryButton} type="button" onClick={() => setConfirmRegenerate(true)} disabled={generating}>
               <RotateCcw size={16} />
               Regenerate
             </button>
@@ -366,6 +373,27 @@ function AssessmentBuilder() {
           </div>
         </section>
       ) : null}
+      <ConfirmDialog
+        confirmLabel="Delete"
+        isOpen={pendingQuestionIndex !== null}
+        message="Delete this question? This action cannot be undone."
+        onCancel={() => setPendingQuestionIndex(null)}
+        onConfirm={() => {
+          if (pendingQuestionIndex === null) return;
+          setQuestions((current) => current.filter((_, index) => index !== pendingQuestionIndex));
+          setPendingQuestionIndex(null);
+        }}
+        title="Delete question"
+      />
+      <ConfirmDialog
+        confirmLabel="Regenerate"
+        isOpen={confirmRegenerate}
+        message="Regenerate questions? Your current edits will be replaced."
+        onCancel={() => setConfirmRegenerate(false)}
+        onConfirm={() => generate(true)}
+        title="Regenerate questions"
+        variant="primary"
+      />
     </div>
   );
 }

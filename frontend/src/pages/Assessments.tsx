@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { EmptyState, SearchInput } from "../components/common";
+import { ConfirmDialog, EmptyState, SearchInput } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
 import { getUsers } from "../services/adminService";
 import { assessmentService, type AssessmentListItem } from "../services/assessmentService";
@@ -26,6 +27,7 @@ function AssessmentsPage() {
   const [error, setError] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<AssessmentListItem | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -71,10 +73,7 @@ function AssessmentsPage() {
 
   const handleDelete = async (assessment: AssessmentListItem) => {
     if (role !== "ADMIN" || deletingId) return;
-    if (!window.confirm(`Delete assessment "${assessment.title}"? This will also delete its attempts and results.`)) {
-      return;
-    }
-
+    setPendingDelete(null);
     setDeleteError("");
     setDeletingId(assessment.id);
     try {
@@ -148,6 +147,7 @@ function AssessmentsPage() {
                       {role === "ADMIN" ? (
                         <div className={styles.actions}>
                           <button
+                            aria-label={`Delete ${assessment.title}`}
                             className={styles.action}
                             onClick={() => navigate(ROUTES.assessmentResults.replace(":assessmentId", assessment.id))}
                             type="button"
@@ -157,10 +157,10 @@ function AssessmentsPage() {
                           <button
                             className={styles.deleteAction}
                             disabled={deletingId !== null}
-                            onClick={() => handleDelete(assessment)}
+                            onClick={() => setPendingDelete(assessment)}
                             type="button"
                           >
-                            {deletingId === assessment.id ? "Deleting..." : "Delete"}
+                            <Trash2 aria-hidden="true" size={16} />
                           </button>
                         </div>
                       ) : assessment.has_submitted ? (
@@ -188,6 +188,14 @@ function AssessmentsPage() {
           </div>
         )}
       </section>
+      <ConfirmDialog
+        confirmLabel="Delete"
+        isOpen={pendingDelete !== null}
+        message={`Delete assessment "${pendingDelete?.title || ""}"? Its attempts and results will also be deleted.`}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => pendingDelete && handleDelete(pendingDelete)}
+        title="Delete assessment"
+      />
     </div>
   );
 }

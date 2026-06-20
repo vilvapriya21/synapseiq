@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, CloudUpload, RefreshCw, Upload } from "lucide-react";
+import { AlertTriangle, CloudUpload, RefreshCw, Trash2, Upload } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import azureDevopsIcon from "../assets/azure-devops.svg";
 import bitbucketIcon from "../assets/BitBucket.svg";
@@ -542,13 +542,14 @@ function RepositoryOnboardPage() {
             View
           </button>
           <button
+            aria-label={`Remove ${repository.name}`}
             className={styles.deleteButton}
             type="button"
             onClick={() => requestDelete(repository.id, repository.name)}
             disabled={deletingId === repository.id}
             title="Remove repository"
           >
-            {deletingId === repository.id ? "..." : "Remove"}
+            <Trash2 aria-hidden="true" size={16} />
           </button>
         </div>
       ),
