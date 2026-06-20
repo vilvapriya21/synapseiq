@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import AttemptResultView from "../components/AttemptResultView";
+import { PageHero } from "../components/common";
 import { assessmentService, type AttemptResult } from "../services/assessmentService";
 import styles from "./AttemptDetail.module.css";
 
@@ -45,12 +46,7 @@ function AttemptDetail() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
-        <div>
-          <p className={styles.eyebrow}>Attempt Detail</p>
-          <h1 className={styles.heading}>Assessment Result</h1>
-        </div>
-      </section>
+      <PageHero eyebrow="Attempt Detail" heading="Assessment Result" />
       <AttemptResultView result={result} />
     </div>
   );

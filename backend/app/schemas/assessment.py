@@ -90,6 +90,20 @@ class AssessmentListItem(BaseModel):
     has_submitted: bool
 
 
+class OrphanedAssessmentReport(BaseModel):
+    """Pydantic schema for orphaned assessment maintenance reports."""
+    id: str
+    kt_topic_id: str
+    repository_id: str
+    title: str
+    created_at: datetime
+    created_by: str
+    assigned_to: str | None
+    question_count: int
+    kt_topic_title: str
+    repository_name: str
+
+
 class AssessmentOptionLearnerView(BaseModel):
     """Pydantic schema for AssessmentOptionLearnerView payloads."""
     id: str
@@ -140,6 +154,7 @@ class AttemptResultResponse(BaseModel):
     correct_answers: int
     wrong_answers: int
     submitted_at: datetime
+    is_late: bool
     per_question: List[PerQuestionResult]
 
 
@@ -153,3 +168,4 @@ class LearnerAttemptSummary(BaseModel):
     score_percentage: float | None
     correct_answers: int
     total_questions: int
+    is_late: bool

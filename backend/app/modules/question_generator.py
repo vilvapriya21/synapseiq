@@ -2,6 +2,8 @@
 
 import json
 import logging
+import re
+from dataclasses import dataclass
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -9,17 +11,26 @@ from sqlalchemy.orm import Session
 from app.models.knowledge_base import KnowledgeBase
 from app.models.kt_topic import KTTopic
 from app.modules.llm_client import LLMError, LLMProvider
-from app.utils.path_matching import parse_path_patterns, path_matches_patterns
+from app.utils.path_matching import filter_matching_path_lines, parse_path_patterns, path_matches_patterns
 
 logger = logging.getLogger(__name__)
 
 MAX_CONTEXT_CHARS = 8000
 MAX_BATCH_QUESTIONS = 5
 TOKENS_PER_QUESTION = 850
+_INVALID_ESCAPE_RE = re.compile(r'\\(?!["\\/bfnrtu])')
 
 
 class AssessmentGenerationError(Exception):
     """Raised when assessment question generation cannot produce valid questions."""
+
+
+@dataclass
+class CodeContextEntry:
+    """Minimal context entry shape used for prompt construction."""
+    entry_type: str
+    content: str
+    file_path: str | None = None
 
 
 def strip_markdown_fences(content: str) -> str:
@@ -63,6 +74,11 @@ def extract_json_array(content: str) -> str:
     return text[start : end + 1]
 
 
+def sanitize_json_escapes(text: str) -> str:
+    """Double any backslash that is not already a valid JSON escape sequence."""
+    return _INVALID_ESCAPE_RE.sub(r"\\\\", text)
+
+
 def parse_generated_questions_json(content: str) -> list[dict]:
     """Parse generated questions json into structured data.
 
@@ -77,8 +93,26 @@ def parse_generated_questions_json(content: str) -> list[dict]:
     """
     try:
         parsed = json.loads(strip_markdown_fences(content))
+        logger.info("Assessment generation JSON parsed via clean parse.")
     except json.JSONDecodeError:
-        parsed = json.loads(extract_json_array(content))
+        array_text = extract_json_array(content)
+        try:
+            parsed = json.loads(array_text)
+            logger.info("Assessment generation JSON parsed via array extraction.")
+        except json.JSONDecodeError:
+            try:
+                parsed = json.loads(sanitize_json_escapes(array_text))
+                logger.info("Assessment generation JSON parsed via escape sanitization.")
+            except json.JSONDecodeError:
+                try:
+                    from json_repair import repair_json
+
+                    parsed = json.loads(repair_json(array_text))
+                    logger.info("Assessment generation JSON parsed via json-repair.")
+                except (ImportError, json.JSONDecodeError, ValueError, TypeError) as repair_exc:
+                    raise AssessmentGenerationError(
+                        "The AI model returned invalid JSON. Try fewer questions or retry generation."
+                    ) from repair_exc
 
     if isinstance(parsed, list):
         return [item for item in parsed if isinstance(item, dict)]
@@ -87,7 +121,7 @@ def parse_generated_questions_json(content: str) -> list[dict]:
     raise AssessmentGenerationError("The AI model returned an unexpected response format.")
 
 
-def build_code_context(entries: list[KnowledgeBase]) -> str:
+def build_code_context(entries: list[KnowledgeBase | CodeContextEntry]) -> str:
     """Build code context for the current operation.
 
     Args:
@@ -108,6 +142,39 @@ def build_code_context(entries: list[KnowledgeBase]) -> str:
         remaining -= len(chunks[-1])
 
     return "\n".join(chunks)
+
+
+def scope_knowledge_base_entries(
+    entries: list[KnowledgeBase],
+    patterns: list[str],
+) -> list[KnowledgeBase | CodeContextEntry]:
+    """Return knowledge-base entries scoped to matching file paths.
+
+    Args:
+        entries: Repository knowledge-base entries.
+        patterns: Path patterns used for matching.
+
+    Returns:
+        Entries whose file path or file-tree content matches the patterns.
+    """
+    scoped_entries: list[KnowledgeBase | CodeContextEntry] = []
+    for entry in entries:
+        if entry.file_path and path_matches_patterns(entry.file_path, patterns):
+            scoped_entries.append(entry)
+            continue
+
+        if entry.entry_type == "file_tree":
+            matching_lines = filter_matching_path_lines(entry.content, patterns)
+            if matching_lines:
+                scoped_entries.append(
+                    CodeContextEntry(
+                        entry_type="file_tree",
+                        file_path=", ".join(patterns),
+                        content="\n".join(matching_lines),
+                    )
+                )
+
+    return scoped_entries
 
 
 def generate_assessment_questions(
@@ -140,11 +207,7 @@ def generate_assessment_questions(
 
         patterns = parse_path_patterns(topic.path_patterns)
         if patterns:
-            entries = [
-                entry
-                for entry in entries
-                if entry.file_path and path_matches_patterns(entry.file_path, patterns)
-            ]
+            entries = scope_knowledge_base_entries(list(entries), patterns)
 
         if not entries:
             if repository_entries:
@@ -190,6 +253,7 @@ STRICT RULES:
 - At least 30% of questions must be "multi" type.
 - Difficulty distribution: ~40% Easy, ~40% Medium, ~20% Hard.
 - explanation: 1-2 sentences explaining the correct answer, referencing the specific code.
+- If a string value needs to include a backslash (e.g. a Windows-style path or regex), escape it as \\\\ so the JSON remains valid. Prefer forward slashes for file paths where possible to avoid this entirely.
 - This is batch {offset // MAX_BATCH_QUESTIONS + 1}; do not repeat question ideas from earlier batches.
 
 Respond ONLY as a valid JSON array. No markdown, no explanation, only JSON.

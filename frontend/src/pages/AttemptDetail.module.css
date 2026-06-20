@@ -3,36 +3,10 @@
   gap: 24px;
 }
 
-.hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.eyebrow {
-  margin: 0 0 6px;
-  color: #64718a;
-  font-size: 14px;
-}
-
-.heading {
-  margin: 0;
-  color: #07142f;
-  font-size: 30px;
-}
-
 .state {
-  border: 1px solid #dbe3ee;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #ffffff;
-  color: #526178;
+  background: var(--color-surface);
+  color: var(--color-muted);
   padding: 24px;
-}
-
-@media (max-width: 760px) {
-  .hero {
-    align-items: stretch;
-    flex-direction: column;
-  }
 }

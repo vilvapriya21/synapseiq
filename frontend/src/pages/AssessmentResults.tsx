@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { PageHero } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
 import { assessmentService, type LearnerAttemptSummary } from "../services/assessmentService";
 import styles from "./AssessmentResults.module.css";
@@ -62,12 +63,7 @@ function AssessmentResults() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
-        <div>
-          <p className={styles.eyebrow}>Assessment Results</p>
-          <h1 className={styles.heading}>Learner Results</h1>
-        </div>
-      </section>
+      <PageHero eyebrow="Assessment Results" heading="Learner Results" />
 
       <section className={styles.stats}>
         <article><span>Average Score</span><strong>{stats.average}%</strong></article>

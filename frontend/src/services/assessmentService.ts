@@ -92,6 +92,7 @@ export interface AttemptResult {
   correct_answers: number;
   wrong_answers: number;
   submitted_at: string;
+  is_late: boolean;
   per_question: PerQuestionResult[];
 }
 
@@ -104,6 +105,7 @@ export interface LearnerAttemptSummary {
   score_percentage: number | null;
   correct_answers: number;
   total_questions: number;
+  is_late: boolean;
 }
 
 export const assessmentService = {

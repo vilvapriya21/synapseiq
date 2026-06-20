@@ -3,47 +3,28 @@
   gap: 24px;
 }
 
-.hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.eyebrow {
-  margin: 0 0 6px;
-  color: #64718a;
-  font-size: 14px;
-}
-
-.heading {
-  margin: 0;
-  color: #07142f;
-  font-size: 30px;
-}
-
 .panel {
-  border: 1px solid #dbe3ee;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--color-surface);
   overflow: hidden;
 }
 
 .panelHeader {
   padding: 20px 22px;
-  border-bottom: 1px solid #edf1f6;
+  border-bottom: 1px solid var(--color-bg-subtle);
 }
 
 .panelHeader h2,
 .donePanel h2 {
   margin: 0;
-  color: #07142f;
+  color: var(--color-text);
   font-size: 18px;
 }
 
 .panelHeader p {
   margin: 4px 0 0;
-  color: #64718a;
+  color: var(--color-muted);
   font-size: 14px;
 }
 
@@ -61,7 +42,7 @@
   gap: 16px;
   margin: 22px 22px 0;
   border-radius: 8px;
-  background: #f7f9fc;
+  background: var(--color-bg-subtle);
   padding: 16px;
 }
 
@@ -71,17 +52,17 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  color: #344554;
+  color: var(--color-text);
   font-size: 0.85rem;
   font-weight: 500;
 }
 
 .configSummary input,
 .configSummary select {
-  border: 1px solid #dbe3ee;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
-  background: #ffffff;
-  color: #07142f;
+  background: var(--color-surface);
+  color: var(--color-text);
   padding: 6px 10px;
   font-size: 0.9rem;
 }
@@ -89,7 +70,7 @@
 .configForm label {
   display: grid;
   gap: 8px;
-  color: #344554;
+  color: var(--color-text);
   font-weight: 600;
 }
 
@@ -99,7 +80,7 @@
 .optionRow input[type="text"],
 .optionRow input:not([type]) {
   min-height: 42px;
-  border: 1px solid #dbe3ee;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 10px 12px;
   font: inherit;
@@ -108,7 +89,7 @@
 .questionCard {
   display: grid;
   gap: 14px;
-  border: 1px solid #dbe3ee;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 18px;
 }
@@ -139,7 +120,7 @@
 .optionRow input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: #176b87;
+  accent-color: var(--color-primary);
 }
 
 .difficultyBadge,
@@ -165,31 +146,31 @@
 }
 
 .difficultyBadge {
-  background: #eef3ff;
-  color: #2454d6;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }
 
 .typeBadge {
-  background: #e8f7ed;
-  color: #176b3a;
+  background: var(--color-success-soft);
+  color: var(--color-success);
 }
 
 .primaryButton,
 .secondaryButton,
 .iconButton {
-  border: 1px solid #cfd8e6;
+  border: 1px solid var(--color-border);
   padding: 0 12px;
 }
 
 .primaryButton {
-  background: #176b87;
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--color-surface);
 }
 
 .secondaryButton,
 .iconButton {
-  background: #ffffff;
-  color: #176b87;
+  background: var(--color-surface);
+  color: var(--color-primary);
 }
 
 .iconButton {
@@ -204,24 +185,23 @@
 
 .error,
 .state {
-  color: #b13a21;
+  color: var(--color-danger);
 }
 
 .success {
   margin: 0;
-  color: #176b3a;
-  font-weight: 800;
+  color: var(--color-success);
+  font-weight: 600;
 }
 
 .state {
-  border: 1px solid #f3c4ba;
+  border: 1px solid var(--color-danger-soft);
   border-radius: 8px;
-  background: #fff8f6;
+  background: var(--color-danger-soft);
   padding: 14px 16px;
 }
 
 @media (max-width: 760px) {
-  .hero,
   .questionHeader,
   .footerActions {
     align-items: stretch;

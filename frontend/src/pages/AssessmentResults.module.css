@@ -3,25 +3,6 @@
   gap: 24px;
 }
 
-.hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.eyebrow {
-  margin: 0 0 6px;
-  color: #64718a;
-  font-size: 14px;
-}
-
-.heading {
-  margin: 0;
-  color: #07142f;
-  font-size: 30px;
-}
-
 .stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -31,9 +12,9 @@
 .stats article,
 .panel,
 .state {
-  border: 1px solid #dbe3ee;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--color-surface);
 }
 
 .stats article {
@@ -43,13 +24,13 @@
 }
 
 .stats span {
-  color: #526178;
+  color: var(--color-muted);
   font-size: 13px;
   font-weight: 600;
 }
 
 .stats strong {
-  color: #07142f;
+  color: var(--color-text);
   font-size: 34px;
 }
 
@@ -59,12 +40,12 @@
 
 .panelHeader {
   padding: 20px 22px;
-  border-bottom: 1px solid #edf1f6;
+  border-bottom: 1px solid var(--color-bg-subtle);
 }
 
 .panelHeader h2 {
   margin: 0;
-  color: #07142f;
+  color: var(--color-text);
   font-size: 18px;
 }
 
@@ -81,12 +62,12 @@
 .table th,
 .table td {
   padding: 16px 22px;
-  border-bottom: 1px solid #edf1f6;
+  border-bottom: 1px solid var(--color-bg-subtle);
   text-align: left;
 }
 
 .table th {
-  color: #526178;
+  color: var(--color-muted);
   font-size: 12px;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -94,10 +75,10 @@
 
 .action {
   min-height: 38px;
-  border: 1px solid #cfd8e6;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #ffffff;
-  color: #176b87;
+  background: var(--color-surface);
+  color: var(--color-primary);
   cursor: pointer;
   padding: 0 12px;
   font-weight: 600;
@@ -121,31 +102,26 @@
 }
 
 .passBadge {
-  background: #e8f7ed;
-  color: #176b3a;
+  background: var(--color-success-soft);
+  color: var(--color-success);
 }
 
 .failBadge {
-  background: #fff0ed;
-  color: #b13a21;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 
 .pendingBadge {
-  background: #eef3ff;
-  color: #2454d6;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }
 
 .state {
-  color: #526178;
+  color: var(--color-muted);
   padding: 24px;
 }
 
 @media (max-width: 760px) {
-  .hero {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
   .stats {
     grid-template-columns: 1fr;
   }

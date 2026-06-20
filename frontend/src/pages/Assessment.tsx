@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Clock, Send } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import AttemptResultView from "../components/AttemptResultView";
-import { Button, EmptyState, Modal } from "../components/common";
+import { Button, EmptyState, Modal, PageHero } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
 import {
   assessmentService,
@@ -139,15 +139,15 @@ function AssessmentPage() {
   if (assessment && result) {
     return (
       <div className={styles.page}>
-        <section className={styles.hero}>
-          <div>
-            <p className={styles.eyebrow}>{assessment.title}</p>
-            <h1 className={styles.heading}>Assessment Result</h1>
-          </div>
-          <Button type="button" variant="secondary" onClick={() => { resetAttempt(); navigate(ROUTES.assessments); }}>
-            Back to Assessments
-          </Button>
-        </section>
+        <PageHero
+          eyebrow={assessment.title}
+          heading="Assessment Result"
+          action={
+            <Button type="button" variant="secondary" onClick={() => { resetAttempt(); navigate(ROUTES.assessments); }}>
+              Back to Assessments
+            </Button>
+          }
+        />
         <AttemptResultView result={result} />
       </div>
     );
@@ -159,16 +159,16 @@ function AssessmentPage() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
-        <div>
-          <p className={styles.eyebrow}>Assigned Assessment</p>
-          <h1 className={styles.heading}>{assessment.title}</h1>
-        </div>
-        <div className={styles.timer}>
-          <Clock size={16} />
-          {formatTime(remainingSeconds)}
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Assigned Assessment"
+        heading={assessment.title}
+        action={
+          <div className={styles.timer}>
+            <Clock size={16} />
+            {formatTime(remainingSeconds)}
+          </div>
+        }
+      />
 
       <section className={styles.attemptPanel}>
         <div className={styles.progressHeader}>

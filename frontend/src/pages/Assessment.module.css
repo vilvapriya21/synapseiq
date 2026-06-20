@@ -3,29 +3,6 @@
   gap: var(--space-5);
 }
 
-.hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-5);
-}
-
-.eyebrow {
-  margin: 0 0 6px;
-  color: var(--color-muted);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.heading {
-  margin: 0;
-  color: var(--color-text);
-  font-size: var(--font-size-3xl);
-  font-weight: 700;
-  line-height: 1.12;
-}
-
 .search {
   width: min(100%, 420px);
 }
@@ -132,10 +109,10 @@
 }
 
 .action {
-  border: 1px solid #cfd8e6;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #ffffff;
-  color: #176b87;
+  background: var(--color-surface);
+  color: var(--color-primary);
   cursor: pointer;
   padding: 9px 12px;
   font-size: var(--font-size-sm);
@@ -149,10 +126,10 @@
 }
 
 .deleteAction {
-  border: 1px solid #fecaca;
+  border: 1px solid var(--color-danger-soft);
   border-radius: 8px;
-  background: #fff;
-  color: #b91c1c;
+  background: var(--color-surface);
+  color: var(--color-danger);
   cursor: pointer;
   padding: 9px 12px;
   font-size: var(--font-size-sm);
@@ -160,7 +137,7 @@
 }
 
 .deleteAction:hover:not(:disabled) {
-  background: #fef2f2;
+  background: var(--color-danger-soft);
 }
 
 .deleteAction:disabled {
@@ -169,9 +146,9 @@
 }
 
 .inlineError {
-  border-bottom: 1px solid #fecaca;
-  background: #fef2f2;
-  color: #b91c1c;
+  border-bottom: 1px solid var(--color-danger-soft);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
   padding: 12px 22px;
 }
 
@@ -211,14 +188,14 @@
   width: 100%;
   height: 8px;
   border-radius: 999px;
-  background: #edf1f6;
+  background: var(--color-bg-subtle);
   overflow: hidden;
 }
 
 .progressFill {
   height: 100%;
   border-radius: inherit;
-  background: #176b87;
+  background: var(--color-primary);
   transition: width 160ms ease;
 }
 
@@ -390,7 +367,6 @@
 }
 
 @media (max-width: 840px) {
-  .hero,
   .questionHeader,
   .navigation {
     align-items: stretch;
