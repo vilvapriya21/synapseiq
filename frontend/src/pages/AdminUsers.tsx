@@ -6,6 +6,10 @@ import {
   getUsers,
   updateUserRole,
 } from "../services/adminService";
+import { EmptyState, PageHero } from "../components/common";
+import Input from "../components/common/Input";
+import Loader from "../components/common/Loader";
+import Table, { type TableColumn } from "../components/common/Table";
 import styles from "./AdminUsers.module.css";
 
 type CreateFormState = {
@@ -100,35 +104,87 @@ function AdminUsersPage() {
     }
   };
 
+  const columns: TableColumn<AdminUser>[] = [
+    {
+      key: "name",
+      header: "Name",
+      render: (user) => <span className={styles.nameCell}>{user.name}</span>,
+    },
+    { key: "email", header: "Email" },
+    {
+      key: "role",
+      header: "Role",
+      render: (user) => (
+        <span
+          className={`${styles.roleBadge} ${
+            user.role === "admin" ? styles.roleBadgeAdmin : styles.roleBadgeLearner
+          }`}
+        >
+          {user.role}
+        </span>
+      ),
+    },
+    {
+      key: "created_at",
+      header: "Joined",
+      render: (user) => formatDate(user.created_at),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      render: (user) => (
+        <>
+          <button
+            className={styles.actionButton}
+            type="button"
+            onClick={() => handleRoleChange(user)}
+            disabled={saving}
+          >
+            Change Role
+          </button>
+          <button
+            className={styles.removeButton}
+            type="button"
+            onClick={() => handleRemove(user)}
+            disabled={saving}
+          >
+            Remove
+          </button>
+        </>
+      ),
+    },
+  ];
+
   return (
     <div className={styles.page}>
-      <header className={styles.hero}>
-        <div>
-          <h1 className={styles.heading}>User Management</h1>
-          <p className={styles.subtitle}>Create accounts and manage access roles</p>
-        </div>
-        <button className={styles.primaryButton} type="button" onClick={() => setShowCreateForm(true)}>
-          Add User
-        </button>
-      </header>
+      <PageHero
+        eyebrow="ADMIN"
+        heading="User Management"
+        subtitle="Create accounts and manage access roles"
+        action={
+          <button className={styles.primaryButton} type="button" onClick={() => setShowCreateForm(true)}>
+            Add User
+          </button>
+        }
+      />
 
       {showCreateForm ? (
         <form className={styles.formCard} onSubmit={handleCreate}>
-          <input
+          <Input
             className={styles.input}
             type="text"
             placeholder="Name"
             value={createForm.name}
             onChange={(event) => setCreateForm((form) => ({ ...form, name: event.target.value }))}
           />
-          <input
+          <Input
             className={styles.input}
             type="email"
             placeholder="Email"
             value={createForm.email}
             onChange={(event) => setCreateForm((form) => ({ ...form, email: event.target.value }))}
           />
-          <input
+          <Input
             className={styles.input}
             type="password"
             placeholder="Password"
@@ -167,64 +223,16 @@ function AdminUsersPage() {
 
       <section className={styles.card}>
         {loading ? (
-          <div className={styles.state}>Loading users...</div>
+          <div className={styles.state}><Loader label="Loading users..." /></div>
         ) : (
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Joined</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((user) => (
-                  <tr key={user.id}>
-                    <td className={styles.nameCell}>{user.name}</td>
-                    <td>{user.email}</td>
-                    <td>
-                      <span
-                        className={`${styles.roleBadge} ${
-                          user.role === "admin" ? styles.roleBadgeAdmin : styles.roleBadgeLearner
-                        }`}
-                      >
-                        {user.role}
-                      </span>
-                    </td>
-                    <td>{formatDate(user.created_at)}</td>
-                    <td>
-                      <button
-                        className={styles.actionButton}
-                        type="button"
-                        onClick={() => handleRoleChange(user)}
-                        disabled={saving}
-                      >
-                        Change Role
-                      </button>
-                      <button
-                        className={styles.removeButton}
-                        type="button"
-                        onClick={() => handleRemove(user)}
-                        disabled={saving}
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {users.length === 0 ? (
-                  <tr>
-                    <td className={styles.emptyCell} colSpan={5}>
-                      No users found.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+          <Table
+            columns={columns}
+            data={users}
+            emptyState={<EmptyState title="No users found" description="Create a user to grant access to SynapseIQ." />}
+            getRowKey={(user) => user.id}
+            tableClassName={styles.table}
+            wrapperClassName={styles.tableWrap}
+          />
         )}
       </section>
     </div>

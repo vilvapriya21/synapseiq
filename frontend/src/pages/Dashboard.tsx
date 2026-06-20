@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../components/common";
+import { Button, EmptyState, PageHero } from "../components/common";
+import Card from "../components/common/Card";
+import Loader from "../components/common/Loader";
 import { ROUTES } from "../routes/routePaths";
 import { dashboardService, type DashboardResponse } from "../services/dashboardService";
 import {
@@ -103,11 +105,11 @@ function DashboardPage() {
   }, [assignedRepositories?.repositories, search]);
 
   if (isLoading) {
-    return <div className={styles.state}>Loading dashboard...</div>;
+    return <Card className={styles.state}><Loader label="Loading dashboard..." /></Card>;
   }
 
   if (error) {
-    return <div className={styles.state}>{error}</div>;
+    return <Card className={styles.state}>{error}</Card>;
   }
 
   if (role === "LEARNER") {
@@ -118,37 +120,40 @@ function DashboardPage() {
 
     return (
       <div className={styles.page}>
-        <section className={styles.hero}>
-          <div>
-            <p className={styles.eyebrow}>Welcome {user?.name || "User"}</p>
-            <h1 className={styles.heading}>Learner Dashboard</h1>
-          </div>
-          <input
-            className={styles.search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search repositories"
-            type="search"
-            value={search}
-          />
-        </section>
+        <PageHero
+          eyebrow={`Welcome ${user?.name || "User"}`}
+          heading="Learner Dashboard"
+          action={
+            <input
+              className={styles.search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search repositories"
+              type="search"
+              value={search}
+            />
+          }
+        />
 
         <section className={styles.stats}>
-          <article className={styles.statCard}>
+          <Card className={styles.statCard}>
             <span className={styles.statLabel}>Repositories Assigned</span>
             <span className={styles.statValue}>{assignedCount}</span>
             <span className={styles.statHint}>Available to learn</span>
-          </article>
-          <article className={styles.statCard}>
+          </Card>
+          <Card className={styles.statCard}>
             <span className={styles.statLabel}>Knowledge Bases Ready</span>
             <span className={styles.statValue}>{knowledgeBasesReady}</span>
             <span className={styles.statHint}>Ready to query</span>
-          </article>
+          </Card>
         </section>
 
-        <section className={styles.card}>
+        <Card className={styles.card}>
           <h2>My Current Learning</h2>
           {myAssignments.length === 0 ? (
-            <p className={styles.emptyText}>No repositories assigned yet. Check back soon.</p>
+            <EmptyState
+              title="No repositories assigned yet"
+              description="Assigned repositories and KT topics will appear here when your admin assigns them."
+            />
           ) : (
             <div className={styles.assignmentGrid}>
               {myAssignments.map((assignment) => (
@@ -168,9 +173,9 @@ function DashboardPage() {
               ))}
             </div>
           )}
-        </section>
+        </Card>
 
-        <section className={styles.panel}>
+        <Card className={styles.panel}>
           <div className={styles.panelHeader}>
             <div>
               <h2>Assigned Repositories</h2>
@@ -189,6 +194,13 @@ function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
+                {filteredAssignedRepositories.length === 0 ? (
+                  <tr>
+                    <td colSpan={5}>
+                      <EmptyState title="No assigned repositories" description="No repositories matched your search." />
+                    </td>
+                  </tr>
+                ) : null}
                 {filteredAssignedRepositories.map((repository) => (
                   <tr key={repository.id}>
                     <td>
@@ -216,42 +228,42 @@ function DashboardPage() {
               </tbody>
             </table>
           </div>
-        </section>
+        </Card>
       </div>
     );
   }
 
   if (!dashboard) {
-    return <div className={styles.state}>No dashboard data available.</div>;
+    return <EmptyState title="No dashboard data available" description="Dashboard metrics will appear once repository data is available." />;
   }
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
-        <div>
-          <p className={styles.eyebrow}>Welcome {user?.name || "User"}</p>
-          <h1 className={styles.heading}>Admin Dashboard</h1>
+      <div className={styles.banner}>
+        <div className={styles.bannerTop}>
+          <p className={styles.bannerGreeting}>
+            Welcome back, <strong>{user?.name || "User"}</strong>
+          </p>
+          <input
+            className={styles.search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search repositories"
+            type="search"
+            value={search}
+          />
         </div>
-        <input
-          className={styles.search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search repositories"
-          type="search"
-          value={search}
-        />
-      </section>
+        <div className={styles.bannerStats}>
+          {adminStatLabels.map(([key, label, hint]) => (
+            <div className={styles.statTile} key={key}>
+              <span className={styles.statLabel}>{label}</span>
+              <span className={styles.statValue}>{dashboard.stats[key] ?? 0}</span>
+              <span className={styles.statHint}>{hint}</span>
+            </div>
+          ))}
+        </div>
+      </div>
 
-      <section className={styles.stats}>
-        {adminStatLabels.map(([key, label, hint]) => (
-          <article className={styles.statCard} key={key}>
-            <span className={styles.statLabel}>{label}</span>
-            <span className={styles.statValue}>{dashboard.stats[key] ?? 0}</span>
-            <span className={styles.statHint}>{hint}</span>
-          </article>
-        ))}
-      </section>
-
-      <section className={styles.panel}>
+      <Card className={styles.panel}>
         <div className={styles.panelHeader}>
           <div>
             <h2>Repositories</h2>
@@ -274,7 +286,14 @@ function DashboardPage() {
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
+              <tbody>
+              {filteredProjects.length === 0 ? (
+                <tr>
+                  <td colSpan={7}>
+                    <EmptyState title="No repositories found" description="No repositories matched your search." />
+                  </td>
+                </tr>
+              ) : null}
               {filteredProjects.map((project) => (
                 <tr key={project.id}>
                   <td>
@@ -303,7 +322,7 @@ function DashboardPage() {
             </tbody>
           </table>
         </div>
-      </section>
+      </Card>
     </div>
   );
 }

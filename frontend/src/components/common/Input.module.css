@@ -4,18 +4,30 @@
 }
 
 .label {
-  color: #344554;
+  color: var(--color-text-secondary);
   font-weight: 700;
 }
 
 .input {
   min-height: 56px;
   width: 100%;
-  border: 1px solid #c7d1da;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   padding: 0 16px;
-  color: #17212b;
+  color: var(--color-text);
   font: inherit;
+}
+
+.inputShell {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.adornment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .input::-ms-reveal,
@@ -24,11 +36,11 @@
 }
 
 .input:focus {
-  border-color: #176b87;
-  outline: 3px solid #d9edf2;
+  border-color: var(--color-secondary);
+  outline: 3px solid var(--color-primary-soft);
 }
 
 .error {
-  color: #b42318;
-  font-size: 14px;
+  color: var(--color-danger);
+  font-size: var(--font-size-base);
 }

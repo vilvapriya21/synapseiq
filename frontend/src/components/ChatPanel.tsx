@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import axios from "axios";
+import { EmptyState, Loader } from "./common";
 import { getChatHistory, postChatMessage, type ChatMessage } from "../services/repositoryService";
 import styles from "./ChatPanel.module.css";
 
@@ -80,6 +81,10 @@ function ChatPanel({ repoId }: ChatPanelProps) {
     }
   };
 
+  const applySuggestion = (question: string) => {
+    setInput(question);
+  };
+
   return (
     <div className={styles.chatPanel}>
       <div className={styles.header}>
@@ -92,13 +97,21 @@ function ChatPanel({ repoId }: ChatPanelProps) {
 
       {error ? <div className={styles.errorBanner}>{error}</div> : null}
 
+      <div className={styles.suggestions}>
+        {["Summarize this repository", "What modules matter most?", "Create onboarding bullets"].map((question) => (
+          <button key={question} type="button" onClick={() => applySuggestion(question)}>
+            {question}
+          </button>
+        ))}
+      </div>
+
       <div className={styles.messageList} ref={messageListRef}>
-        {loading ? <p className={styles.stateText}>Loading chat...</p> : null}
+        {loading ? <Loader label="Loading chat..." /> : null}
         {!loading && messages.length === 0 ? (
-          <div className={styles.emptyState}>
-            <strong>No messages yet</strong>
-            <span>Ask a question about files, modules, dependencies, or onboarding context.</span>
-          </div>
+          <EmptyState
+            title="No messages yet"
+            description="Ask a question about files, modules, dependencies, or onboarding context."
+          />
         ) : null}
         {messages.map((message, index) => (
           <div

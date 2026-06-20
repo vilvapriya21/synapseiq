@@ -1,315 +1,365 @@
 .page {
   display: grid;
-  gap: 24px;
+  gap: var(--space-5);
 }
 
-.hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.heading {
-  margin: 0;
-  color: #07142f;
-  font-size: 30px;
-}
-
-.subtitle {
-  margin: 6px 0 0;
-  color: #64718a;
-  font-size: 14px;
-}
-
-.connectGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+.connectCard,
+.providerPanel,
+.repositoryCard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .connectCard {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  background: #ffffff;
-  padding: 18px 20px;
+  display: grid;
+  gap: 18px;
+  padding: 22px;
 }
 
-.connectCardHeader {
+.connectCardHeader,
+.repositoryHeader,
+.cardHeader,
+.uploadHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: var(--space-4);
 }
 
-.connectCardHeader h2 {
+.connectCardHeader h2,
+.repositoryHeader h2,
+.cardHeader h2 {
   margin: 0;
-  color: #07142f;
-  font-size: 18px;
+  color: var(--color-text);
+  font-size: var(--font-size-xl);
 }
 
-.connectCardHeader p {
-  margin: 4px 0 0;
-  color: #6b7280;
-  font-size: 13px;
+.connectCardHeader p,
+.repositoryHeader p,
+.cardHeader p,
+.helperText {
+  margin: 5px 0 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
 }
 
 .providerTabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 18px;
-  border-bottom: 1px solid #e5e7eb;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  gap: var(--space-4);
 }
 
 .providerTab {
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: #6b7280;
+  min-height: 170px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 8px 12px;
+  padding: 18px;
+  text-align: center;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.providerTab:hover,
+.providerTabActive {
+  border-color: var(--color-primary-soft-hover);
+  box-shadow: 0 12px 26px rgba(47, 111, 237, 0.10);
+  transform: translateY(-1px);
 }
 
 .providerTabActive {
-  border-bottom-color: #1b4fd8;
-  color: #1b4fd8;
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-bg) 100%);
+}
+
+.providerTab strong {
+  font-size: var(--font-size-lg);
+}
+
+.providerTab small {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+}
+
+.providerMark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+}
+
+.githubMark {
+  background: var(--accent-indigo-soft);
+  color: var(--color-text);
+}
+
+.gitlabMark {
+  background: var(--accent-amber-soft);
+  color: #fc6d26;
+}
+
+.bitbucketMark {
+  background: var(--accent-sky-soft);
+  color: #0052cc;
+}
+
+.azureMark {
+  background: var(--accent-mint-soft);
+  color: #0078d4;
+}
+
+.connectionBadge,
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  border-radius: calc(var(--radius-lg) * 999);
+  padding: 0 10px;
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.connected,
+.badgeIndexed {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.patSaved,
+.badgeIndexing {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.notConnected,
+.badgePending {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+}
+
+.badgeError {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 
 .providerPanel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
 }
 
-.oauthButton {
+.cardHeader {
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.iconBox,
+.repositoryIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+}
+
+.githubIcon {
+  background: var(--accent-indigo-soft);
+  color: var(--color-text);
+}
+
+.gitlabPanelIcon {
+  background: var(--accent-amber-soft);
+  color: #fc6d26;
+}
+
+.bitbucketPanelIcon {
+  background: var(--accent-sky-soft);
+  color: #0052cc;
+}
+
+.azurePanelIcon {
+  background: var(--accent-mint-soft);
+  color: #0078d4;
+}
+
+.uploadIcon {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.oauthButton,
+.primaryButton,
+.secondaryButton,
+.outlineButton,
+.viewButton,
+.deleteButton {
+  min-height: 40px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  border: 1px solid #e5e7eb;
-  border-radius: 7px;
-  background: #ffffff;
-  color: #6b7280;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 0 16px;
+  font-size: var(--font-size-sm);
+  font-weight: 800;
 }
 
-.connectedBanner {
+.oauthButton,
+.secondaryButton,
+.outlineButton,
+.viewButton {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-primary);
+}
+
+.primaryButton {
+  width: 100%;
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-surface);
+}
+
+.primaryButton:hover {
+  background: var(--color-primary-hover);
+}
+
+.deleteButton {
+  margin-left: var(--space-2);
+  border: 1px solid var(--color-danger-soft);
+  background: var(--color-surface);
+  color: var(--color-danger);
+}
+
+.connectedBanner,
+.warningBanner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  border: 1px solid #bbf7d0;
-  border-radius: 6px;
-  background: #f0fdf4;
-  color: #15803d;
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: 500;
+  gap: var(--space-3);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: var(--font-size-sm);
+  font-weight: 650;
+}
+
+.connectedBanner {
+  border: 1px solid var(--color-success-soft);
+  background: var(--color-success-soft);
+  color: var(--color-success);
 }
 
 .warningBanner {
-  border: 1px solid #fde68a;
-  border-radius: 6px;
-  background: #fffbeb;
-  color: #92400e;
-  padding: 8px 12px;
-  font-size: 13px;
+  border: 1px solid var(--color-warning-soft);
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
 }
 
-.disconnectLink {
+.disconnectLink,
+.linkButton {
   border: 0;
-  background: none;
-  color: #6b7280;
+  background: transparent;
+  color: var(--color-primary);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--font-size-sm);
+  font-weight: 800;
   padding: 0;
-  text-decoration: underline;
 }
 
 .divider {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #6b7280;
-  font-size: 12px;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
 }
 
 .divider span {
   flex: 1;
   height: 1px;
-  background: #e5e7eb;
+  background: var(--color-border);
 }
 
 .divider strong {
-  font-weight: 500;
-}
-
-.helperText {
-  margin: 0;
-  color: #6b7280;
-  font-size: 12px;
-}
-
-.card,
-.repositoryCard {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  background: #ffffff;
-  padding: 18px 20px;
-}
-
-.card {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.cardHeader {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.cardHeader h2,
-.repositoryHeader h2 {
-  margin: 0;
-  color: #07142f;
-  font-size: 18px;
-}
-
-.cardHeader p {
-  margin: 4px 0 0;
-  color: #6b7280;
-  font-size: 13px;
-}
-
-.iconBox {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  flex: 0 0 44px;
-  border-radius: 8px;
-}
-
-.githubIcon {
-  background: #24292f;
-  color: #ffffff;
-}
-
-.uploadIcon {
-  background: #ede9fe;
-  color: #6d28d9;
+  font-weight: 700;
 }
 
 .formGrid {
   display: grid;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  gap: var(--space-3);
 }
 
-.input {
+.input,
+.repositorySearch {
   width: 100%;
-  height: 40px;
-  box-sizing: border-box;
-  border: 1px solid #e5e7eb;
-  border-radius: 7px;
-  background: #ffffff;
-  color: #111827;
+  height: 42px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
   padding: 0 12px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
-.primaryButton,
-.secondaryButton,
-.outlineButton,
-.viewButton {
-  cursor: pointer;
-  border-radius: 7px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
+.repositorySearch {
+  width: min(320px, 100%);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--color-muted);
 }
 
-.primaryButton {
+.repositorySearch input {
   width: 100%;
   border: 0;
-  background: #1b4fd8;
-  color: #ffffff;
-}
-
-.secondaryButton,
-.outlineButton,
-.viewButton {
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  color: #6b7280;
-}
-
-.outlineButton {
-  color: #1b4fd8;
-}
-
-.viewButton {
-  padding: 7px 12px;
-}
-
-.deleteButton {
   background: transparent;
-  border: 1px solid #fca5a5;
-  border-radius: 6px;
-  color: #dc2626;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  margin-left: 6px;
-  padding: 4px 10px;
+  outline: 0;
 }
 
-.deleteButton:hover {
-  background: #fee2e2;
-}
-
-.deleteButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.primaryButton:disabled,
-.secondaryButton:disabled,
-.outlineButton:disabled,
-.viewButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.65;
+.repositorySearchInput {
+  height: 40px;
+  min-height: 40px;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
 }
 
 .dropZone {
   display: grid;
   place-items: center;
-  gap: 6px;
-  min-height: 150px;
-  border: 1px dashed #cfd8e6;
-  border-radius: 10px;
-  color: #6b7280;
+  gap: var(--space-2);
+  min-height: 160px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-muted);
   text-align: center;
-  padding: 18px;
+  padding: var(--space-5);
 }
 
 .dropZone strong {
-  color: #111827;
-  font-size: 14px;
+  color: var(--color-text);
+  font-size: var(--font-size-base);
 }
 
 .dropZone span {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .dropZoneActive {
-  border-color: #1b4fd8;
-  background: #eef3ff;
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
 }
 
 .hiddenInput {
@@ -318,34 +368,36 @@
 
 .error {
   margin: 0;
-  color: #dc2626;
-  font-size: 13px;
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
 }
 
 .success {
   margin: 0;
-  color: #15803d;
-  font-size: 13px;
+  color: var(--color-success);
+  font-size: var(--font-size-sm);
 }
 
 .repositoryCard {
   overflow: hidden;
-  padding: 0;
 }
 
 .repositoryHeader {
+  align-items: center;
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.repositoryTools {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  gap: var(--space-3);
 }
 
 .loading {
-  padding: 18px 20px;
-  color: #6b7280;
-  font-size: 13px;
+  padding: 20px 22px;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
 }
 
 .tableWrap {
@@ -354,93 +406,207 @@
 
 .table {
   width: 100%;
-  min-width: 760px;
+  min-width: 860px;
   border-collapse: collapse;
 }
 
 .table th,
 .table td {
-  border-bottom: 1px solid #edf1f6;
-  padding: 12px;
+  border-bottom: 1px solid var(--color-border);
+  padding: 16px 20px;
   text-align: left;
   vertical-align: middle;
 }
 
 .table th {
-  color: #6b7280;
-  font-size: 11px;
-  letter-spacing: 0;
-  text-transform: uppercase;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 800;
 }
 
 .table td {
-  color: #374151;
-  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.repositoryIdentity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.repositoryIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+}
+
+.repositoryIconGithub {
+  background: var(--accent-indigo-soft);
+  color: var(--color-text);
+}
+
+.repositoryIconGitlab {
+  background: var(--accent-amber-soft);
+  color: #fc6d26;
+}
+
+.repositoryIconBitbucket {
+  background: var(--accent-sky-soft);
+  color: #0052cc;
+}
+
+.repositoryIconAzure {
+  background: var(--accent-mint-soft);
+  color: #0078d4;
+}
+
+.repositoryIconUpload {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }
 
 .repositoryName {
-  color: #111827;
-  font-weight: 700;
+  color: var(--color-text);
+  font-weight: 800;
 }
 
 .repositorySource {
   margin-top: 3px;
-  color: #6b7280;
-  font-size: 12px;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 72px;
-  min-height: 26px;
-  border-radius: 999px;
-  padding: 0 10px;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.badgeIndexed {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.badgeIndexing {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.badgePending {
-  background: #f3f4f6;
-  color: #4b5563;
-}
-
-.badgeError {
-  background: #fee2e2;
-  color: #b91c1c;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  text-transform: capitalize;
 }
 
 .statusReason {
   margin-top: 6px;
   max-width: 260px;
-  color: #6b7280;
-  font-size: 12px;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
   line-height: 1.35;
 }
 
-@media (max-width: 900px) {
-  .connectGrid {
-    grid-template-columns: 1fr;
+.emptyCell {
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.outlineButton:disabled,
+.viewButton:disabled,
+.deleteButton:disabled,
+.oauthButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.oauthButton,
+.primaryButton,
+.secondaryButton,
+.outlineButton,
+.viewButton,
+.deleteButton,
+.disconnectLink,
+.linkButton {
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.secondaryButton:hover,
+.outlineButton:hover,
+.viewButton:hover,
+.oauthButton:hover,
+.secondaryButton:focus-visible,
+.outlineButton:focus-visible,
+.viewButton:focus-visible,
+.oauthButton:focus-visible {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary-soft-hover);
+}
+
+.primaryButton:hover,
+.primaryButton:focus-visible {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.deleteButton:hover,
+.deleteButton:focus-visible {
+  background: var(--color-danger-soft);
+}
+
+.disconnectLink:hover,
+.linkButton:hover,
+.disconnectLink:focus-visible,
+.linkButton:focus-visible {
+  color: var(--color-primary-hover);
+}
+
+.repositoryEmptyState {
+  animation: emptyStateEnter 360ms ease-out both;
+}
+
+.repositoryEmptyState > section {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.repositoryEmptyState > section::before {
+  position: absolute;
+  inset: -34px;
+  z-index: 0;
+  background-image: url("../assets/auth-knowledge-bg.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: min(620px, 88vw) auto;
+  content: "";
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.repositoryEmptyState > section > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes emptyStateEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@media (max-width: 640px) {
-  .repositoryHeader {
+@media (max-width: 1200px) {
+  .providerTabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .connectCardHeader,
+  .repositoryHeader,
+  .repositoryTools,
+  .formGrid {
     align-items: stretch;
+    grid-template-columns: 1fr;
     flex-direction: column;
   }
 
+  .providerTabs {
+    grid-template-columns: 1fr;
+  }
+
+  .repositorySearch,
   .outlineButton {
     width: 100%;
   }

@@ -3,7 +3,8 @@ import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import ChatPanel from "../components/ChatPanel";
 import KTChecklist from "../components/KTChecklist";
-import { EmptyState, Modal } from "../components/common";
+import { EmptyState, Modal, PageHero } from "../components/common";
+import Loader from "../components/common/Loader";
 import { ENV } from "../constants/env";
 import { getUsers, type AdminUser } from "../services/adminService";
 import apiClient from "../services/api";
@@ -73,6 +74,18 @@ const providerLabels: Record<RepositoryProvider, string> = {
   bitbucket: "Bitbucket",
   azure: "Azure DevOps",
 };
+
+const topicAccentClasses = [
+  styles.topicAccentCobalt,
+  styles.topicAccentMint,
+  styles.topicAccentIndigo,
+  styles.topicAccentSky,
+  styles.topicAccentAmber,
+];
+
+function getTopicAccentClass(index: number) {
+  return topicAccentClasses[index % topicAccentClasses.length];
+}
 
 function getStatusClass(status: Repository["status"] | Repository["knowledge_base_status"]) {
   switch (status) {
@@ -635,7 +648,7 @@ function RepositoryPage() {
     if (fileLoading) {
       return (
         <div className={styles.emptyPreview}>
-          <p>Loading {selectedFilePath}&hellip;</p>
+          <Loader label={`Loading ${selectedFilePath}...`} />
         </div>
       );
     }
@@ -651,7 +664,7 @@ function RepositoryPage() {
     if (!selectedFile) {
       return (
         <div className={styles.emptyPreview}>
-          <p>No preview available for {selectedFilePath}.</p>
+          <EmptyState title="No preview available" description={`${selectedFilePath} cannot be previewed.`} />
         </div>
       );
     }
@@ -732,7 +745,7 @@ function RepositoryPage() {
           </section>
         </div>
       ) : (
-        <p className={styles.muted}>No files matched your search.</p>
+        <EmptyState title="No files matched your search" description="Try a different file name or path." />
       );
     }
 
@@ -778,9 +791,9 @@ function RepositoryPage() {
           {uploadError ? <p className={styles.error}>{uploadError}</p> : null}
 
           {uploadsLoading ? (
-            <p className={styles.muted}>Loading uploaded files&hellip;</p>
+            <Loader label="Loading uploaded files..." />
           ) : uploads.length === 0 ? (
-            <p className={styles.emptyText}>No extra KT files uploaded yet.</p>
+            <EmptyState title="No uploaded KT files" description="Extra sheets, docs, images, and reference files will appear here." />
           ) : (
             <div className={styles.uploadList}>
               {uploads.map((upload) => (
@@ -813,7 +826,7 @@ function RepositoryPage() {
   };
 
   if (loading && !repository) {
-    return <div className={styles.state}>Loading repository&hellip;</div>;
+    return <div className={styles.state}><Loader label="Loading repository..." /></div>;
   }
 
   if (error || !repository) {
@@ -822,42 +835,37 @@ function RepositoryPage() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.headerCard}>
-        <button
-          className={styles.backButton}
-          type="button"
-          onClick={() => navigate(role === "LEARNER" ? "/dashboard" : "/repositories")}
-        >
-          &#8592; Repositories
-        </button>
-        <div className={styles.headerMain}>
-          <div>
-            <h1>{repository.name}</h1>
-            {repository.url ? (
-              <a className={styles.repoUrl} href={repository.url} rel="noreferrer" target="_blank">
-                {repository.url}
-              </a>
-            ) : (
-              <span className={styles.repoUrl}>Local upload</span>
-            )}
+      <PageHero
+        eyebrow="Repository"
+        heading={repository.name}
+        subtitle={repository.url || "Local upload"}
+        action={
+          <div className={styles.headerActions}>
+            <button
+              className={styles.backButton}
+              type="button"
+              onClick={() => navigate(role === "LEARNER" ? "/dashboard" : "/repositories")}
+            >
+              &#8592; Repositories
+            </button>
+            <span className={`${styles.badge} ${getStatusClass(repository.status)}`}>{repository.status}</span>
+            <button className={styles.outlineButton} type="button" onClick={handleReanalyze} disabled={refreshing}>
+              Re-analyze
+            </button>
           </div>
-          <span className={`${styles.badge} ${getStatusClass(repository.status)}`}>{repository.status}</span>
-        </div>
-        <div className={styles.stats}>
-          <span className={`${styles.statChip} ${styles.providerChip}`}>{repository.provider || "local"}</span>
-          <span className={styles.statChip}>Language: {repository.language || "-"}</span>
-          <span className={styles.statChip}>Modules: {repository.module_count}</span>
-          <span className={styles.statChip}>Files: {repository.file_count}</span>
-          <span className={styles.statChip}>Branch: {repository.branch || "-"}</span>
-          <span className={styles.statChip}>Source: {repository.source_type}</span>
-          <span className={styles.statChip}>KB Entries: {knowledgeBase?.total ?? 0}</span>
-          <span className={styles.statChip}>Created: {formatDate(repository.created_at)}</span>
-        </div>
-        <button className={styles.outlineButton} type="button" onClick={handleReanalyze} disabled={refreshing}>
-          Re-analyze
-        </button>
-        {refreshError ? <p className={styles.error}>{refreshError}</p> : null}
-      </section>
+        }
+      />
+      <div className={styles.stats}>
+        <span className={`${styles.statChip} ${styles.providerChip}`}>{repository.provider || "local"}</span>
+        <span className={styles.statChip}>Language: {repository.language || "-"}</span>
+        <span className={styles.statChip}>Modules: {repository.module_count}</span>
+        <span className={styles.statChip}>Files: {repository.file_count}</span>
+        <span className={styles.statChip}>Branch: {repository.branch || "-"}</span>
+        <span className={styles.statChip}>Source: {repository.source_type}</span>
+        <span className={styles.statChip}>KB Entries: {knowledgeBase?.total ?? 0}</span>
+        <span className={styles.statChip}>Created: {formatDate(repository.created_at)}</span>
+      </div>
+      {refreshError ? <p className={styles.error}>{refreshError}</p> : null}
 
       <Modal
         isOpen={Boolean(refreshAuthError)}
@@ -983,15 +991,18 @@ function RepositoryPage() {
             ) : null}
 
             {topics.length === 0 ? (
-              <p className={styles.emptyText}>
-                {role === "ADMIN"
-                  ? "No KT topics yet. Add one to start organizing knowledge transfer."
-                  : "No KT topics assigned yet."}
-              </p>
+              <EmptyState
+                title={role === "ADMIN" ? "No KT topics yet" : "No KT topics assigned yet"}
+                description={
+                  role === "ADMIN"
+                    ? "Add one to start organizing knowledge transfer."
+                    : "Assigned KT topics will appear here."
+                }
+              />
             ) : (
               <div className={styles.topicList}>
-                {topics.map((topic) => (
-                  <div key={topic.id} className={styles.topicItem}>
+                {topics.map((topic, index) => (
+                  <div key={topic.id} className={`${styles.topicItem} ${getTopicAccentClass(index)}`}>
                     <div>
                       <strong>{topic.title}</strong>
                       {topic.description ? <p className={styles.topicDescription}>{topic.description}</p> : null}
@@ -1015,9 +1026,10 @@ function RepositoryPage() {
                     {recommendations[topic.id] ? (
                       <div className={styles.recommendationBox}>
                         {recommendations[topic.id].length === 0 ? (
-                          <p className={styles.emptyText}>
-                            No matching contributors found. Run "Analyze Contributors" first, or check the path patterns.
-                          </p>
+                          <EmptyState
+                            title="No matching contributors found"
+                            description="Run Analyze Contributors first, or check the path patterns."
+                          />
                         ) : (
                           recommendations[topic.id].map((recommendation, index) => (
                             <div key={`${recommendation.email}-${index}`} className={styles.recommendationRow}>
@@ -1060,9 +1072,10 @@ function RepositoryPage() {
                 </div>
                 {contributorError ? <p className={styles.error}>{contributorError}</p> : null}
                 {contributors.length === 0 ? (
-                  <p className={styles.emptyText}>
-                    No contributor data yet. Click "Analyze Contributors" to extract commit history.
-                  </p>
+                  <EmptyState
+                    title="No contributor data yet"
+                    description="Click Analyze Contributors to extract commit history."
+                  />
                 ) : (
                   <table className={styles.table}>
                     <thead>
@@ -1110,7 +1123,7 @@ function RepositoryPage() {
                 {assignError ? <p className={styles.error}>{assignError}</p> : null}
 
                 {assignments.length === 0 ? (
-                  <p className={styles.emptyText}>No learners assigned yet.</p>
+                  <EmptyState title="No learners assigned yet" description="Assigned learners will appear here." />
                 ) : (
                   <table className={styles.table}>
                     <thead>
