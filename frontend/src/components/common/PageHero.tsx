@@ -6,7 +6,7 @@ import styles from "./PageHero.module.css";
 export interface PageHeroProps {
   action?: ReactNode;
   cornerAction?: ReactNode;
-  eyebrow: string;
+  eyebrow?: string;
   heading: string;
   subtitle?: string;
 }
@@ -15,13 +15,13 @@ function PageHero({ action, cornerAction, eyebrow, heading, subtitle }: PageHero
   const { setTitle } = usePageTitle();
 
   useEffect(() => {
-    setTitle({ eyebrow, heading });
+    setTitle({ eyebrow: eyebrow || "", heading });
   }, [eyebrow, heading, setTitle]);
 
   return (
     <section className={styles.hero}>
       <div className={styles.content}>
-        <p className={styles.eyebrow}>{eyebrow}</p>
+        {eyebrow ? <p className={styles.eyebrow}>{eyebrow}</p> : null}
         <h1 className={styles.heading}>{heading}</h1>
         {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
       </div>
