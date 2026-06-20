@@ -244,13 +244,6 @@ function DashboardPage() {
           <p className={styles.bannerGreeting}>
             Welcome back, <strong>{user?.name || "User"}</strong>
           </p>
-          <input
-            className={styles.search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search repositories"
-            type="search"
-            value={search}
-          />
         </div>
         <div className={styles.bannerStats}>
           {adminStatLabels.map(([key, label, hint]) => (
@@ -269,9 +262,19 @@ function DashboardPage() {
             <h2>Repositories</h2>
             <p>{filteredProjects.length} repositories matched</p>
           </div>
-          <Button onClick={() => navigate(ROUTES.repositoryOnboard)} type="button">
-            Add Repository
-          </Button>
+          <div className={styles.panelActions}>
+            <input
+              aria-label="Search repositories"
+              className={styles.search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search repositories"
+              type="search"
+              value={search}
+            />
+            <Button onClick={() => navigate(ROUTES.repositoryOnboard)} type="button">
+              Add Repository
+            </Button>
+          </div>
         </div>
         <div className={styles.tableWrap}>
           <table className={styles.table}>

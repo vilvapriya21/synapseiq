@@ -35,7 +35,6 @@ from app.modules.repository_analysis import (
     MAX_IMAGE_FILE_BYTES,
     MAX_TEXT_FILE_BYTES,
     REPOSITORY_STORAGE_DIR,
-    TEXT_FILE_EXTENSIONS,
     analyze_repository,
 )
 from app.schemas.repository import (
@@ -56,6 +55,7 @@ from app.schemas.repository import (
 router = APIRouter()
 
 MAX_UPLOAD_SIZE_BYTES = 2_000_000_000
+MAX_NOTEBOOK_PREVIEW_BYTES = 20_000_000
 UPLOAD_DIR = Path("uploaded_repos")
 DOCUMENT_UPLOAD_DIR = Path("uploads") / "documents"
 MAX_DOCUMENT_UPLOAD_SIZE_BYTES = 100_000_000
@@ -496,18 +496,69 @@ def get_knowledge_base(
 
 
 def get_stored_repository_file(repo_id: str, file_path: str) -> Path:
-    root = (REPOSITORY_STORAGE_DIR / repo_id).resolve()
-    requested = (root / file_path).resolve()
+    storage_roots = [REPOSITORY_STORAGE_DIR.resolve()]
+    legacy_root = (Path("uploads") / "repositories").resolve()
+    if legacy_root not in storage_roots:
+        storage_roots.append(legacy_root)
 
+    for storage_root in storage_roots:
+        root = (storage_root / repo_id).resolve()
+        requested = (root / file_path).resolve()
+        try:
+            requested.relative_to(root)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid file path") from exc
+
+        if requested.exists() and requested.is_file():
+            return requested
+
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File is not in local repository storage. Re-analyze the repository once to restore previews.")
+
+
+def format_notebook_preview(requested: Path) -> str:
     try:
-        requested.relative_to(root)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid file path") from exc
+        notebook = json.loads(requested.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="This notebook is not valid JSON and cannot be previewed.",
+        ) from exc
 
-    if not requested.exists() or not requested.is_file():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found. Re-analyze this repository.")
+    if not isinstance(notebook, dict):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="This notebook does not contain a valid notebook object.",
+        )
 
-    return requested
+    cells = notebook.get("cells")
+    if not isinstance(cells, list):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="This notebook does not contain a valid cells list.",
+        )
+
+    sections: list[str] = []
+    for index, cell in enumerate(cells, start=1):
+        if not isinstance(cell, dict):
+            continue
+        cell_type = str(cell.get("cell_type") or "unknown")
+        source = cell.get("source", "")
+        source_text = "".join(str(part) for part in source) if isinstance(source, list) else str(source)
+
+        if cell_type == "code":
+            execution_count = cell.get("execution_count")
+            label = f"Code cell {index}"
+            if execution_count is not None:
+                label += f" (execution {execution_count})"
+            sections.append(f"--- {label} ---\n{source_text.rstrip()}")
+        elif cell_type == "markdown":
+            sections.append(f"--- Markdown cell {index} ---\n{source_text.rstrip()}")
+        elif cell_type == "raw":
+            sections.append(f"--- Raw cell {index} ---\n{source_text.rstrip()}")
+
+    if not sections:
+        return "[This notebook has no previewable cells.]"
+    return "\n\n".join(sections)
 
 
 @router.get("/{repo_id}/files", response_model=RepositoryFileResponse)
@@ -522,17 +573,21 @@ def get_repository_file(
     size = requested.stat().st_size
     suffix = requested.suffix.lower()
 
-    if suffix in TEXT_FILE_EXTENSIONS:
-        if size > MAX_TEXT_FILE_BYTES:
-            content = f"[Skipped: text file is {size} bytes, above the {MAX_TEXT_FILE_BYTES} byte preview limit.]"
-        else:
-            content = requested.read_text(encoding="utf-8", errors="replace")
+    if suffix == ".ipynb":
+        content = (
+            format_notebook_preview(requested)
+            if size <= MAX_NOTEBOOK_PREVIEW_BYTES
+            else (
+                f"[Preview skipped: notebook is {size} bytes, above the "
+                f"{MAX_NOTEBOOK_PREVIEW_BYTES} byte preview limit.]"
+            )
+        )
         return RepositoryFileResponse(
             repository_id=repo_id,
             path=file_path,
             entry_type="source_file",
             content=content,
-            mime_type=mimetypes.guess_type(requested.name)[0] or "text/plain",
+            mime_type="application/x-ipynb+json",
             size=size,
         )
 
@@ -551,7 +606,24 @@ def get_repository_file(
             size=size,
         )
 
-    raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail="Preview is not available for this file type")
+    mime_type = mimetypes.guess_type(requested.name)[0] or "text/plain"
+    if size > MAX_TEXT_FILE_BYTES:
+        content = f"[Preview skipped: file is {size} bytes, above the {MAX_TEXT_FILE_BYTES} byte preview limit.]"
+    else:
+        raw_content = requested.read_bytes()
+        if b"\x00" in raw_content[:8192]:
+            content = f"[Binary file: {mime_type}, {size} bytes. Text preview is not available.]"
+        else:
+            content = raw_content.decode("utf-8", errors="replace")
+
+    return RepositoryFileResponse(
+        repository_id=repo_id,
+        path=file_path,
+        entry_type="source_file",
+        content=content,
+        mime_type=mime_type,
+        size=size,
+    )
 
 
 @router.get("/{repo_id}/uploads", response_model=RepositoryUploadListResponse)

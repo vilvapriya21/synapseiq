@@ -1,5 +1,6 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import axios from "axios";
+import { Info } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import ChatPanel from "../components/ChatPanel";
 import KTChecklist from "../components/KTChecklist";
@@ -246,6 +247,7 @@ function RepositoryPage() {
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState("");
+  const [showRepositoryInfo, setShowRepositoryInfo] = useState(false);
   const [refreshAuthError, setRefreshAuthError] = useState<ProviderAuthError | null>(null);
   const [azurePat, setAzurePat] = useState("");
   const [azurePatError, setAzurePatError] = useState("");
@@ -638,8 +640,13 @@ function RepositoryPage() {
     try {
       const file = await getRepositoryFile(repoId, path);
       setSelectedFile(file);
-    } catch {
-      setFileError("Unable to preview this file. Re-analyze the repository if it was indexed before local storage was added.");
+    } catch (error) {
+      const detail = axios.isAxiosError(error) ? error.response?.data?.detail : null;
+      setFileError(
+        typeof detail === "string" && detail.trim()
+          ? detail
+          : "Unable to preview this file.",
+      );
     } finally {
       setFileLoading(false);
     }
@@ -863,6 +870,12 @@ function RepositoryPage() {
         eyebrow="Repository"
         heading={repository.name}
         subtitle={repository.url || "Local upload"}
+        cornerAction={
+          <button className={`${styles.outlineButton} ${styles.infoButton}`} type="button" onClick={() => setShowRepositoryInfo(true)}>
+            <Info size={16} />
+            Info
+          </button>
+        }
         action={
           <div className={styles.headerActions}>
             <button
@@ -879,17 +892,48 @@ function RepositoryPage() {
           </div>
         }
       />
-      <div className={styles.stats}>
-        <span className={`${styles.statChip} ${styles.providerChip}`}>{repository.provider || "local"}</span>
-        <span className={styles.statChip}>Language: {repository.language || "-"}</span>
-        <span className={styles.statChip}>Modules: {repository.module_count}</span>
-        <span className={styles.statChip}>Files: {repository.file_count}</span>
-        <span className={styles.statChip}>Branch: {repository.branch || "-"}</span>
-        <span className={styles.statChip}>Source: {repository.source_type}</span>
-        <span className={styles.statChip}>KB Entries: {knowledgeBase?.total ?? 0}</span>
-        <span className={styles.statChip}>Created: {formatDate(repository.created_at)}</span>
-      </div>
       {refreshError ? <p className={styles.error}>{refreshError}</p> : null}
+
+      <Modal
+        isOpen={showRepositoryInfo}
+        onClose={() => setShowRepositoryInfo(false)}
+        title="Repository Information"
+      >
+        <dl className={styles.infoGrid}>
+          <div className={`${styles.infoItem} ${styles.providerInfoItem}`}>
+            <dt>Provider</dt>
+            <dd>{repository.provider || "Local"}</dd>
+          </div>
+          <div className={styles.infoItem}>
+            <dt>Language</dt>
+            <dd>{repository.language || "-"}</dd>
+          </div>
+          <div className={styles.infoItem}>
+            <dt>Modules</dt>
+            <dd>{repository.module_count}</dd>
+          </div>
+          <div className={styles.infoItem}>
+            <dt>Files</dt>
+            <dd>{repository.file_count ?? 0}</dd>
+          </div>
+          <div className={styles.infoItem}>
+            <dt>Branch</dt>
+            <dd>{repository.branch || "-"}</dd>
+          </div>
+          <div className={styles.infoItem}>
+            <dt>Source</dt>
+            <dd>{repository.source_type}</dd>
+          </div>
+          <div className={styles.infoItem}>
+            <dt>Knowledge-base entries</dt>
+            <dd>{knowledgeBase?.total ?? 0}</dd>
+          </div>
+          <div className={styles.infoItem}>
+            <dt>Created</dt>
+            <dd>{formatDate(repository.created_at)}</dd>
+          </div>
+        </dl>
+      </Modal>
 
       <Modal
         isOpen={Boolean(refreshAuthError)}

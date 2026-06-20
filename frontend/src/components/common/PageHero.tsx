@@ -5,12 +5,13 @@ import styles from "./PageHero.module.css";
 
 export interface PageHeroProps {
   action?: ReactNode;
+  cornerAction?: ReactNode;
   eyebrow: string;
   heading: string;
   subtitle?: string;
 }
 
-function PageHero({ action, eyebrow, heading, subtitle }: PageHeroProps) {
+function PageHero({ action, cornerAction, eyebrow, heading, subtitle }: PageHeroProps) {
   const { setTitle } = usePageTitle();
 
   useEffect(() => {
@@ -24,6 +25,7 @@ function PageHero({ action, eyebrow, heading, subtitle }: PageHeroProps) {
         <h1 className={styles.heading}>{heading}</h1>
         {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
       </div>
+      {cornerAction ? <div className={styles.cornerAction}>{cornerAction}</div> : null}
       {action ? <div className={styles.action}>{action}</div> : null}
     </section>
   );

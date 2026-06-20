@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { CloudUpload, GitBranch, GitFork, GitPullRequest, Search, Server, Upload } from "lucide-react";
+import { CloudUpload, GitBranch, GitFork, GitPullRequest, RefreshCw, Search, Server, Upload } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ENV } from "../constants/env";
 import { EmptyState, Loader, PageHero } from "../components/common";
@@ -917,8 +917,15 @@ type="text"
               type="search"
               value={repoSearch}
             />
-            <button className={styles.outlineButton} type="button" onClick={handleRefreshAll} disabled={submitting}>
-              Refresh All
+            <button
+              aria-label="Refresh all repositories"
+              className={`${styles.outlineButton} ${styles.refreshButton}`}
+              type="button"
+              onClick={handleRefreshAll}
+              disabled={submitting}
+              title="Refresh all repositories"
+            >
+              <RefreshCw className={submitting ? styles.refreshingIcon : undefined} size={18} />
             </button>
           </div>
         </div>

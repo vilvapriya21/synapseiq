@@ -25,9 +25,16 @@
 }
 
 .content,
-.action {
+.action,
+.cornerAction {
   position: relative;
   z-index: 1;
+}
+
+.cornerAction {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
 }
 
 .content {
@@ -74,5 +81,11 @@
 
   .action {
     justify-content: flex-start;
+  }
+
+  .cornerAction {
+    position: static;
+    align-self: flex-end;
+    order: -1;
   }
 }

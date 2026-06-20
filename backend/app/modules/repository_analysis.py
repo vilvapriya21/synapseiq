@@ -53,7 +53,8 @@ IMAGE_FILE_EXTENSIONS = {
 
 MAX_TEXT_FILE_BYTES = 500_000
 MAX_IMAGE_FILE_BYTES = 5_000_000
-REPOSITORY_STORAGE_DIR = Path("uploads") / "repositories"
+BACKEND_DIR = Path(__file__).resolve().parents[2]
+REPOSITORY_STORAGE_DIR = BACKEND_DIR / "uploads" / "repositories"
 
 
 def clone_repository(clone_url: str, target_dir: Path, branch: str | None = None, provider: str | None = None) -> None:
@@ -127,9 +128,7 @@ def count_modules(file_paths: list[Path]) -> int:
 
 
 def extract_file_tree(root: Path, file_paths: list[Path]) -> str:
-    lines = [str(file_path.relative_to(root)) for file_path in file_paths[:2000]]
-    if len(file_paths) > 2000:
-        lines.append("... (truncated)")
+    lines = [str(file_path.relative_to(root)) for file_path in file_paths]
     return "\n".join(lines)
 
 

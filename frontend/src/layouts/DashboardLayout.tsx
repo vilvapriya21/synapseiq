@@ -59,6 +59,10 @@ function DashboardLayout() {
   }, [collapsed]);
 
   const handleLogout = () => {
+    if (!window.confirm("Are you sure you want to sign out?")) {
+      return;
+    }
+
     logout();
     navigate(ROUTES.login, { replace: true });
   };
