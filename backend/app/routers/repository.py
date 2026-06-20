@@ -1149,26 +1149,39 @@ def create_assignment(
 
     repository = get_owned_repository(db, repo_id, current_user.id)
 
-    kt_topic_id = payload.kt_topic_id.strip()
-    if not kt_topic_id:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="KT topic is required")
-    topic = db.get(KTTopic, kt_topic_id)
-    if topic is None or topic.repository_id != repo_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
+    requested_topic_id = (payload.kt_topic_id or "").strip() or None
+    topic = None
+    if requested_topic_id:
+        topic = db.get(KTTopic, requested_topic_id)
+        if topic is None or topic.repository_id != repo_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
+
+    # The database requires an assignment topic. Use the hidden repository-level
+    # topic when the admin intentionally leaves the optional topic selector empty.
+    assignment_topic = topic or get_or_create_repository_learning_topic(db, repository, current_user)
+    kt_topic_id = assignment_topic.id
 
     learner = db.get(User, payload.learner_id)
     if learner is None or not is_learner(learner):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Learner not found")
 
-    existing = db.scalar(
-        select(RepositoryAssignment).where(
-            RepositoryAssignment.repository_id == repo_id,
-            RepositoryAssignment.kt_topic_id == kt_topic_id,
-            RepositoryAssignment.learner_id == payload.learner_id,
-        )
-    )
+    existing_filter = [
+        RepositoryAssignment.repository_id == repo_id,
+        RepositoryAssignment.learner_id == payload.learner_id,
+    ]
+    if requested_topic_id:
+        existing_filter.append(RepositoryAssignment.kt_topic_id == requested_topic_id)
+
+    existing = db.scalar(select(RepositoryAssignment).where(*existing_filter))
     if existing is not None:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Learner already assigned to this KT topic")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Learner already assigned to this KT topic"
+                if requested_topic_id
+                else "Learner already assigned to this repository"
+            ),
+        )
 
     assignment = RepositoryAssignment(
         repository_id=repo_id,
@@ -1222,6 +1235,21 @@ def list_assignments(
         topic = db.get(KTTopic, a.kt_topic_id)
         is_repository_learning = topic and topic.path_patterns == REPOSITORY_LEARNING_TOPIC_MARKER
         learner = db.get(User, a.learner_id)
+        checklist_item_ids = list(
+            db.scalars(
+                select(KTChecklistItem.id).where(KTChecklistItem.kt_topic_id == a.kt_topic_id)
+            ).all()
+        )
+        completed_items = 0
+        if checklist_item_ids:
+            completed_items = db.scalar(
+                select(func.count())
+                .select_from(KTChecklistProgress)
+                .where(
+                    KTChecklistProgress.checklist_item_id.in_(checklist_item_ids),
+                    KTChecklistProgress.learner_id == a.learner_id,
+                )
+            ) or 0
         results.append(AssignmentResponse(
             id=a.id,
             repository_id=a.repository_id,
@@ -1232,6 +1260,8 @@ def list_assignments(
             learner_email=learner.email if learner else "",
             status=a.status,
             assigned_at=a.assigned_at,
+            completed_items=completed_items,
+            total_items=len(checklist_item_ids),
         ))
     return AssignmentListResponse(assignments=results, total=len(results))
 

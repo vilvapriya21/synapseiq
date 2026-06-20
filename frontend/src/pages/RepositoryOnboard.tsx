@@ -319,14 +319,19 @@ function RepositoryOnboardPage() {
     setConnectError("");
     setConnectSuccess("");
 
-    if (!url.startsWith("https://")) {
+    const repositoryUrl = url.trim();
+    if (!repositoryUrl) {
+      setConnectError("Please provide a URL.");
+      return;
+    }
+    if (!repositoryUrl.startsWith("https://")) {
       setConnectError("Repository URL must start with https://");
       return;
     }
 
     setSubmitting(true);
     try {
-      await connectRepository(url, branch || "main");
+      await connectRepository(repositoryUrl, branch || "main");
       setUrl("");
       setBranch("main");
       await fetchRepositories();
@@ -345,14 +350,19 @@ function RepositoryOnboardPage() {
     setConnectError("");
     setConnectSuccess("");
 
-    if (!azureRepoUrl.startsWith("https://")) {
+    const repositoryUrl = azureRepoUrl.trim();
+    if (!repositoryUrl) {
+      setConnectError("Please provide a URL.");
+      return;
+    }
+    if (!repositoryUrl.startsWith("https://")) {
       setConnectError("Repository URL must start with https://");
       return;
     }
 
     setSubmitting(true);
     try {
-      await connectRepository(azureRepoUrl, azureBranch || "main", "azure");
+      await connectRepository(repositoryUrl, azureBranch || "main", "azure");
       setAzureRepoUrl("");
       setAzureBranch("main");
       await fetchRepositories();
@@ -701,7 +711,7 @@ type="text"
 
             {connectError && (
               <div className={styles.errorBanner} role="alert">
-                <strong>Error:&nbsp;</strong>{connectError}
+                {connectError}
               </div>
             )}
 
@@ -781,7 +791,7 @@ type="text"
 
             {connectError && (
               <div className={styles.errorBanner} role="alert">
-                <strong>Error:&nbsp;</strong>{connectError}
+                {connectError}
               </div>
             )}
 
@@ -861,7 +871,7 @@ type="text"
 
             {connectError && (
               <div className={styles.errorBanner} role="alert">
-                <strong>Error:&nbsp;</strong>{connectError}
+                {connectError}
               </div>
             )}
 
@@ -924,7 +934,7 @@ type="password"
             </p>
             {azureStatus !== "connected" && connectError && (
               <div className={styles.errorBanner} role="alert">
-                <strong>Error:&nbsp;</strong>{connectError}
+                {connectError}
               </div>
             )}
 
@@ -957,7 +967,7 @@ type="text"
                 </p>
                 {connectError && (
                   <div className={styles.errorBanner} role="alert">
-                    <strong>Error:&nbsp;</strong>{connectError}
+                    {connectError}
                   </div>
                 )}
                 {connectSuccess ? <p className={styles.success}>{connectSuccess}</p> : null}
@@ -1000,7 +1010,7 @@ type="text"
 
             {uploadError && (
               <div className={styles.errorBanner} role="alert">
-                <strong>Error:&nbsp;</strong>{uploadError}
+                {uploadError}
               </div>
             )}
 

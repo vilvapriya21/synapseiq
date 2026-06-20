@@ -58,7 +58,7 @@ class GroqProvider:
                 "https://api.groq.com/openai/v1/chat/completions",
                 headers=headers,
                 json=payload,
-                timeout=60,
+                timeout=25,
             )
         except httpx.HTTPError as exc:
             raise LLMError(f"Groq request failed: {exc.__class__.__name__}") from exc
@@ -100,7 +100,7 @@ class OllamaProvider:
         }
 
         try:
-            timeout = httpx.Timeout(settings.ollama_timeout_seconds, connect=10)
+            timeout = httpx.Timeout(min(settings.ollama_timeout_seconds, 25), connect=10)
             response = httpx.post(url, json=payload, timeout=timeout)
         except httpx.ConnectError as exc:
             raise LLMError(f"Could not reach Ollama at {url}. Is it running?") from exc

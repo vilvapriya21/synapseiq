@@ -499,15 +499,20 @@ function RepositoryPage() {
       return;
     }
 
-    await deleteKTTopic(repoId, topicId);
-    const result = await getKTTopics(repoId);
-    setTopics(result.topics);
-    await fetchAssignments();
+    try {
+      await deleteKTTopic(repoId, topicId);
+      const result = await getKTTopics(repoId);
+      setTopics(result.topics);
+      await fetchAssignments();
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail;
+      window.alert(detail || "Failed to remove KT topic.");
+    }
   };
 
   const handleAssign = async () => {
-    if (!repoId || !selectedLearnerId || !selectedTopicId) {
-      setAssignError("Please select a learner and a KT topic.");
+    if (!repoId || !selectedLearnerId) {
+      setAssignError("Please select a learner.");
       return;
     }
 
@@ -532,9 +537,14 @@ function RepositoryPage() {
       return;
     }
 
-    await unassignLearner(repoId, assignmentId);
-    const result = await getAssignments(repoId);
-    setAssignments(result.assignments);
+    try {
+      await unassignLearner(repoId, assignmentId);
+      const result = await getAssignments(repoId);
+      setAssignments(result.assignments);
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail;
+      window.alert(detail || "Failed to remove assignment.");
+    }
   };
 
   const toggleChecklist = (topicId: string) => {
@@ -1221,9 +1231,8 @@ function RepositoryPage() {
                     className={styles.input}
                     value={selectedTopicId}
                     onChange={(event) => setSelectedTopicId(event.target.value)}
-                    required
                   >
-                    <option value="">Select Topic... *</option>
+                    <option value="">Select Topic (optional)</option>
                     {topics.map((topic) => (
                       <option key={topic.id} value={topic.id}>{topic.title}</option>
                     ))}
@@ -1232,7 +1241,7 @@ function RepositoryPage() {
                     className={styles.primaryButton}
                     onClick={handleAssign}
                     type="button"
-                    disabled={assigning || !selectedLearnerId || !selectedTopicId}
+                    disabled={assigning || !selectedLearnerId}
                   >
                     {assigning ? "Assigning..." : "Assign"}
                   </button>
@@ -1247,7 +1256,7 @@ function RepositoryPage() {
                       <tr>
                         <th>Learner</th>
                         <th>KT Topic</th>
-                        <th>Status</th>
+                        <th>Checklist Progress</th>
                         <th></th>
                       </tr>
                     </thead>
@@ -1257,9 +1266,26 @@ function RepositoryPage() {
                           <td>{assignment.learner_name} ({assignment.learner_email})</td>
                           <td>{assignment.kt_topic_title || "General"}</td>
                           <td>
-                            <span className={`${styles.badge} ${getStatusClass(assignment.status)}`}>
-                              {assignment.status}
-                            </span>
+                            <div className={styles.assignmentProgress}>
+                              <span>{assignment.completed_items} / {assignment.total_items} complete</span>
+                              <div
+                                aria-label={`${assignment.completed_items} of ${assignment.total_items} checklist items complete`}
+                                className={styles.assignmentProgressTrack}
+                                role="progressbar"
+                                aria-valuemax={assignment.total_items}
+                                aria-valuemin={0}
+                                aria-valuenow={assignment.completed_items}
+                              >
+                                <div
+                                  className={styles.assignmentProgressFill}
+                                  style={{
+                                    width: `${assignment.total_items > 0
+                                      ? Math.round((assignment.completed_items / assignment.total_items) * 100)
+                                      : 0}%`,
+                                  }}
+                                />
+                              </div>
+                            </div>
                           </td>
                           <td>
                             <button className={styles.deleteButton} onClick={() => handleUnassign(assignment.id)} type="button">

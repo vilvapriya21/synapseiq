@@ -28,6 +28,7 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [regenerateError, setRegenerateError] = useState("");
   const [error, setError] = useState("");
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
@@ -138,12 +139,13 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
     }
 
     setRegenerating(true);
-    setError("");
+    setRegenerateError("");
     try {
       const response = await regenerateChecklist(repoId, topicId);
       setItems(response.items);
-    } catch {
-      setError("Unable to regenerate checklist.");
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail;
+      setRegenerateError(detail || "Checklist generation failed. Please try again.");
     } finally {
       setRegenerating(false);
     }
@@ -193,11 +195,12 @@ function KTChecklist({ repoId, topicId, isAdmin }: KTChecklistProps) {
         ) : null}
         {adminView ? (
           <button className={styles.secondaryButton} type="button" onClick={handleRegenerate} disabled={regenerating}>
-            {regenerating ? "Generating..." : "Regenerate"}
+            {regenerating ? "Generating..." : "Generate Checklist"}
           </button>
         ) : null}
       </div>
 
+      {regenerateError ? <p className={styles.error}>{regenerateError}</p> : null}
       {error ? <p className={styles.error}>{error}</p> : null}
 
       {adminView ? (
