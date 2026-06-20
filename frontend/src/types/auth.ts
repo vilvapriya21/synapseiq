@@ -5,7 +5,6 @@ export interface User {
   id: string;
   name: string;
   role?: UserRole | string;
-  roles: UserRole[];
 }
 
 export interface AuthTokens {

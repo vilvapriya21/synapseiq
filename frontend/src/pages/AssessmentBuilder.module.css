@@ -55,6 +55,37 @@
   padding: 22px;
 }
 
+.configSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 22px 22px 0;
+  border-radius: 8px;
+  background: #f7f9fc;
+  padding: 16px;
+}
+
+.configSummary label {
+  min-width: 160px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #344554;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.configSummary input,
+.configSummary select {
+  border: 1px solid #dbe3ee;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #07142f;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+}
+
 .configForm label {
   display: grid;
   gap: 8px;
@@ -174,6 +205,12 @@
 .error,
 .state {
   color: #b13a21;
+}
+
+.success {
+  margin: 0;
+  color: #176b3a;
+  font-weight: 800;
 }
 
 .state {

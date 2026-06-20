@@ -94,8 +94,8 @@ class ContributorListResponse(BaseModel):
 
 
 class AssignLearnerRequest(BaseModel):
-    kt_topic_id: Optional[str] = None
     learner_id: str
+    kt_topic_id: str | None = None
 
 
 class AssignmentResponse(BaseModel):

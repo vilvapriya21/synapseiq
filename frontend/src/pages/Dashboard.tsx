@@ -37,7 +37,7 @@ function truncate(value: string, maxLength = 40) {
 function DashboardPage() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const role = normalizeRole(user?.role ?? user?.roles?.[0]);
+  const role = normalizeRole(user?.role ?? "");
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [assignedRepositories, setAssignedRepositories] = useState<RepositoryListResponse | null>(null);
   const [myAssignments, setMyAssignments] = useState<MyAssignment[]>([]);

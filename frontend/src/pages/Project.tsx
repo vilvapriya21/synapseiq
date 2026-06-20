@@ -73,7 +73,7 @@ function ProjectPage() {
   const navigate = useNavigate();
   const { projectId } = useParams();
   const user = useAuthStore((state) => state.user);
-  const role = normalizeRole(user?.role ?? user?.roles?.[0]);
+  const role = normalizeRole(user?.role ?? "");
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);

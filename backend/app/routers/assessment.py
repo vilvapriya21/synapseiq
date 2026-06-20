@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete as sql_delete, select
 from sqlalchemy.orm import Session
 
 from app.core.llm_dependency import get_llm
@@ -364,6 +364,52 @@ def assign_assessment(
     db.commit()
     db.refresh(assessment)
     return cast(AssessmentResponse, _assessment_response(db, assessment, include_correct=True))
+
+
+@router.delete("/{assessment_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_assessment(
+    assessment_id: str,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> None:
+    assessment = _get_assessment_or_404(db, assessment_id)
+    get_owned_repository(db, assessment.repository_id, current_user.id)
+
+    question_ids = list(
+        db.scalars(
+            select(AssessmentQuestion.id).where(AssessmentQuestion.assessment_id == assessment.id)
+        ).all()
+    )
+    attempt_ids = list(
+        db.scalars(
+            select(AssessmentAttempt.id).where(AssessmentAttempt.assessment_id == assessment.id)
+        ).all()
+    )
+
+    if attempt_ids:
+        db.execute(
+            sql_delete(AssessmentAttemptAnswer).where(
+                AssessmentAttemptAnswer.attempt_id.in_(attempt_ids)
+            )
+        )
+    if question_ids:
+        db.execute(
+            sql_delete(AssessmentAttemptAnswer).where(
+                AssessmentAttemptAnswer.question_id.in_(question_ids)
+            )
+        )
+        db.execute(
+            sql_delete(AssessmentOption).where(AssessmentOption.question_id.in_(question_ids))
+        )
+
+    db.execute(
+        sql_delete(AssessmentAttempt).where(AssessmentAttempt.assessment_id == assessment.id)
+    )
+    db.execute(
+        sql_delete(AssessmentQuestion).where(AssessmentQuestion.assessment_id == assessment.id)
+    )
+    db.delete(assessment)
+    db.commit()
 
 
 @router.post("/{assessment_id}/start")

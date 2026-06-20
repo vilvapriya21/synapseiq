@@ -15,6 +15,11 @@ from app.models.repository import Repository
 from app.modules.git_provider import build_authenticated_url
 
 
+def sanitize_git_error(value: str) -> str:
+    """Remove credentials embedded in authenticated clone URLs."""
+    return re.sub(r"(https://)[^/@\s]+@", r"\1***@", value)
+
+
 def clone_with_history(clone_url: str, target_dir: Path) -> None:
     command = ["git", "clone", clone_url, str(target_dir)]
     try:
@@ -26,16 +31,21 @@ def clone_with_history(clone_url: str, target_dir: Path) -> None:
             text=True,
         )
     except subprocess.CalledProcessError as exc:
-        stderr = exc.stderr or ""
-        if "Authentication failed" in stderr:
-            raise Exception("Authentication failed. Connect your GitHub account and try again.")
-        if "Repository not found" in stderr or "not found" in stderr:
+        stderr = sanitize_git_error(exc.stderr or "")
+        stderr_lower = stderr.lower()
+        if "authentication failed" in stderr_lower or "access denied" in stderr_lower:
+            raise Exception("Authentication failed. Reconnect the repository provider account and try again.")
+        if "repository not found" in stderr_lower or "not found" in stderr_lower:
             raise Exception(
                 "Repository not found. Check the URL or connect your account to access private repositories."
             )
-        if "could not resolve host" in stderr:
+        if "could not resolve host" in stderr_lower:
             raise Exception("Could not reach the git server. Check the URL.")
         raise Exception(f"Git clone failed: {stderr[:200]}")
+    except subprocess.TimeoutExpired as exc:
+        raise Exception(
+            "Repository cloning timed out after 10 minutes. The repository history may be too large."
+        ) from exc
 
 
 BOT_ACCOUNT_MARKERS = (

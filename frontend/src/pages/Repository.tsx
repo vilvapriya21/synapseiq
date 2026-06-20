@@ -88,7 +88,7 @@ function getTopicAccentClass(index: number) {
   return topicAccentClasses[index % topicAccentClasses.length];
 }
 
-function getStatusClass(status: Repository["status"] | Repository["knowledge_base_status"]) {
+function getStatusClass(status: string) {
   switch (status) {
     case "indexed":
     case "ready":
@@ -211,7 +211,7 @@ function RepositoryPage() {
   const { repoId } = useParams();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const role = normalizeRole(user?.role ?? user?.roles?.[0]);
+  const role = normalizeRole(user?.role ?? "");
   const [repository, setRepository] = useState<Repository | null>(null);
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBaseResponse | null>(null);
   const [contributors, setContributors] = useState<Contributor[]>([]);
@@ -222,12 +222,15 @@ function RepositoryPage() {
   const [topicTitle, setTopicTitle] = useState("");
   const [topicDescription, setTopicDescription] = useState("");
   const [topicPaths, setTopicPaths] = useState("");
+  const [creatingTopic, setCreatingTopic] = useState(false);
+  const [topicError, setTopicError] = useState("");
   const [recommendations, setRecommendations] = useState<Record<string, RecommendedContributor[]>>({});
   const [expandedChecklistTopicIds, setExpandedChecklistTopicIds] = useState<Record<string, boolean>>({});
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [learners, setLearners] = useState<{ id: string; name: string; email: string }[]>([]);
   const [selectedLearnerId, setSelectedLearnerId] = useState("");
   const [selectedTopicId, setSelectedTopicId] = useState("");
+  const [assigning, setAssigning] = useState(false);
   const [assignError, setAssignError] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("file_tree");
   const [selectedFilePath, setSelectedFilePath] = useState("");
@@ -437,8 +440,13 @@ function RepositoryPage() {
     try {
       const result = await analyzeContributors(repoId);
       setContributors(result.contributors);
-    } catch {
-      setContributorError("Failed to analyze contributors. The repository may be too large or access was denied.");
+    } catch (error) {
+      const detail = axios.isAxiosError(error) ? error.response?.data?.detail : null;
+      setContributorError(
+        typeof detail === "string" && detail.trim()
+          ? detail
+          : "Failed to analyze contributors. Please check repository access and try again.",
+      );
     } finally {
       setAnalyzingContributors(false);
     }
@@ -450,17 +458,25 @@ function RepositoryPage() {
       return;
     }
 
-    await createKTTopic(repoId, {
-      title: topicTitle,
-      description: topicDescription,
-      path_patterns: topicPaths,
-    });
-    setTopicTitle("");
-    setTopicDescription("");
-    setTopicPaths("");
-    setShowTopicForm(false);
-    const result = await getKTTopics(repoId);
-    setTopics(result.topics);
+    setCreatingTopic(true);
+    setTopicError("");
+    try {
+      await createKTTopic(repoId, {
+        title: topicTitle,
+        description: topicDescription,
+        path_patterns: topicPaths,
+      });
+      setTopicTitle("");
+      setTopicDescription("");
+      setTopicPaths("");
+      setShowTopicForm(false);
+      const result = await getKTTopics(repoId);
+      setTopics(result.topics);
+    } catch (err: any) {
+      setTopicError(err?.response?.data?.detail || "Failed to create topic.");
+    } finally {
+      setCreatingTopic(false);
+    }
   };
 
   const handleViewRecommendation = async (topicId: string) => {
@@ -487,10 +503,12 @@ function RepositoryPage() {
   };
 
   const handleAssign = async () => {
-    if (!repoId || !selectedLearnerId || !selectedTopicId) {
+    if (!repoId || !selectedLearnerId) {
+      setAssignError("Please select a learner.");
       return;
     }
 
+    setAssigning(true);
     setAssignError("");
     try {
       await assignLearner(repoId, selectedLearnerId, selectedTopicId || undefined);
@@ -498,8 +516,11 @@ function RepositoryPage() {
       setAssignments(result.assignments);
       setSelectedLearnerId("");
       setSelectedTopicId("");
-    } catch {
-      setAssignError("Failed to assign learner. They may already be assigned to this repository.");
+      setAssignError("");
+    } catch (err: any) {
+      setAssignError(err?.response?.data?.detail || "Failed to assign learner. They may already be assigned.");
+    } finally {
+      setAssigning(false);
     }
   };
 
@@ -922,8 +943,8 @@ function RepositoryPage() {
             <article className={`${styles.card} ${styles.knowledgeCard}`}>
               <div className={styles.cardHeader}>
                 <h2>Knowledge Base</h2>
-                <span className={`${styles.badge} ${getStatusClass(repository.knowledge_base_status)}`}>
-                  {repository.knowledge_base_status}
+                <span className={`${styles.badge} ${getStatusClass(repository.knowledge_base_status ?? "none")}`}>
+                  {repository.knowledge_base_status ?? "none"}
                 </span>
               </div>
 
@@ -989,7 +1010,10 @@ function RepositoryPage() {
                   value={topicPaths}
                   onChange={(event) => setTopicPaths(event.target.value)}
                 />
-                <button className={styles.primaryButton} type="submit">Create Topic</button>
+                {topicError ? <p className={styles.error}>{topicError}</p> : null}
+                <button className={styles.primaryButton} type="submit" disabled={creatingTopic}>
+                  {creatingTopic ? "Creating..." : "Create Topic"}
+                </button>
               </form>
             ) : null}
 
@@ -1144,7 +1168,14 @@ function RepositoryPage() {
                       <option key={topic.id} value={topic.id}>{topic.title}</option>
                     ))}
                   </select>
-                  <button className={styles.primaryButton} onClick={handleAssign} type="button">Assign</button>
+                  <button
+                    className={styles.primaryButton}
+                    onClick={handleAssign}
+                    type="button"
+                    disabled={assigning || !selectedLearnerId}
+                  >
+                    {assigning ? "Assigning..." : "Assign"}
+                  </button>
                 </div>
                 {assignError ? <p className={styles.error}>{assignError}</p> : null}
 
@@ -1155,7 +1186,7 @@ function RepositoryPage() {
                     <thead>
                       <tr>
                         <th>Learner</th>
-                        <th>Repository</th>
+                        <th>KT Topic</th>
                         <th>Status</th>
                         <th></th>
                       </tr>
@@ -1164,8 +1195,12 @@ function RepositoryPage() {
                       {assignments.map((assignment) => (
                         <tr key={assignment.id}>
                           <td>{assignment.learner_name} ({assignment.learner_email})</td>
-                          <td>{repository.name}</td>
-                          <td>{assignment.status}</td>
+                          <td>{assignment.kt_topic_title || "General"}</td>
+                          <td>
+                            <span className={`${styles.badge} ${getStatusClass(assignment.status)}`}>
+                              {assignment.status}
+                            </span>
+                          </td>
                           <td>
                             <button className={styles.deleteButton} onClick={() => handleUnassign(assignment.id)} type="button">
                               Remove

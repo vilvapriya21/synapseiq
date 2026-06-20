@@ -124,6 +124,38 @@
   font-weight: 800;
 }
 
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.deleteAction {
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fff;
+  color: #b91c1c;
+  cursor: pointer;
+  padding: 9px 12px;
+  font-weight: 800;
+}
+
+.deleteAction:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.deleteAction:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.inlineError {
+  border-bottom: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+  padding: 12px 22px;
+}
+
 .sourceBadge,
 .typeBadge {
   min-height: 28px;

@@ -71,6 +71,7 @@ function AssessmentBuilder() {
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [questionErrors, setQuestionErrors] = useState<Record<number, string>>({});
   const [learners, setLearners] = useState<{ id: string; name: string; email: string }[]>([]);
   const [selectedLearnerId, setSelectedLearnerId] = useState("");
@@ -127,6 +128,7 @@ function AssessmentBuilder() {
     }
     setGenerating(true);
     setError("");
+    setSuccessMessage("");
     try {
       const response = await assessmentService.generateQuestions(topicId, numQuestions);
       setQuestions(response.questions);
@@ -201,6 +203,7 @@ function AssessmentBuilder() {
     }
     setSaving(true);
     setError("");
+    setSuccessMessage("");
     try {
       const saved = await assessmentService.saveAssessment({
         kt_topic_id: topicId,
@@ -210,6 +213,7 @@ function AssessmentBuilder() {
         assigned_to: selectedLearnerId || undefined,
       });
       setSavedAssessment(saved);
+      setSuccessMessage(`Assessment "${saved.title}" saved successfully.`);
       setStep("done");
     } catch {
       setError("Assessment could not be saved.");
@@ -259,8 +263,8 @@ function AssessmentBuilder() {
                 ))}
               </select>
             </label>
-            <button className={styles.primaryButton} type="button" onClick={() => generate()} disabled={generating}>
-              {generating ? "Generating..." : "Generate Questions"}
+            <button className={styles.primaryButton} type="button" onClick={() => generate()} disabled={generating || !title.trim()}>
+              {generating ? "Generating questions with AI..." : "Generate Questions"}
             </button>
           </div>
         </section>
@@ -273,6 +277,31 @@ function AssessmentBuilder() {
               <h2>{questions.length} questions generated</h2>
               <p>Review and edit before saving.</p>
             </div>
+          </div>
+          <div className={styles.configSummary}>
+            <label>
+              Title
+              <input value={title} onChange={(event) => setTitle(event.target.value)} />
+            </label>
+            <label>
+              Duration (min)
+              <input
+                type="number"
+                min={1}
+                max={180}
+                value={durationMinutes}
+                onChange={(event) => setDurationMinutes(Number(event.target.value))}
+              />
+            </label>
+            <label>
+              Assign to
+              <select value={selectedLearnerId} onChange={(event) => setSelectedLearnerId(event.target.value)}>
+                <option value="">Unassigned</option>
+                {learners.map((learner) => (
+                  <option key={learner.id} value={learner.id}>{learner.name} ({learner.email})</option>
+                ))}
+              </select>
+            </label>
           </div>
           <div className={styles.reviewList}>
             {questions.map((question, index) => (
@@ -324,6 +353,7 @@ function AssessmentBuilder() {
       {step === "done" && savedAssessment ? (
         <section className={styles.panel}>
           <div className={styles.donePanel}>
+            {successMessage ? <p className={styles.success}>{successMessage}</p> : null}
             <h2>Assessment saved{selectedLearner ? ` and assigned to ${selectedLearner.name}` : ""}</h2>
             <div className={styles.footerActions}>
               <button className={styles.primaryButton} type="button" onClick={() => navigate(ROUTES.assessmentResults.replace(":assessmentId", savedAssessment.id))}>

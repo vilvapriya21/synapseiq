@@ -18,12 +18,14 @@ function formatDate(value: string) {
 function AssessmentsPage() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const role = normalizeRole(user?.role ?? user?.roles?.[0]);
+  const role = normalizeRole(user?.role ?? "");
   const [assessments, setAssessments] = useState<AssessmentListItem[]>([]);
   const [learnerNames, setLearnerNames] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -67,6 +69,24 @@ function AssessmentsPage() {
     );
   }, [assessments, search]);
 
+  const handleDelete = async (assessment: AssessmentListItem) => {
+    if (role !== "ADMIN" || deletingId) return;
+    if (!window.confirm(`Delete assessment "${assessment.title}"? This will also delete its attempts and results.`)) {
+      return;
+    }
+
+    setDeleteError("");
+    setDeletingId(assessment.id);
+    try {
+      await assessmentService.deleteAssessment(assessment.id);
+      setAssessments((current) => current.filter((item) => item.id !== assessment.id));
+    } catch {
+      setDeleteError("Assessment could not be deleted. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (isLoading) {
     return <div className={styles.state}>Loading assessments...</div>;
   }
@@ -98,6 +118,7 @@ function AssessmentsPage() {
             <p>{filteredAssessments.length} assessments matched</p>
           </div>
         </div>
+        {deleteError ? <div className={styles.inlineError} role="alert">{deleteError}</div> : null}
         {filteredAssessments.length === 0 ? (
           <EmptyState title="No assessments available" description="Assessments will appear here after they are created and assigned." />
         ) : (
@@ -127,13 +148,23 @@ function AssessmentsPage() {
                     <td>{assessment.assigned_to === null && role === "ADMIN" ? "Unassigned" : assessment.has_submitted ? "Submitted" : "Pending"}</td>
                     <td>
                       {role === "ADMIN" ? (
-                        <button
-                          className={styles.action}
-                          onClick={() => navigate(ROUTES.assessmentResults.replace(":assessmentId", assessment.id))}
-                          type="button"
-                        >
-                          View Results
-                        </button>
+                        <div className={styles.actions}>
+                          <button
+                            className={styles.action}
+                            onClick={() => navigate(ROUTES.assessmentResults.replace(":assessmentId", assessment.id))}
+                            type="button"
+                          >
+                            View Results
+                          </button>
+                          <button
+                            className={styles.deleteAction}
+                            disabled={deletingId !== null}
+                            onClick={() => handleDelete(assessment)}
+                            type="button"
+                          >
+                            {deletingId === assessment.id ? "Deleting..." : "Delete"}
+                          </button>
+                        </div>
                       ) : assessment.has_submitted ? (
                         <button
                           className={styles.action}

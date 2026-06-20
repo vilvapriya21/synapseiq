@@ -177,6 +177,7 @@ export interface ChecklistItem {
   kt_topic_id: string;
   title: string;
   description?: string | null;
+  source?: string | null;
   order: number;
   created_at: string;
   completed: boolean;
@@ -316,7 +317,11 @@ export async function getContributors(repoId: string): Promise<ContributorListRe
 }
 
 export async function analyzeContributors(repoId: string): Promise<ContributorListResponse> {
-  const { data } = await apiClient.post<ContributorListResponse>(`/repositories/${repoId}/analyze-contributors`);
+  const { data } = await apiClient.post<ContributorListResponse>(
+    `/repositories/${repoId}/analyze-contributors`,
+    undefined,
+    { timeout: 600000 },
+  );
   return data;
 }
 

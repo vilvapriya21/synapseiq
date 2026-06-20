@@ -140,6 +140,10 @@ export const assessmentService = {
     return data;
   },
 
+  async deleteAssessment(assessmentId: string): Promise<void> {
+    await apiClient.delete(`/assessment/${assessmentId}`);
+  },
+
   async getByTopic(ktTopicId: string): Promise<AssessmentFull | AssessmentLearner | null> {
     try {
       const { data } = await apiClient.get(`/assessment/by-topic/${ktTopicId}`);
