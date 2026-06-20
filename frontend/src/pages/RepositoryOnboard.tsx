@@ -2,9 +2,8 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { CloudUpload, GitBranch, GitFork, GitPullRequest, RefreshCw, Server, Upload } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ENV } from "../constants/env";
-import { ConfirmDialog, EmptyState, Loader, PageHero, SearchInput } from "../components/common";
-import Input from "../components/common/Input";
-import Table, { type TableColumn } from "../components/common/Table";
+import { ConfirmDialog, EmptyState, Input, Loader, PageHero, SearchInput, Table } from "../components/common";
+import type { TableColumn } from "../components/common/Table";
 import {
   connectRepository,
   deleteRepository,
