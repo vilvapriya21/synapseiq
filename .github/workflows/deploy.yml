@@ -79,6 +79,7 @@ jobs:
           VITE_API_BASE_URL=${VITE_API_BASE_URL}
           COMPOSE_ENV
 
+          docker compose down --remove-orphans
           docker compose build --pull
           docker compose up -d --remove-orphans
           docker compose exec -T backend alembic upgrade head
