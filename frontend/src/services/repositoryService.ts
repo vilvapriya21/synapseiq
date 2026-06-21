@@ -138,7 +138,13 @@ export interface RecommendedContributor {
   name: string;
   email: string;
   commit_count: number;
+  prs_authored: number;
   relevant_file_matches: number;
+}
+
+export interface AssignKtProviderRequest {
+  contributor_email: string;
+  kt_topic_id: string;
 }
 
 export interface TopicRecommendationResponse {
@@ -351,6 +357,19 @@ export const getAssignments = async (repoId: string): Promise<AssignmentListResp
 
 export const getMyAssignments = async (): Promise<MyAssignment[]> => {
   const response = await apiClient.get<MyAssignment[]>("/repositories/assigned-to-me");
+  return response.data;
+};
+
+export const getMyKtProviderAssignments = async (): Promise<MyAssignment[]> => {
+  const response = await apiClient.get<MyAssignment[]>("/repositories/my-kt-provider-assignments");
+  return response.data;
+};
+
+export const assignKtProvider = async (
+  repoId: string,
+  payload: AssignKtProviderRequest,
+): Promise<Assignment> => {
+  const response = await apiClient.post<Assignment>(`/repositories/${repoId}/assign-kt-provider`, payload);
   return response.data;
 };
 

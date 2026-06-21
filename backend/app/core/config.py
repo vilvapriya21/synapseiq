@@ -1,9 +1,12 @@
 """Application configuration loaded from environment variables."""
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import AnyHttpUrl, Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):
@@ -69,7 +72,7 @@ class Settings(BaseSettings):
             raise ValueError("LLM_PROVIDER is set to 'groq'. Set GROQ_API_KEY in backend/.env.")
         return v
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file=ENV_FILE, env_file_encoding="utf-8", extra="ignore")
 
 
 @lru_cache

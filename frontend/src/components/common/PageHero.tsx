@@ -6,7 +6,7 @@ import styles from "./PageHero.module.css";
 export interface PageHeroProps {
   action?: ReactNode;
   cornerAction?: ReactNode;
-  eyebrow: string;
+  eyebrow?: string;
   eyebrowContent?: ReactNode;
   heading: string;
   subtitle?: string;
@@ -22,7 +22,9 @@ function PageHero({ action, cornerAction, eyebrow, eyebrowContent, heading, subt
   return (
     <section className={styles.hero}>
       <div className={styles.content}>
-        <p className={styles.eyebrow}>{eyebrowContent ?? eyebrow}</p>
+        {eyebrowContent || eyebrow ? (
+          <p className={styles.eyebrow}>{eyebrowContent ?? eyebrow}</p>
+        ) : null}
         <h1 className={styles.heading}>{heading}</h1>
         {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
       </div>

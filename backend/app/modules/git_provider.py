@@ -22,6 +22,12 @@ def detect_provider(url: str) -> str:
         Result produced by the operation.
     """
     url = url.strip()
+    try:
+        hostname = (urlsplit(url).hostname or "").lower()
+    except ValueError:
+        hostname = ""
+    if hostname == "dev.azure.com" or hostname.endswith(".visualstudio.com"):
+        return "azure"
     for provider, pattern in PROVIDER_PATTERNS:
         if re.match(pattern, url, re.IGNORECASE):
             return provider
@@ -57,12 +63,32 @@ def is_valid_azure_repo_url(url: str) -> bool:
     Returns:
         Result produced by the operation.
     """
-    url = _clean_url(url)
+    url = normalize_azure_repo_url(url)
     azure_patterns = [
         r"^https://dev\.azure\.com/[^/]+/[^/]+/_git/[^/]+$",
         r"^https://[a-zA-Z0-9-]+\.visualstudio\.com/[^/]+/_git/[^/]+$",
     ]
     return any(re.match(pattern, url, re.IGNORECASE) for pattern in azure_patterns)
+
+
+def normalize_azure_repo_url(url: str) -> str:
+    """Return a canonical Azure DevOps URL without clone-URL user information."""
+    base = _clean_url(url)
+    try:
+        parts = urlsplit(base)
+    except ValueError:
+        return base
+    hostname = parts.hostname or ""
+    if not hostname:
+        return base
+    netloc = hostname
+    try:
+        port = parts.port
+    except ValueError:
+        return base
+    if port is not None:
+        netloc = f"{netloc}:{port}"
+    return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
 
 
 def _clean_url(url: str) -> str:
@@ -127,7 +153,7 @@ def build_authenticated_url(url: str, token: str | None, provider: str) -> str:
     if provider == "azure":
         # Azure DevOps uses Basic Auth with any username and PAT as password
         # Format: https://user:{pat}@dev.azure.com/org/project/_git/repo
-        parts = urlsplit(base)
+        parts = urlsplit(normalize_azure_repo_url(base))
         authenticated_netloc = f"SynapseIQ:{quote(token, safe='')}@{parts.netloc}"
         return urlunsplit((parts.scheme, authenticated_netloc, parts.path, parts.query, parts.fragment))
 
