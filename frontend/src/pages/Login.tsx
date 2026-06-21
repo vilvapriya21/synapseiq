@@ -6,7 +6,6 @@ import authKnowledgeImage from "../assets/logo-synapse.jpg";
 import { ROUTES } from "../routes/routePaths";
 import { authService } from "../services/authService";
 import { useAuthStore } from "../store/authStore";
-import { UserRole } from "../types";
 import styles from "./Login.module.css";
 
 type AuthMode = "login" | "signup" | "forgot" | "reset";
@@ -126,7 +125,6 @@ function PasswordField({
 function LoginPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<AuthMode>("login");
-  const [role, setRole] = useState<UserRole>("LEARNER");
   const [emailValue, setEmailValue] = useState("");
   const [passwordValue, setPasswordValue] = useState("");
   const [emailReadOnly, setEmailReadOnly] = useState(true);
@@ -211,7 +209,6 @@ function LoginPage() {
           last_name: lastName || undefined,
           email,
           password,
-          role: role.toLowerCase() as UserRole,
         });
         setMessage(resp?.message || "Account created. Please sign in.");
         setMode("login");
@@ -309,24 +306,6 @@ function LoginPage() {
             <PasswordField autoComplete="new-password" label="Confirm password" name="confirmPassword" placeholder="Confirm password" />
           )}
 
-          {mode === "signup" && (
-            <div className={styles.roleSection}>
-              <span>Account role</span>
-              <div className={styles.roleGrid} aria-label="Account role">
-                {(["LEARNER", "ADMIN"] as UserRole[]).map((item) => (
-                  <button
-                    className={`${styles.roleButton} ${role === item ? styles.roleButtonActive : ""}`}
-                    key={item}
-                    onClick={() => setRole(item)}
-                    type="button"
-                  >
-                    {item === "ADMIN" ? "Admin" : "Learner"}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {mode === "login" && (
             <div className={styles.row}>
               <label className={styles.remember}>
@@ -351,7 +330,7 @@ function LoginPage() {
 
           <Button isLoading={isLoading} type="submit">
             {mode === "login" && "Sign In"}
-            {mode === "signup" && "Sign Up"}
+            {mode === "signup" && "Sign Up as Learner"}
             {mode === "forgot" && "Send Verification Code"}
             {mode === "reset" && "Reset Password"}
           </Button>

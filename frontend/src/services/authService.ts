@@ -1,5 +1,5 @@
 import { apiClient } from "./api";
-import { User, UserRole } from "../types";
+import { User } from "../types";
 
 export interface LoginRequest {
   email: string;
@@ -9,7 +9,6 @@ export interface LoginRequest {
 export interface SignupRequest extends LoginRequest {
   first_name: string;
   last_name?: string;
-  role: UserRole;
 }
 
 export interface ForgotPasswordRequest {

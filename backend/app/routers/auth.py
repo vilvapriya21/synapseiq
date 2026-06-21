@@ -134,16 +134,12 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)) -> dict[str, s
     last_name = payload.last_name.strip() if payload.last_name else None
     name = f"{first_name}{' ' + last_name if last_name else ''}"
 
-    role = (payload.role or "USER").upper()
-    if role not in {"ADMIN", "USER"}:
-        role = "USER"
-
     user = User(
         email=payload.email.lower(),
         name=name,
         first_name=first_name,
         last_name=last_name,
-        role=role,
+        role="LEARNER",
         hashed_password=get_password_hash(payload.password),
     )
     db.add(user)

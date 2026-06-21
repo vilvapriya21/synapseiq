@@ -1,7 +1,7 @@
 .trigger {
   position: fixed;
   right: 28px;
-  bottom: 28px;
+  bottom: 72px;
   z-index: 50;
   display: inline-flex;
   align-items: center;
@@ -54,7 +54,7 @@
 .assistantHint {
   position: fixed;
   right: 98px;
-  bottom: 36px;
+  bottom: 80px;
   z-index: 50;
   max-width: 250px;
   border: 1px solid var(--color-primary-soft-hover);
@@ -123,7 +123,7 @@
 .panel {
   position: fixed;
   right: 28px;
-  bottom: 96px;
+  bottom: 140px;
   z-index: 49;
   width: 380px;
   opacity: 0;

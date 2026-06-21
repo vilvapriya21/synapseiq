@@ -13,7 +13,6 @@ class SignupRequest(LoginRequest):
     """Pydantic schema for SignupRequest payloads."""
     first_name: str
     last_name: str | None = None
-    role: str = "learner"
 
 
 class Token(BaseModel):
