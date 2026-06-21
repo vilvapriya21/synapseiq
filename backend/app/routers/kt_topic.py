@@ -27,8 +27,6 @@ from app.schemas.kt_topic import (
     CreateKTTopicRequest,
     KTTopicListResponse,
     KTTopicResponse,
-    RecommendedContributor,
-    TopicRecommendationResponse,
 )
 from app.utils.path_matching import count_matching_paths, normalize_path_patterns, parse_path_patterns
 
@@ -333,13 +331,13 @@ def parse_top_files(top_files_str: str | None) -> dict[str, int]:
     return result
 
 
-@router.get("/{topic_id}/recommend", response_model=TopicRecommendationResponse)
+@router.get("/{topic_id}/recommend", response_model=None)
 def recommend_contributor(
     repo_id: str,
     topic_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> TopicRecommendationResponse:
+) -> dict:
     """Handle recommend contributor for the current operation.
 
     Args:
@@ -361,30 +359,38 @@ def recommend_contributor(
     if topic is None or topic.repository_id != repo_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
 
-    if not topic.path_patterns:
-        return TopicRecommendationResponse(kt_topic_id=topic_id, kt_topic_title=topic.title, recommendations=[])
-
-    patterns = parse_path_patterns(topic.path_patterns)
+    patterns = parse_path_patterns(topic.path_patterns) if topic.path_patterns else []
     contributors = db.scalars(select(Contributor).where(Contributor.repository_id == repo_id)).all()
 
     scored = []
     for c in contributors:
+        commit_count = c.commit_count or 0
+        prs_authored = c.prs_authored or 0
+        if commit_count + prs_authored == 0:
+            continue
         files = parse_top_files(c.top_files)
-        match_count = count_matching_paths(list(files), patterns)
-        if match_count > 0:
-            scored.append(RecommendedContributor(
-                name=c.name,
-                email=c.email,
-                commit_count=c.commit_count,
-                relevant_file_matches=match_count,
-            ))
+        match_count = count_matching_paths(list(files), patterns) if patterns else 0
+        scored.append({
+            "name": c.name,
+            "email": c.email,
+            "commit_count": commit_count,
+            "prs_authored": prs_authored,
+            "relevant_file_matches": match_count,
+        })
 
-    scored.sort(key=lambda r: (r.relevant_file_matches, r.commit_count), reverse=True)
-    return TopicRecommendationResponse(
-        kt_topic_id=topic_id,
-        kt_topic_title=topic.title,
-        recommendations=scored[:5],
+    scored.sort(
+        key=lambda row: (
+            row["relevant_file_matches"],
+            row["prs_authored"],
+            row["commit_count"],
+        ),
+        reverse=True,
     )
+    return {
+        "kt_topic_id": topic_id,
+        "kt_topic_title": topic.title,
+        "recommendations": scored[:10],
+    }
 
 
 @router.get("/{topic_id}/checklist", response_model=ChecklistListResponse)

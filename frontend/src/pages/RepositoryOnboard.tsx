@@ -42,14 +42,14 @@ function mapRepositoryError(detail: string, fallback: string): string {
   if (d.includes("branch")) {
     return "The specified branch was not found in this repository. Check the branch name and try again.";
   }
-  if (d.includes("valid git repository url") || d.includes("https://")) {
-    return "Please enter a valid repository URL starting with https://.";
-  }
   if (d.includes("azure devops pat") || d.includes("pat")) {
     return "Please save your Azure DevOps Personal Access Token before connecting an Azure repository.";
   }
   if (d.includes("valid azure")) {
-    return "Please enter a valid Azure DevOps URL (e.g. https://dev.azure.com/org/project/_git/repo).";
+    return "Please enter a valid Azure DevOps URL (for example, https://dev.azure.com/org/project/_git/repo).";
+  }
+  if (d.includes("valid git repository url") || d.includes("https://")) {
+    return "Please enter a valid repository URL starting with https://.";
   }
   return detail || fallback;
 }
@@ -559,7 +559,6 @@ function RepositoryOnboardPage() {
   return (
     <div className={styles.page}>
       <PageHero
-        eyebrow="Repositories"
         heading="Repositories"
       />
 

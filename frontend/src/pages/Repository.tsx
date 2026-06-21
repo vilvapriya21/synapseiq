@@ -12,6 +12,7 @@ import { getUsers, type AdminUser } from "../services/adminService";
 import apiClient from "../services/api";
 import {
   analyzeContributors,
+  assignKtProvider,
   assignLearner,
   createKTTopic,
   deleteKTTopic,
@@ -22,6 +23,7 @@ import {
   getKTTopics,
   getKnowledgeBase,
   getMyAssignments,
+  getMyKtProviderAssignments,
   getRepositoryFile,
   getRepositoryUploads,
   getRepository,
@@ -226,6 +228,9 @@ function RepositoryPage() {
   const [creatingTopic, setCreatingTopic] = useState(false);
   const [topicError, setTopicError] = useState("");
   const [recommendations, setRecommendations] = useState<Record<string, RecommendedContributor[]>>({});
+  const [assigningProvider, setAssigningProvider] = useState<Record<string, boolean>>({});
+  const [providerAssignError, setProviderAssignError] = useState<Record<string, string>>({});
+  const [providerAssignSuccess, setProviderAssignSuccess] = useState<Record<string, string>>({});
   const [expandedChecklistTopicIds, setExpandedChecklistTopicIds] = useState<Record<string, boolean>>({});
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [learners, setLearners] = useState<{ id: string; name: string; email: string }[]>([]);
@@ -305,7 +310,11 @@ function RepositoryPage() {
     }
 
     try {
-      const rows = await getMyAssignments();
+      const [learnerRows, providerRows] = await Promise.all([
+        getMyAssignments(),
+        getMyKtProviderAssignments(),
+      ]);
+      const rows = [...learnerRows, ...providerRows];
       setTopics(
         rows
           .filter((assignment) => assignment.repository_id === repoId && assignment.kt_topic_id && assignment.kt_topic_title)
@@ -493,6 +502,33 @@ function RepositoryPage() {
 
     const result = await getTopicRecommendation(repoId, topicId);
     setRecommendations((previous) => ({ ...previous, [topicId]: result.recommendations }));
+  };
+
+  const handleAssignKtProvider = async (topicId: string, contributorEmail: string) => {
+    if (!repoId) return;
+    const key = `${topicId}-${contributorEmail}`;
+    setAssigningProvider((previous) => ({ ...previous, [key]: true }));
+    setProviderAssignError((previous) => ({ ...previous, [key]: "" }));
+    setProviderAssignSuccess((previous) => ({ ...previous, [key]: "" }));
+    try {
+      await assignKtProvider(repoId, {
+        contributor_email: contributorEmail,
+        kt_topic_id: topicId,
+      });
+      setProviderAssignSuccess((previous) => ({
+        ...previous,
+        [key]: `${contributorEmail} was assigned as KT provider.`,
+      }));
+      await fetchAssignments();
+    } catch (error) {
+      const detail = axios.isAxiosError(error) ? error.response?.data?.detail : undefined;
+      setProviderAssignError((previous) => ({
+        ...previous,
+        [key]: detail || "Failed to assign KT provider.",
+      }));
+    } finally {
+      setAssigningProvider((previous) => ({ ...previous, [key]: false }));
+    }
   };
 
   const handleDeleteTopic = async (topicId: string) => {
@@ -1151,14 +1187,39 @@ function RepositoryPage() {
                             description="Run Analyze Contributors first, or check the path patterns."
                           />
                         ) : (
-                          recommendations[topic.id].map((recommendation, index) => (
-                            <div key={`${recommendation.email}-${index}`} className={styles.recommendationRow}>
-                              <span>{recommendation.name} ({recommendation.email})</span>
-                              <span>
-                                {recommendation.relevant_file_matches} relevant files &middot; {recommendation.commit_count} total commits
-                              </span>
+                          recommendations[topic.id].map((recommendation, index) => {
+                            const providerKey = `${topic.id}-${recommendation.email}`;
+                            return (
+                            <div key={`${recommendation.email}-${index}`} className={styles.recommendationItem}>
+                              <div className={styles.recommendationRow}>
+                                <div className={styles.recommendationInfo}>
+                                  <strong>{recommendation.name}</strong>
+                                  <span className={styles.recommendationEmail}>{recommendation.email}</span>
+                                  <span className={styles.recommendationStats}>
+                                    {recommendation.relevant_file_matches > 0
+                                      ? `${recommendation.relevant_file_matches} matching files · `
+                                      : ""}
+                                    {recommendation.commit_count} commits
+                                    {recommendation.prs_authored > 0 ? ` · ${recommendation.prs_authored} PRs` : ""}
+                                  </span>
+                                </div>
+                                <button
+                                  className={styles.assignProviderButton}
+                                  disabled={assigningProvider[providerKey] ?? false}
+                                  onClick={() => handleAssignKtProvider(topic.id, recommendation.email)}
+                                  type="button"
+                                >
+                                  {assigningProvider[providerKey] ? "Assigning…" : "Assign as KT Provider"}
+                                </button>
+                              </div>
+                              {providerAssignError[providerKey] ? (
+                                <p className={styles.error}>{providerAssignError[providerKey]}</p>
+                              ) : null}
+                              {providerAssignSuccess[providerKey] ? (
+                                <p className={styles.successMsg}>{providerAssignSuccess[providerKey]}</p>
+                              ) : null}
                             </div>
-                          ))
+                          );})
                         )}
                       </div>
                     ) : null}

@@ -7,6 +7,8 @@ import { ROUTES } from "../routes/routePaths";
 import { dashboardService, type DashboardResponse } from "../services/dashboardService";
 import {
   getAssignedRepositories,
+  getMyKtProviderAssignments,
+  type MyAssignment,
   type RepositoryListResponse,
 } from "../services/repositoryService";
 import { useAuthStore } from "../store/authStore";
@@ -36,6 +38,7 @@ function DashboardPage() {
   const role = normalizeRole(user?.role ?? "");
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [assignedRepositories, setAssignedRepositories] = useState<RepositoryListResponse | null>(null);
+  const [ktProviderAssignments, setKtProviderAssignments] = useState<MyAssignment[]>([]);
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -45,17 +48,25 @@ function DashboardPage() {
     setIsLoading(true);
     setError("");
 
-    const request = role === "LEARNER" ? getAssignedRepositories() : dashboardService.getDashboard();
+    const request = role === "LEARNER"
+      ? Promise.all([
+          getAssignedRepositories(),
+          getMyKtProviderAssignments().catch(() => [] as MyAssignment[]),
+        ])
+      : dashboardService.getDashboard();
 
     request
       .then((data) => {
         if (!isMounted) return;
         if (role === "LEARNER") {
-          setAssignedRepositories(data as RepositoryListResponse);
+          const [repositories, providerAssignments] = data as [RepositoryListResponse, MyAssignment[]];
+          setAssignedRepositories(repositories);
+          setKtProviderAssignments(providerAssignments);
           setDashboard(null);
         } else {
           setDashboard(data as DashboardResponse);
           setAssignedRepositories(null);
+          setKtProviderAssignments([]);
         }
       })
       .catch(() => {
@@ -134,6 +145,46 @@ function DashboardPage() {
             </div>
           </div>
         </div>
+        {ktProviderAssignments.length > 0 ? (
+          <Card className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <div>
+                <h2>My KT Assignments <span className={styles.providerBadge}>Provider</span></h2>
+                <p>You have been assigned to deliver knowledge transfer on these topics.</p>
+              </div>
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Repository</th>
+                    <th>KT Topic</th>
+                    <th>Assigned On</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ktProviderAssignments.map((assignment) => (
+                    <tr key={assignment.assignment_id}>
+                      <td><strong>{assignment.repository_name}</strong></td>
+                      <td>{assignment.kt_topic_title ?? "General"}</td>
+                      <td>{new Date(assignment.assigned_at).toLocaleDateString()}</td>
+                      <td>
+                        <button
+                          className={styles.action}
+                          onClick={() => navigate(`/repositories/${assignment.repository_id}`)}
+                          type="button"
+                        >
+                          View Repository
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        ) : null}
       </div>
     );
   }

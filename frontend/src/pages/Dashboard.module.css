@@ -133,6 +133,20 @@
   font-weight: 700;
 }
 
+.providerBadge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
 .assignmentGrid {
   display: grid;
   gap: 14px;

@@ -11,6 +11,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 from sqlalchemy import delete as sql_delete, func, select
 from sqlalchemy.orm import Session as DbSession
 
@@ -31,6 +32,7 @@ from app.modules.git_provider import (
     extract_repo_name,
     is_valid_azure_repo_url,
     is_valid_git_url,
+    normalize_azure_repo_url,
 )
 from app.modules.repository_analysis import (
     IMAGE_FILE_EXTENSIONS,
@@ -62,6 +64,13 @@ UPLOAD_DIR = Path("uploaded_repos")
 DOCUMENT_UPLOAD_DIR = Path("uploads") / "documents"
 MAX_DOCUMENT_UPLOAD_SIZE_BYTES = 100_000_000
 REPOSITORY_LEARNING_TOPIC_MARKER = "__repository_current_learning__"
+
+
+class AssignKtProviderRequest(BaseModel):
+    """Request to assign a registered contributor as a KT provider."""
+
+    contributor_email: str
+    kt_topic_id: str
 
 PROVIDER_LABELS = {
     "github": "GitHub",
@@ -489,6 +498,7 @@ def connect_repository(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Please save Azure DevOps PAT before connecting a repository.",
             )
+        payload.url = normalize_azure_repo_url(payload.url)
 
     existing_repository = db.scalar(
         select(Repository).where(
@@ -617,6 +627,8 @@ def get_my_assignments(
         repo = db.get(Repository, a.repository_id)
         topic = db.get(KTTopic, a.kt_topic_id)
         is_repository_learning = topic and topic.path_patterns == REPOSITORY_LEARNING_TOPIC_MARKER
+        if is_repository_learning or a.status == "kt_provider_assigned":
+            continue
         results.append(MyAssignmentResponse(
             assignment_id=a.id,
             repository_id=a.repository_id,
@@ -626,6 +638,35 @@ def get_my_assignments(
             kt_topic_description=None if is_repository_learning else topic.description if topic else None,
             status=a.status,
             assigned_at=a.assigned_at,
+        ))
+    return results
+
+
+@router.get("/my-kt-provider-assignments", response_model=list[MyAssignmentResponse])
+def get_my_kt_provider_assignments(
+    db: DbSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[MyAssignmentResponse]:
+    """Return KT topics the current user has been assigned to deliver."""
+    rows = db.scalars(
+        select(RepositoryAssignment).where(
+            RepositoryAssignment.learner_id == current_user.id,
+            RepositoryAssignment.status == "kt_provider_assigned",
+        )
+    ).all()
+    results = []
+    for assignment in rows:
+        repository = db.get(Repository, assignment.repository_id)
+        topic = db.get(KTTopic, assignment.kt_topic_id)
+        results.append(MyAssignmentResponse(
+            assignment_id=assignment.id,
+            repository_id=assignment.repository_id,
+            repository_name=repository.name if repository else "Unknown",
+            kt_topic_id=assignment.kt_topic_id,
+            kt_topic_title=topic.title if topic else None,
+            kt_topic_description=topic.description if topic else None,
+            status=assignment.status,
+            assigned_at=assignment.assigned_at,
         ))
     return results
 
@@ -1204,6 +1245,92 @@ def create_assignment(
         learner_email=learner.email,
         status=assignment.status,
         assigned_at=assignment.assigned_at,
+    )
+
+
+@router.post("/{repo_id}/assign-kt-provider", response_model=AssignmentResponse, status_code=status.HTTP_201_CREATED)
+def assign_kt_provider(
+    repo_id: str,
+    payload: AssignKtProviderRequest,
+    db: DbSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> AssignmentResponse:
+    """Assign a registered contributor to deliver a repository KT topic."""
+    if not is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    repository = get_owned_repository(db, repo_id, current_user.id)
+    topic = db.get(KTTopic, payload.kt_topic_id)
+    if topic is None or topic.repository_id != repo_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="KT topic not found")
+
+    email = payload.contributor_email.strip().lower()
+    provider = db.scalar(select(User).where(func.lower(User.email) == email))
+    if provider is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"No SynapseIQ account found for '{payload.contributor_email}'. "
+                "Create a learner account for this developer first."
+            ),
+        )
+    if not is_learner(provider):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The matching SynapseIQ account must have the learner role.",
+        )
+
+    existing_topic_assignment = db.scalar(
+        select(RepositoryAssignment).where(
+            RepositoryAssignment.kt_topic_id == topic.id,
+            RepositoryAssignment.learner_id == provider.id,
+        )
+    )
+    if existing_topic_assignment is not None:
+        detail = (
+            "This user is already assigned as KT provider for this topic."
+            if existing_topic_assignment.status == "kt_provider_assigned"
+            else "This user already has a learner assignment for this topic."
+        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail)
+
+    provider_assignment = RepositoryAssignment(
+        repository_id=repo_id,
+        kt_topic_id=topic.id,
+        learner_id=provider.id,
+        assigned_by=current_user.id,
+        status="kt_provider_assigned",
+    )
+    db.add(provider_assignment)
+
+    access_topic = get_or_create_repository_learning_topic(db, repository, current_user)
+    existing_access = db.scalar(
+        select(RepositoryAssignment).where(
+            RepositoryAssignment.kt_topic_id == access_topic.id,
+            RepositoryAssignment.learner_id == provider.id,
+        )
+    )
+    if existing_access is None:
+        db.add(RepositoryAssignment(
+            repository_id=repo_id,
+            kt_topic_id=access_topic.id,
+            learner_id=provider.id,
+            assigned_by=current_user.id,
+            status="assigned",
+        ))
+
+    db.commit()
+    db.refresh(provider_assignment)
+    return AssignmentResponse(
+        id=provider_assignment.id,
+        repository_id=provider_assignment.repository_id,
+        kt_topic_id=provider_assignment.kt_topic_id,
+        kt_topic_title=topic.title,
+        learner_id=provider.id,
+        learner_name=provider.name,
+        learner_email=provider.email,
+        status=provider_assignment.status,
+        assigned_at=provider_assignment.assigned_at,
     )
 
 
