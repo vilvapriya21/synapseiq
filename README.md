@@ -11,6 +11,7 @@ SynapseIQ is an AI-powered code intelligence and knowledge transfer platform for
 - [Environment Setup](#environment-setup)
 - [Backend Setup](#backend-setup)
 - [Frontend Setup](#frontend-setup)
+- [Docker Setup](#docker-setup)
 - [Database Migrations](#database-migrations)
 - [API Overview](#api-overview)
 - [Useful Commands](#useful-commands)
@@ -199,6 +200,100 @@ The frontend runs at:
 ```text
 http://localhost:5173
 ```
+
+## Docker Setup
+
+### Prerequisites
+
+- Docker Desktop or Docker Engine with Docker Compose v2
+- A configured `backend/.env` file
+- A PostgreSQL-compatible `DATABASE_URL`, such as NeonDB, unless you use the optional local Postgres profile
+- Optional: external Ollama reachable through `OLLAMA_BASE_URL`
+
+### Environment setup
+
+Create the backend environment file and fill in real values locally:
+
+```powershell
+Copy-Item backend\.env.example backend\.env
+```
+
+Do not commit `backend/.env`. The Docker images do not copy `.env` files; Compose injects backend settings at runtime through:
+
+```yaml
+env_file:
+  - backend/.env
+```
+
+For the frontend image, only public `VITE_` values are accepted at build time. By default, Compose builds with:
+
+```env
+VITE_APP_NAME=SynapseIQ
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+```
+
+### Build and start
+
+From the project root:
+
+```powershell
+docker compose build
+docker compose up -d
+```
+
+Open the app at:
+
+```text
+Frontend: http://localhost:5173
+Backend:  http://localhost:8000
+Health:   http://localhost:8000/api/v1/health
+```
+
+View logs:
+
+```powershell
+docker compose logs -f backend
+docker compose logs -f frontend
+```
+
+### Migrations
+
+Run migrations after the backend container is running:
+
+```powershell
+docker compose exec backend alembic upgrade head
+```
+
+### Optional local Postgres
+
+The default Compose setup expects `DATABASE_URL` to point at NeonDB or another external PostgreSQL-compatible database.
+
+For local development with the bundled Postgres service:
+
+```powershell
+docker compose --profile local-db up -d postgres
+```
+
+Set `DATABASE_URL` in `backend/.env` to:
+
+```env
+DATABASE_URL=postgresql+psycopg://synapseiq:synapseiq@postgres:5432/synapseiq
+```
+
+Then start the app:
+
+```powershell
+docker compose --profile local-db up -d --build
+docker compose exec backend alembic upgrade head
+```
+
+### Docker troubleshooting
+
+- If the backend is unhealthy, check `DATABASE_URL`, `JWT_SECRET_KEY`, and `LLM_PROVIDER` in `backend/.env`.
+- If `LLM_PROVIDER=groq`, set `GROQ_API_KEY`; otherwise use `LLM_PROVIDER=ollama` and a reachable `OLLAMA_BASE_URL`.
+- If the frontend cannot call the API, confirm `VITE_API_BASE_URL` points to the browser-accessible backend URL and `BACKEND_CORS_ORIGINS` includes the frontend origin, such as `http://localhost:5173`.
+- If repository indexing fails, check backend logs. The backend image includes `git` for repository analysis.
+- If OAuth callbacks fail in Docker, make sure provider callback URLs match the backend URL exposed to your browser.
 
 ## Database Migrations
 
