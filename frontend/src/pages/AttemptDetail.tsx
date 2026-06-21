@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import AttemptResultView from "../components/AttemptResultView";
-import { PageHero } from "../components/common";
+import { BackLink, PageHero } from "../components/common";
 import { assessmentService, type AttemptResult } from "../services/assessmentService";
 import styles from "./AttemptDetail.module.css";
 
 function AttemptDetail() {
+  const navigate = useNavigate();
   const { attemptId, assessmentId } = useParams();
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,7 +47,10 @@ function AttemptDetail() {
 
   return (
     <div className={styles.page}>
-      <PageHero eyebrow="Attempt Detail" heading="Assessment Result" />
+      <PageHero
+        eyebrowContent={<BackLink onClick={() => navigate(-1)} />}
+        heading="Assessment Result"
+      />
       <AttemptResultView result={result} />
     </div>
   );

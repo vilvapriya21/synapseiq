@@ -13,7 +13,6 @@ import AssessmentBuilder from "../pages/AssessmentBuilder";
 import AssessmentResults from "../pages/AssessmentResults";
 import AssessmentsPage from "../pages/Assessments";
 import AttemptDetail from "../pages/AttemptDetail";
-import ResultsPage from "../pages/Results";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
 import { ROUTES } from "./routePaths";
@@ -32,7 +31,6 @@ function AppRoutes() {
           <Route path={ROUTES.projectWorkspace} element={<ProjectPage />} />
           <Route path={ROUTES.assessments} element={<AssessmentsPage />} />
           <Route path={ROUTES.project} element={<ProjectPage />} />
-          <Route path={ROUTES.projectResults} element={<ResultsPage />} />
           <Route path={ROUTES.repositories} element={<RepositoriesPage />} />
           <Route path={ROUTES.repositoryDetail} element={<RepositoryPage />} />
 

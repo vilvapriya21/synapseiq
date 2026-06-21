@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ConfirmDialog } from "../components/common";
+import { BackLink, ConfirmDialog } from "../components/common";
 import { PageHero } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
 import { getUsers, type AdminUser } from "../services/adminService";
@@ -235,7 +235,10 @@ function AssessmentBuilder() {
 
   return (
     <div className={styles.page}>
-      <PageHero eyebrow="Assessment Builder" heading="Manage Assessment" />
+      <PageHero
+        eyebrowContent={<BackLink label="Back to Repository" onClick={() => navigate(ROUTES.repository.replace(":repoId", repoId || ""))} />}
+        heading="Manage Assessment"
+      />
 
       {error ? <div className={styles.state}>{error}</div> : null}
 

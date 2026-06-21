@@ -1,0 +1,22 @@
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: none;
+  transition: color var(--transition-fast);
+}
+
+.backLink:hover,
+.backLink:focus-visible {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}

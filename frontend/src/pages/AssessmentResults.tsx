@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { PageHero } from "../components/common";
+import { BackLink, PageHero } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
 import { assessmentService, type LearnerAttemptSummary } from "../services/assessmentService";
 import styles from "./AssessmentResults.module.css";
@@ -42,14 +42,9 @@ function AssessmentResults() {
 
   const stats = useMemo(() => {
     const submitted = results.filter((result) => result.submitted_at && result.score_percentage !== null);
-    const average = submitted.length
-      ? Math.round(submitted.reduce((total, result) => total + (result.score_percentage || 0), 0) / submitted.length)
-      : 0;
-    const passed = submitted.filter((result) => (result.score_percentage || 0) >= 70).length;
     return {
-      average,
       totalSubmitted: submitted.length,
-      passRate: submitted.length ? Math.round((passed / submitted.length) * 100) : 0,
+      totalAttempts: results.length,
     };
   }, [results]);
 
@@ -63,12 +58,16 @@ function AssessmentResults() {
 
   return (
     <div className={styles.page}>
-      <PageHero eyebrow="Assessment Results" heading="Learner Results" />
+      <PageHero
+        eyebrowContent={<BackLink label="Back to Assessments" onClick={() => navigate(ROUTES.assessments)} />}
+        heading="Assessment Results"
+      />
 
       <section className={styles.stats}>
-        <article><span>Average Score</span><strong>{stats.average}%</strong></article>
-        <article><span>Pass Rate</span><strong>{stats.passRate}%</strong></article>
-        <article><span>Total Submitted</span><strong>{stats.totalSubmitted}</strong></article>
+        <article>
+          <span>Total Submitted</span>
+          <span><strong>{stats.totalSubmitted} / {stats.totalAttempts}</strong> Completed</span>
+        </article>
       </section>
 
       <section className={styles.panel}>

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Clock, Send } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import AttemptResultView from "../components/AttemptResultView";
-import { Button, EmptyState, Modal, PageHero } from "../components/common";
+import { BackLink, Button, EmptyState, Modal, PageHero } from "../components/common";
 import { ROUTES } from "../routes/routePaths";
 import {
   assessmentService,
@@ -140,7 +140,7 @@ function AssessmentPage() {
     return (
       <div className={styles.page}>
         <PageHero
-          eyebrow={assessment.title}
+          eyebrowContent={<BackLink label="Back to Assessments" onClick={() => { resetAttempt(); navigate(ROUTES.assessments); }} />}
           heading="Assessment Result"
           action={
             <Button type="button" variant="secondary" onClick={() => { resetAttempt(); navigate(ROUTES.assessments); }}>
@@ -160,7 +160,7 @@ function AssessmentPage() {
   return (
     <div className={styles.page}>
       <PageHero
-        eyebrow="Assigned Assessment"
+        eyebrowContent={<BackLink label="Back to Assessments" onClick={() => navigate(ROUTES.assessments)} />}
         heading={assessment.title}
         action={
           <div className={styles.timer}>

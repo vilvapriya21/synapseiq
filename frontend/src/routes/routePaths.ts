@@ -15,5 +15,4 @@ export const ROUTES = {
   attemptDetail: "/assessment/attempts/:attemptId",
   project: "/project/:projectId",
   projectAssessment: "/project/:projectId/assessment",
-  projectResults: "/project/:projectId/results",
 } as const;
