@@ -1,5 +1,6 @@
 """Thin wrappers around configured LLM providers for chat and analysis completions."""
 
+import time
 from typing import Protocol
 
 import httpx
@@ -53,18 +54,55 @@ class GroqProvider:
         }
         headers = {"Authorization": f"Bearer {settings.groq_api_key}"}
 
-        try:
-            response = httpx.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=25,
-            )
-        except httpx.HTTPError as exc:
-            raise LLMError(f"Groq request failed: {exc.__class__.__name__}") from exc
+        response: httpx.Response | None = None
+        compacted_for_size = False
+        retryable_statuses = {429, 500, 502, 503, 504}
+        for attempt in range(3):
+            try:
+                response = httpx.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    timeout=httpx.Timeout(45, connect=10),
+                )
+            except (httpx.TimeoutException, httpx.NetworkError) as exc:
+                if attempt < 2:
+                    time.sleep(0.5 * (2 ** attempt))
+                    continue
+                raise LLMError("Groq is temporarily unreachable. Please try again shortly.") from exc
+            except httpx.HTTPError as exc:
+                raise LLMError(f"Groq request failed: {exc.__class__.__name__}") from exc
 
+            if response.status_code == 200:
+                break
+            if response.status_code == 413 and not compacted_for_size and attempt < 2:
+                # Preserve the grounding rules and the beginning of context, where
+                # exact filename matches are placed, while dropping older history.
+                payload["messages"][0]["content"] = system_prompt[:5_500] + "\n...(context compacted)"
+                payload["messages"][1]["content"] = user_prompt[-1_200:]
+                payload["max_tokens"] = min(max_tokens, 512)
+                compacted_for_size = True
+                continue
+            if response.status_code in retryable_statuses and attempt < 2:
+                retry_after = response.headers.get("retry-after")
+                try:
+                    delay = min(float(retry_after), 3.0) if retry_after else 0.5 * (2 ** attempt)
+                except ValueError:
+                    delay = 0.5 * (2 ** attempt)
+                time.sleep(delay)
+                continue
+            break
+
+        if response is None:
+            raise LLMError("Groq did not return a response.")
+        if response.status_code in {401, 403}:
+            raise LLMError("Groq authentication failed. Check GROQ_API_KEY.")
+        if response.status_code == 429:
+            raise LLMError("Groq rate limit reached. Please try again shortly.")
+        if response.status_code == 413:
+            raise LLMError("The request is still too large for Groq after automatic compaction. Start a new chat and try again.")
         if response.status_code != 200:
-            raise LLMError(f"Groq request failed with status {response.status_code}.")
+            raise LLMError(f"Groq is unavailable (status {response.status_code}). Please try again shortly.")
 
         try:
             return response.json()["choices"][0]["message"]["content"]

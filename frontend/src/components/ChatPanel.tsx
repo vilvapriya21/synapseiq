@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { Fragment, FormEvent, ReactNode, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { EmptyState, Loader } from "./common";
 import { getChatHistory, postChatMessage, type ChatMessage } from "../services/repositoryService";
@@ -8,13 +8,54 @@ interface ChatPanelProps {
   repoId: string;
 }
 
+function renderInlineMarkdown(value: string): ReactNode[] {
+  return value.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).filter(Boolean).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return <code className={styles.inlineCode} key={index}>{part.slice(1, -1)}</code>;
+    }
+    return <Fragment key={index}>{part}</Fragment>;
+  });
+}
+
+function FormattedAssistantMessage({ content }: { content: string }) {
+  return (
+    <div className={styles.formattedMessage}>
+      {content.split(/\r?\n/).map((line, index) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <div className={styles.messageSpacer} key={index} />;
+
+        const markdownHeading = trimmed.match(/^#{1,3}\s+(.+)$/);
+        const boldHeading = trimmed.match(/^\*\*([^*]+)\*\*$/);
+        if (markdownHeading || boldHeading) {
+          return <h3 key={index}>{renderInlineMarkdown(markdownHeading?.[1] ?? boldHeading?.[1] ?? "")}</h3>;
+        }
+
+        const bullet = trimmed.match(/^[-*]\s+(.+)$/);
+        if (bullet) {
+          return <div className={styles.listItem} key={index}><span aria-hidden="true">•</span><div>{renderInlineMarkdown(bullet[1])}</div></div>;
+        }
+
+        const numbered = trimmed.match(/^(\d+)\.\s+(.+)$/);
+        if (numbered) {
+          return <div className={styles.listItem} key={index}><span>{numbered[1]}.</span><div>{renderInlineMarkdown(numbered[2])}</div></div>;
+        }
+
+        return <p key={index}>{renderInlineMarkdown(trimmed)}</p>;
+      })}
+    </div>
+  );
+}
+
 function getChatErrorMessage(error: unknown) {
   if (axios.isAxiosError(error)) {
     if (error.response?.status === 409) {
       return "Knowledge base is still building. Try again once analysis is ready.";
     }
     if (error.response?.status === 503) {
-      return "AI assistant unavailable. Check the configured LLM provider and try again.";
+      return error.response?.data?.detail || "AI assistant unavailable. Check the configured LLM provider and try again.";
     }
   }
   return "Unable to reach the assistant right now.";
@@ -119,7 +160,7 @@ function ChatPanel({ repoId }: ChatPanelProps) {
             className={`${styles.messageRow} ${message.role === "user" ? styles.userRow : styles.assistantRow}`}
           >
             <div className={`${styles.messageBubble} ${message.role === "user" ? styles.userBubble : styles.assistantBubble}`}>
-              {message.content}
+              {message.role === "assistant" ? <FormattedAssistantMessage content={message.content} /> : message.content}
             </div>
             {message.role === "assistant" && message.sources?.length ? (
               <div className={styles.sources}>

@@ -25,7 +25,26 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 HISTORY_LIMIT = 50
-CONTEXT_TURNS_FOR_PROMPT = 6
+CONTEXT_TURNS_FOR_PROMPT = 3
+MAX_HISTORY_CHARS = 1_200
+
+
+def build_bounded_history(messages: list[ChatMessage]) -> str:
+    """Build recent chat history without exceeding the LLM input budget."""
+    selected: list[str] = []
+    remaining = MAX_HISTORY_CHARS
+    for message in reversed(messages):
+        role = "User" if message.role == "user" else "Assistant"
+        line = f"{role}: {message.content}"
+        if len(line) > remaining:
+            if remaining >= 100:
+                selected.append(line[:remaining] + "...(truncated)")
+            break
+        selected.append(line)
+        remaining -= len(line) + 1
+        if remaining <= 0:
+            break
+    return "\n".join(reversed(selected))
 
 
 @router.get("/{repo_id}/chat", response_model=ChatHistoryResponse)
@@ -114,9 +133,7 @@ def post_chat_message(
         .limit(CONTEXT_TURNS_FOR_PROMPT)
     ).all()
     recent_in_order = list(reversed(recent))[:-1]
-    history_text = "\n".join(
-        f"{'User' if message.role == 'user' else 'Assistant'}: {message.content}" for message in recent_in_order
-    )
+    history_text = build_bounded_history(recent_in_order)
 
     try:
         answer_text, sources = answer_question(

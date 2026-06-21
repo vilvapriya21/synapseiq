@@ -63,6 +63,8 @@ IMAGE_FILE_EXTENSIONS = {
 
 MAX_TEXT_FILE_BYTES = 500_000
 MAX_IMAGE_FILE_BYTES = 5_000_000
+MAX_RAG_SOURCE_FILE_BYTES = 100_000
+MAX_RAG_SOURCE_TOTAL_BYTES = 5_000_000
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 REPOSITORY_STORAGE_DIR = BACKEND_DIR / "uploads" / "repositories"
 
@@ -502,6 +504,35 @@ def build_knowledge_base(repository: Repository, root: Path, file_paths: list[Pa
                         language=repository.language,
                     )
                 )
+
+        # Signatures support broad search, but file-specific Q&A needs actual
+        # implementation bodies. Bound both individual and repository totals.
+        indexed_source_bytes = 0
+        for file_path in file_paths:
+            if file_path.suffix.lower() not in LANGUAGE_EXTENSIONS:
+                continue
+            try:
+                file_size = file_path.stat().st_size
+                if file_size > MAX_RAG_SOURCE_FILE_BYTES:
+                    continue
+                if indexed_source_bytes + file_size > MAX_RAG_SOURCE_TOTAL_BYTES:
+                    break
+                source = file_path.read_text(encoding="utf-8", errors="ignore")
+            except (OSError, UnicodeError):
+                continue
+            if not source.strip():
+                continue
+            relative_path = str(file_path.relative_to(root)).replace("\\", "/")
+            db.add(
+                KnowledgeBase(
+                    repository_id=repository.id,
+                    entry_type="source_file",
+                    file_path=relative_path,
+                    content=source,
+                    language=LANGUAGE_EXTENSIONS.get(file_path.suffix.lower()),
+                )
+            )
+            indexed_source_bytes += len(source.encode("utf-8"))
 
         repository.knowledge_base_status = "ready"
         db.commit()
