@@ -4,9 +4,9 @@ This repo deploys from GitHub to the Docker Compose application on:
 
 - Server: `62.72.30.227`
 - App path: `/home/amisha/synapseiq`
-- Frontend: `http://62.72.30.227:5173`
-- Backend: `http://62.72.30.227:8000`
-- Health: `http://62.72.30.227:8000/api/v1/health`
+- Frontend: `http://62.72.30.227:15173`
+- Backend: `http://62.72.30.227:18000`
+- Health: `http://62.72.30.227:18000/api/v1/health`
 
 The workflow file is `.github/workflows/deploy.yml`. It runs on every push to `main` and can also be started manually from GitHub Actions.
 
@@ -47,8 +47,8 @@ docker ps
 Open the required ports if a firewall is enabled:
 
 ```bash
-sudo ufw allow 5173/tcp
-sudo ufw allow 8000/tcp
+sudo ufw allow 15173/tcp
+sudo ufw allow 18000/tcp
 ```
 
 ## GitHub secrets and variables
@@ -71,11 +71,12 @@ DEPLOY_HOST=62.72.30.227
 DEPLOY_PORT=22
 DEPLOY_USER=root
 DEPLOY_PATH=/home/amisha/synapseiq
+FRONTEND_PORT=15173
+BACKEND_PORT=18000
 VITE_APP_NAME=SynapseIQ
-VITE_API_BASE_URL=http://62.72.30.227:8000/api/v1
 ```
 
-The workflow already has defaults for the optional variables above.
+The workflow already has defaults for the optional variables above. It builds the frontend API URL from `DEPLOY_HOST` and `BACKEND_PORT`.
 
 ## SSH password setup
 
@@ -101,7 +102,7 @@ APP_ENV=development
 API_V1_PREFIX=/api/v1
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=60
-BACKEND_CORS_ORIGINS=["http://localhost:5173","http://62.72.30.227:5173"]
+BACKEND_CORS_ORIGINS=["http://localhost:5173","http://62.72.30.227:15173"]
 LLM_PROVIDER=groq
 GROQ_MODEL=llama-3.3-70b-versatile
 OLLAMA_BASE_URL=http://192.168.1.81:11434
@@ -155,7 +156,9 @@ For manual server testing:
 cd /home/amisha/synapseiq
 cat > .env <<'EOF'
 VITE_APP_NAME=SynapseIQ
-VITE_API_BASE_URL=http://62.72.30.227:8000/api/v1
+VITE_API_BASE_URL=http://62.72.30.227:18000/api/v1
+FRONTEND_PORT=15173
+BACKEND_PORT=18000
 EOF
 
 docker compose up -d --build
@@ -165,9 +168,9 @@ docker compose exec backend alembic upgrade head
 Open:
 
 ```text
-Frontend: http://62.72.30.227:5173
-Backend:  http://62.72.30.227:8000
-Health:   http://62.72.30.227:8000/api/v1/health
+Frontend: http://62.72.30.227:15173
+Backend:  http://62.72.30.227:18000
+Health:   http://62.72.30.227:18000/api/v1/health
 ```
 
 ## Important security note

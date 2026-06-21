@@ -15,8 +15,10 @@ env:
   DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
   DEPLOY_USER: ${{ vars.DEPLOY_USER || 'root' }}
   DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/home/amisha/synapseiq' }}
+  FRONTEND_PORT: ${{ vars.FRONTEND_PORT || '15173' }}
+  BACKEND_PORT: ${{ vars.BACKEND_PORT || '18000' }}
   VITE_APP_NAME: ${{ vars.VITE_APP_NAME || 'SynapseIQ' }}
-  VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'http://62.72.30.227:8000/api/v1' }}
+  VITE_API_BASE_URL: http://${{ vars.DEPLOY_HOST || '62.72.30.227' }}:${{ vars.BACKEND_PORT || '18000' }}/api/v1
 
 jobs:
   deploy:
@@ -55,12 +57,15 @@ jobs:
             -o PubkeyAuthentication=no \
             -p "$DEPLOY_PORT" \
             "$DEPLOY_USER@$DEPLOY_HOST" \
-            'bash -s' -- "$DEPLOY_PATH" "$VITE_APP_NAME" "$VITE_API_BASE_URL" <<'REMOTE'
+            'bash -s' -- "$DEPLOY_PATH" "$VITE_APP_NAME" "$VITE_API_BASE_URL" "$FRONTEND_PORT" "$BACKEND_PORT" "$DEPLOY_HOST" <<'REMOTE'
           set -euo pipefail
 
           DEPLOY_PATH="${1:?DEPLOY_PATH is required}"
           VITE_APP_NAME="${2:?VITE_APP_NAME is required}"
           VITE_API_BASE_URL="${3:?VITE_API_BASE_URL is required}"
+          FRONTEND_PORT="${4:?FRONTEND_PORT is required}"
+          BACKEND_PORT="${5:?BACKEND_PORT is required}"
+          DEPLOY_HOST="${6:?DEPLOY_HOST is required}"
 
           cd "$DEPLOY_PATH"
 
@@ -73,10 +78,15 @@ jobs:
           cat > backend/.env <<'BACKEND_ENV'
           ${{ secrets.BACKEND_ENV }}
           BACKEND_ENV
+          cat >> backend/.env <<BACKEND_RUNTIME_ENV
+          BACKEND_CORS_ORIGINS=["http://localhost:5173","http://${DEPLOY_HOST}:${FRONTEND_PORT}"]
+          BACKEND_RUNTIME_ENV
 
           cat > .env <<COMPOSE_ENV
           VITE_APP_NAME=${VITE_APP_NAME}
           VITE_API_BASE_URL=${VITE_API_BASE_URL}
+          FRONTEND_PORT=${FRONTEND_PORT}
+          BACKEND_PORT=${BACKEND_PORT}
           COMPOSE_ENV
 
           docker compose down --remove-orphans
@@ -89,5 +99,5 @@ jobs:
 
       - name: Verify public endpoints
         run: |
-          curl --fail --retry 12 --retry-delay 5 --retry-all-errors "http://${DEPLOY_HOST}:8000/api/v1/health"
-          curl --fail --retry 12 --retry-delay 5 --retry-all-errors "http://${DEPLOY_HOST}:5173/"
+          curl --fail --retry 12 --retry-delay 5 --retry-all-errors "http://${DEPLOY_HOST}:${BACKEND_PORT}/api/v1/health"
+          curl --fail --retry 12 --retry-delay 5 --retry-all-errors "http://${DEPLOY_HOST}:${FRONTEND_PORT}/"

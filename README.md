@@ -346,7 +346,7 @@ docker compose exec backend alembic upgrade head
 
 GitHub Actions deployment is configured in `.github/workflows/deploy.yml`.
 
-On every push to `main`, the workflow connects to the Linux server with password SSH, updates `/home/amisha/synapseiq`, writes `backend/.env` from the `BACKEND_ENV` GitHub secret, builds the Docker images, restarts Docker Compose, runs Alembic migrations, and checks the public frontend and backend health URLs.
+On every push to `main`, the workflow connects to the Linux server with password SSH, updates `/home/amisha/synapseiq`, writes `backend/.env` from the `BACKEND_ENV` GitHub secret, builds the Docker images, restarts Docker Compose, runs Alembic migrations, and checks the public frontend and backend health URLs. Server deployment defaults to frontend port `15173` and backend port `18000`.
 
 Full setup instructions are in [docs/ci-cd-deployment.md](docs/ci-cd-deployment.md).
 
