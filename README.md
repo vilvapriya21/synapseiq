@@ -5,15 +5,20 @@ SynapseIQ is an AI-powered code intelligence and knowledge transfer platform for
 ## Table of Contents
 
 - [Features](#features)
+- [User Roles and Usage Flow](#user-roles-and-usage-flow)
 - [Tech Stack](#tech-stack)
+- [Architecture Documentation](#architecture-documentation)
+- [Project Documentation](#project-documentation)
 - [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
 - [Environment Setup](#environment-setup)
+- [Security Notes](#security-notes)
 - [Backend Setup](#backend-setup)
 - [Frontend Setup](#frontend-setup)
 - [Docker Setup](#docker-setup)
 - [Database Migrations](#database-migrations)
 - [API Overview](#api-overview)
+- [Testing and Validation](#testing-and-validation)
 - [Useful Commands](#useful-commands)
 - [Troubleshooting](#troubleshooting)
 
@@ -28,6 +33,26 @@ SynapseIQ is an AI-powered code intelligence and knowledge transfer platform for
 - AI chat over repository knowledge with saved chat history.
 - Assessment generation, assignment, active assessment views, submissions, results, and attempt detail pages.
 - Dashboard and workspace screens for navigating projects, repositories, assessments, and results.
+
+## User Roles and Usage Flow
+
+### Administrator Flow
+
+1. Login with an administrator account.
+2. Connect a repository through GitHub, GitLab, Bitbucket, Azure DevOps PAT, or ZIP upload.
+3. Start repository indexing so SynapseIQ can analyze files, contributors, and knowledge sources.
+4. View the repository workspace, contributor insights, file inventory, and generated knowledge base.
+5. Create KT topics, assign learners, and manage checklist items for repository knowledge transfer.
+6. Create and assign assessments where applicable to validate learner understanding.
+
+### Learner Flow
+
+1. Login with a learner account.
+2. Open the Project Workspace.
+3. View only assigned repositories and assigned KT topics.
+4. Complete KT checklist activities for assigned topics.
+5. Use the repository AI chatbot to understand code, files, and domain context.
+6. View assigned assessments and results where applicable.
 
 ## Tech Stack
 
@@ -52,6 +77,20 @@ SynapseIQ is an AI-powered code intelligence and knowledge transfer platform for
 - Passlib and bcrypt password hashing
 - PyGithub, GitPython, httpx, chardet, and scikit-learn
 - Groq or Ollama-backed LLM workflows
+
+## Architecture Documentation
+
+The technical architecture is documented in [docs/Technical_Architecture_Blueprint.docx](docs/Technical_Architecture_Blueprint.docx).
+
+The architecture covers the React/Vite frontend, FastAPI backend, PostgreSQL/NeonDB persistence, repository analysis pipeline, TF-IDF semantic search, Ollama/Groq LLM integration, JWT authentication, and Docker deployment.
+
+## Project Documentation
+
+- [Product Requirements Document](docs/PRD.docx)
+- [Technical Architecture Blueprint](docs/Technical_Architecture_Blueprint.docx)
+- [Project Plan](docs/Project_Plan.docx)
+- [AI Usage Summary and Metrics](docs/AI_Usage_Summary_and_Metrics.docx)
+- [Testing and Validation Report](docs/Testing_and_Validation_Report.docx)
 
 ## Project Structure
 
@@ -140,7 +179,7 @@ LLM_PROVIDER=ollama
 GROQ_API_KEY=
 GROQ_MODEL=llama-3.3-70b-versatile
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.1
+OLLAMA_MODEL=qwen2.5-coder:14b
 OLLAMA_TIMEOUT_SECONDS=500
 ```
 
@@ -159,6 +198,13 @@ Important notes:
 VITE_APP_NAME=SynapseIQ
 VITE_API_BASE_URL=http://localhost:8000/api/v1
 ```
+
+## Security Notes
+
+- Never commit `.env` files, PATs, API keys, database URLs, OAuth client secrets, or other credentials.
+- Use `.env.example` files as templates only.
+- Production secrets must come from secure deployment settings or CI/CD secret storage.
+- Azure DevOps PATs should use the minimum permissions required for repository access.
 
 ## Backend Setup
 
@@ -343,6 +389,21 @@ Most application routes require a bearer token:
 Authorization: Bearer <token>
 ```
 
+## Testing and Validation
+
+Test evidence and validation notes are documented in [docs/Testing_and_Validation_Report.docx](docs/Testing_and_Validation_Report.docx).
+
+Validation scenarios include:
+
+- Authentication and role-based access.
+- Repository onboarding for GitHub, GitLab, Bitbucket, Azure DevOps PAT, and ZIP upload.
+- Repository indexing and knowledge-base generation.
+- Admin and learner Project Workspace access.
+- KT topic assignment and checklist completion.
+- Contributor analysis.
+- Repository AI chatbot.
+- Docker Compose startup and health endpoint validation.
+
 ## Useful Commands
 
 Run a frontend production build:
@@ -429,7 +490,7 @@ GROQ_API_KEY=your-groq-api-key
 Make sure Ollama is running and the configured model is available:
 
 ```powershell
-ollama pull llama3.1
+ollama pull qwen2.5-coder:14b
 ollama serve
 ```
 
