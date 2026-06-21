@@ -12,9 +12,15 @@ def configure_cors(app: FastAPI) -> None:
     Args:
         app: app value used by the operation.
     """
+    configured_origins = [str(origin).rstrip("/") for origin in settings.backend_cors_origins]
+    development_origin_regex = None
+    if settings.app_env.lower() in {"development", "dev", "local"}:
+        development_origin_regex = r"https?://(?:localhost|127\.0\.0\.1)(?::\d+)?"
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.backend_cors_origins],
+        allow_origins=configured_origins,
+        allow_origin_regex=development_origin_regex,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
