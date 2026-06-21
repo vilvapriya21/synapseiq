@@ -6,7 +6,7 @@ services:
     env_file:
       - backend/.env
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     restart: unless-stopped
     healthcheck:
       test:
@@ -29,7 +29,7 @@ services:
         VITE_APP_NAME: ${VITE_APP_NAME:-SynapseIQ}
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
     ports:
-      - "5173:80"
+      - "${FRONTEND_PORT:-5173}:80"
     depends_on:
       backend:
         condition: service_healthy
@@ -48,6 +48,7 @@ services:
     environment:
       POSTGRES_DB: synapseiq
       POSTGRES_USER: synapseiq
+      # Local development only. Do not use this password in production.
       POSTGRES_PASSWORD: synapseiq
     volumes:
       - postgres_data:/var/lib/postgresql/data
