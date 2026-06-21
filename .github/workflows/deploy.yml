@@ -1,0 +1,92 @@
+name: Deploy SynapseIQ
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: synapseiq-production
+  cancel-in-progress: true
+
+env:
+  DEPLOY_HOST: ${{ vars.DEPLOY_HOST || '62.72.30.227' }}
+  DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
+  DEPLOY_USER: ${{ vars.DEPLOY_USER || 'root' }}
+  DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/home/amisha/synapseiq' }}
+  VITE_APP_NAME: ${{ vars.VITE_APP_NAME || 'SynapseIQ' }}
+  VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'http://62.72.30.227:8000/api/v1' }}
+
+jobs:
+  deploy:
+    name: Build and restart Docker Compose on server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check required secrets
+        env:
+          HAS_DEPLOY_SSH_PASSWORD: ${{ secrets.DEPLOY_SSH_PASSWORD != '' }}
+          HAS_BACKEND_ENV: ${{ secrets.BACKEND_ENV != '' }}
+        run: |
+          if [ "$HAS_DEPLOY_SSH_PASSWORD" != "true" ]; then
+            echo "Missing DEPLOY_SSH_PASSWORD secret"
+            exit 1
+          fi
+
+          if [ "$HAS_BACKEND_ENV" != "true" ]; then
+            echo "Missing BACKEND_ENV secret"
+            exit 1
+          fi
+
+      - name: Install SSH password client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy
+        env:
+          SSHPASS: ${{ secrets.DEPLOY_SSH_PASSWORD }}
+        run: |
+          sshpass -e ssh \
+            -o PreferredAuthentications=password \
+            -o PubkeyAuthentication=no \
+            -p "$DEPLOY_PORT" \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            'bash -s' -- "$DEPLOY_PATH" "$VITE_APP_NAME" "$VITE_API_BASE_URL" <<'REMOTE'
+          set -euo pipefail
+
+          DEPLOY_PATH="${1:?DEPLOY_PATH is required}"
+          VITE_APP_NAME="${2:?VITE_APP_NAME is required}"
+          VITE_API_BASE_URL="${3:?VITE_API_BASE_URL is required}"
+
+          cd "$DEPLOY_PATH"
+
+          git config --global --add safe.directory "$DEPLOY_PATH"
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+
+          mkdir -p backend
+          cat > backend/.env <<'BACKEND_ENV'
+          ${{ secrets.BACKEND_ENV }}
+          BACKEND_ENV
+
+          cat > .env <<COMPOSE_ENV
+          VITE_APP_NAME=${VITE_APP_NAME}
+          VITE_API_BASE_URL=${VITE_API_BASE_URL}
+          COMPOSE_ENV
+
+          docker compose build --pull
+          docker compose up -d --remove-orphans
+          docker compose exec -T backend alembic upgrade head
+          docker compose ps
+          docker image prune -f
+          REMOTE
+
+      - name: Verify public endpoints
+        run: |
+          curl --fail --retry 12 --retry-delay 5 --retry-all-errors "http://${DEPLOY_HOST}:8000/api/v1/health"
+          curl --fail --retry 12 --retry-delay 5 --retry-all-errors "http://${DEPLOY_HOST}:5173/"

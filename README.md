@@ -16,6 +16,7 @@ SynapseIQ is an AI-powered code intelligence and knowledge transfer platform for
 - [Backend Setup](#backend-setup)
 - [Frontend Setup](#frontend-setup)
 - [Docker Setup](#docker-setup)
+- [CI/CD Deployment](#cicd-deployment)
 - [Database Migrations](#database-migrations)
 - [API Overview](#api-overview)
 - [Testing and Validation](#testing-and-validation)
@@ -340,6 +341,14 @@ docker compose exec backend alembic upgrade head
 - If the frontend cannot call the API, confirm `VITE_API_BASE_URL` points to the browser-accessible backend URL and `BACKEND_CORS_ORIGINS` includes the frontend origin, such as `http://localhost:5173`.
 - If repository indexing fails, check backend logs. The backend image includes `git` for repository analysis.
 - If OAuth callbacks fail in Docker, make sure provider callback URLs match the backend URL exposed to your browser.
+
+## CI/CD Deployment
+
+GitHub Actions deployment is configured in `.github/workflows/deploy.yml`.
+
+On every push to `main`, the workflow connects to the Linux server with password SSH, updates `/home/amisha/synapseiq`, writes `backend/.env` from the `BACKEND_ENV` GitHub secret, builds the Docker images, restarts Docker Compose, runs Alembic migrations, and checks the public frontend and backend health URLs.
+
+Full setup instructions are in [docs/ci-cd-deployment.md](docs/ci-cd-deployment.md).
 
 ## Database Migrations
 
