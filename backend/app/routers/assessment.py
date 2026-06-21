@@ -676,17 +676,28 @@ def start_attempt(
     assessment = _get_assessment_or_404(db, assessment_id)
     _require_assigned_learner(assessment, current_user)
 
-    existing = db.scalar(
+    submitted_attempt = db.scalar(
         select(AssessmentAttempt).where(
             AssessmentAttempt.assessment_id == assessment_id,
             AssessmentAttempt.learner_id == current_user.id,
+            AssessmentAttempt.submitted_at.isnot(None),
         )
+        .order_by(AssessmentAttempt.submitted_at.desc())
     )
-    if existing is not None and existing.submitted_at is not None:
+    if submitted_attempt is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="You have already completed this assessment.",
         )
+
+    existing = db.scalar(
+        select(AssessmentAttempt).where(
+            AssessmentAttempt.assessment_id == assessment_id,
+            AssessmentAttempt.learner_id == current_user.id,
+            AssessmentAttempt.submitted_at.is_(None),
+        )
+        .order_by(AssessmentAttempt.started_at.desc())
+    )
     if existing is not None:
         return {
             "attempt_id": existing.id,
@@ -844,10 +855,11 @@ def get_my_result(
         .where(
             AssessmentAttempt.assessment_id == assessment_id,
             AssessmentAttempt.learner_id == current_user.id,
+            AssessmentAttempt.submitted_at.isnot(None),
         )
-        .order_by(AssessmentAttempt.started_at.desc())
+        .order_by(AssessmentAttempt.submitted_at.desc())
     )
-    if attempt is None or attempt.submitted_at is None:
+    if attempt is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Result not found")
 
     return _build_attempt_result(db, attempt)
