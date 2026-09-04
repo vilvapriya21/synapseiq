@@ -1,6 +1,21 @@
+"""Top-level API router that mounts versioned API endpoints."""
+
 from fastapi import APIRouter
 
 from app.api.v1 import health
+from app.routers import admin, assessment, auth, chat, dashboard, github_auth, kt_topic, repository
 
 api_router = APIRouter()
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
+api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 api_router.include_router(health.router, prefix="/health", tags=["health"])
+api_router.include_router(github_auth.router, tags=["github-auth"])
+api_router.include_router(repository.router, prefix="/repositories", tags=["repositories"])
+api_router.include_router(chat.router, prefix="/repositories", tags=["chat"])
+api_router.include_router(
+    kt_topic.router,
+    prefix="/repositories/{repo_id}/kt-topics",
+    tags=["kt-topics"],
+)
+api_router.include_router(assessment.router, prefix="/assessment", tags=["assessment"])

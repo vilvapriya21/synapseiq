@@ -1,0 +1,336 @@
+.page {
+  display: grid;
+  gap: 22px;
+}
+
+.hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.heading {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-3xl);
+  line-height: 1.15;
+}
+
+.subtitle {
+  max-width: 620px;
+  margin: 8px 0 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+}
+
+.toolbar,
+.section,
+.repoCard,
+.stateCard,
+.skeletonCard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  padding: 18px 20px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 14px;
+}
+
+.section {
+  display: grid;
+  gap: 14px;
+}
+
+.sectionHeader {
+  color: var(--color-text);
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  margin: 0 0 14px;
+}
+
+.muted {
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}
+
+.searchBox {
+  min-width: min(420px, 100%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  padding: 0 13px;
+}
+
+.searchBox span {
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.searchBox input {
+  width: 100%;
+  min-height: 42px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.searchBox input::placeholder {
+  color: var(--color-muted);
+}
+
+.count {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.statsGrid,
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-3);
+}
+
+.statCard,
+.metaGrid div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  padding: 11px 12px;
+}
+
+.statCard span,
+.metaGrid span {
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.statCard strong,
+.metaGrid strong {
+  min-width: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list {
+  display: grid;
+  gap: 14px;
+}
+
+.repoCard {
+  display: grid;
+  gap: 18px;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.repoCard:hover,
+.repoCard:focus-visible {
+  border-color: var(--color-primary-soft-hover);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.1);
+  transform: translateY(-1px);
+  outline: 0;
+}
+
+.repoMain,
+.cardFooter,
+.actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.repoMain h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-xl);
+}
+
+.repoMain p,
+.cardFooter p {
+  margin: 6px 0 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: calc(var(--radius-lg) * 999);
+  padding: 4px 11px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.indexed {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.indexing {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+
+.error {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.pending {
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.cardFooter {
+  align-items: center;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-4);
+}
+
+.primaryButton,
+.viewButton {
+  min-height: 38px;
+  border: 1px solid var(--color-primary-hover);
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-hover);
+  color: var(--color-surface);
+  cursor: pointer;
+  padding: 0 16px;
+  font-weight: 600;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.primaryButton:hover,
+.viewButton:hover,
+.primaryButton:focus-visible,
+.viewButton:focus-visible {
+  background: var(--color-primary-hover);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.secondaryButton {
+  min-height: 38px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 0 16px;
+  font-weight: 600;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.secondaryButton:hover,
+.secondaryButton:focus-visible {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary-soft-hover);
+  color: var(--color-primary);
+}
+
+.stateCard {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+  color: var(--color-muted);
+}
+
+.stateCard h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+}
+
+.skeletonCard {
+  display: grid;
+  gap: 14px;
+}
+
+.skeletonCard span {
+  height: 18px;
+  border-radius: calc(var(--radius-lg) * 999);
+  background: linear-gradient(90deg, var(--color-border) 0%, var(--color-bg) 45%, var(--color-border) 100%);
+}
+
+.skeletonCard span:first-child {
+  width: 36%;
+}
+
+.skeletonCard span:nth-child(2) {
+  width: 70%;
+}
+
+.skeletonCard span:last-child {
+  width: 52%;
+}
+
+@media (max-width: 760px) {
+  .hero,
+  .toolbar,
+  .repoMain,
+  .cardFooter,
+  .actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .searchBox {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .count {
+    white-space: normal;
+  }
+
+  .primaryButton,
+  .secondaryButton,
+  .viewButton {
+    width: 100%;
+  }
+}

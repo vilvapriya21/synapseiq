@@ -1,0 +1,762 @@
+.page {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.connectCard,
+.providerPanel,
+.repositoryCard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.connectCard {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+}
+
+.connectCardHeader,
+.repositoryHeader,
+.cardHeader,
+.uploadHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.connectCardHeader h2,
+.repositoryHeader h2,
+.cardHeader h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-xl);
+}
+
+.connectCardHeader p,
+.repositoryHeader p,
+.cardHeader p,
+.helperText {
+  margin: 5px 0 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+}
+
+.providerTabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  gap: var(--space-4);
+}
+
+.providerTab {
+  min-height: 170px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 18px;
+  text-align: center;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.providerTab:hover,
+.providerTabActive {
+  border-color: var(--color-primary-soft-hover);
+  box-shadow: 0 12px 26px rgba(47, 111, 237, 0.10);
+  transform: translateY(-1px);
+}
+
+.providerTabActive {
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-bg) 100%);
+}
+
+.providerTab strong {
+  font-size: var(--font-size-lg);
+}
+
+.providerTab small {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+}
+
+.providerMark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+}
+
+.providerLogo {
+  display: block;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.githubMark {
+  background: var(--accent-indigo-soft);
+  color: var(--color-text);
+}
+
+.gitlabMark {
+  background: var(--accent-amber-soft);
+  color: #fc6d26;
+}
+
+.bitbucketMark {
+  background: var(--accent-sky-soft);
+  color: #0052cc;
+}
+
+.azureMark {
+  background: var(--accent-mint-soft);
+  color: #0078d4;
+}
+
+.connectionBadge,
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  border-radius: calc(var(--radius-lg) * 999);
+  padding: 0 10px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.connected,
+.badgeIndexed {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.patSaved,
+.badgeIndexing {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.notConnected,
+.badgePending {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+}
+
+.badgeError {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.providerPanel {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+
+.cardHeader {
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.iconBox,
+.repositoryIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+}
+
+.githubIcon {
+  background: var(--accent-indigo-soft);
+  color: var(--color-text);
+}
+
+.gitlabPanelIcon {
+  background: var(--accent-amber-soft);
+  color: #fc6d26;
+}
+
+.bitbucketPanelIcon {
+  background: var(--accent-sky-soft);
+  color: #0052cc;
+}
+
+.azurePanelIcon {
+  background: var(--accent-mint-soft);
+  color: #0078d4;
+}
+
+.uploadIcon {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.oauthButton,
+.primaryButton,
+.secondaryButton,
+.outlineButton,
+.viewButton,
+.deleteButton {
+  min-height: 40px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  padding: 0 16px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.oauthButton,
+.secondaryButton,
+.outlineButton,
+.viewButton {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-primary);
+}
+
+.primaryButton {
+  width: 100%;
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-surface);
+}
+
+.primaryButton:hover {
+  background: var(--color-primary-hover);
+}
+
+.deleteButton {
+  display: inline-flex;
+  width: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0;
+  margin-left: var(--space-2);
+  border: 1px solid var(--color-danger-soft);
+  background: var(--color-surface);
+  color: var(--color-danger);
+}
+
+.connectedBanner,
+.warningBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.connectedBanner {
+  border: 1px solid var(--color-success-soft);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.warningBanner {
+  border: 1px solid var(--color-warning-soft);
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.disconnectLink,
+.linkButton {
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  padding: 0;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}
+
+.divider span {
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.divider strong {
+  font-weight: 600;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  gap: var(--space-3);
+}
+
+.input,
+.repositorySearch {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 0 12px;
+  font-size: var(--font-size-sm);
+}
+
+.repositorySearch {
+  width: min(320px, 100%);
+  min-width: 0;
+}
+
+.refreshButton {
+  width: 42px;
+  min-width: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.refreshingIcon {
+  animation: refreshSpin 800ms linear infinite;
+}
+
+@keyframes refreshSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.dropZone {
+  display: grid;
+  place-items: center;
+  gap: var(--space-2);
+  min-height: 160px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-muted);
+  text-align: center;
+  padding: var(--space-5);
+}
+
+.dropZone strong {
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+}
+
+.dropZone span {
+  font-size: var(--font-size-sm);
+}
+
+.dropZoneActive {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+}
+
+.errorBanner {
+  margin: 0 0 16px;
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+}
+
+.success {
+  margin: 0;
+  color: var(--color-success);
+  font-size: var(--font-size-sm);
+}
+
+.repositoryCard {
+  overflow: hidden;
+}
+
+.repositoryHeader {
+  align-items: center;
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.repositoryTools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.loading {
+  padding: 20px 22px;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}
+
+.tableWrap {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  min-width: 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid var(--color-border);
+  padding: 16px 20px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.table th:nth-child(2),
+.table td:nth-child(2) {
+  width: 100px;
+}
+
+.table th:nth-child(3),
+.table td:nth-child(3) {
+  width: 100px;
+}
+
+.table th:nth-child(4),
+.table td:nth-child(4) {
+  width: 90px;
+}
+
+.table th:nth-child(5),
+.table td:nth-child(5) {
+  width: 150px;
+}
+
+.table th:nth-child(6),
+.table td:nth-child(6) {
+  width: 230px;
+  text-align: right;
+}
+
+.table td[colspan] {
+  overflow: visible;
+  text-align: center;
+  white-space: normal;
+}
+
+.table th {
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.table td {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.repositoryIdentity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.repositoryIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+}
+
+.repositoryIconGithub {
+  background: var(--accent-indigo-soft);
+  color: var(--color-text);
+}
+
+.repositoryIconGitlab {
+  background: var(--accent-amber-soft);
+  color: #fc6d26;
+}
+
+.repositoryIconBitbucket {
+  background: var(--accent-sky-soft);
+  color: #0052cc;
+}
+
+.repositoryIconAzure {
+  background: var(--accent-mint-soft);
+  color: #0078d4;
+}
+
+.repositoryIconUpload {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.repositoryText {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.repositoryName {
+  overflow: hidden;
+  color: var(--color-text);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repositorySource {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.statusCell {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) auto;
+  align-items: center;
+  justify-content: start;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.statusIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  color: var(--color-danger);
+}
+
+.statusReason {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actionCell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.actionCell .viewButton,
+.actionCell .deleteButton {
+  flex: 0 0 auto;
+  padding: 0 12px;
+}
+
+.actionCell .deleteButton {
+  margin-left: 0;
+  padding: 0;
+}
+
+.emptyCell {
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.outlineButton:disabled,
+.viewButton:disabled,
+.deleteButton:disabled,
+.oauthButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.oauthButton,
+.primaryButton,
+.secondaryButton,
+.outlineButton,
+.viewButton,
+.deleteButton,
+.disconnectLink,
+.linkButton {
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.secondaryButton:hover,
+.outlineButton:hover,
+.viewButton:hover,
+.oauthButton:hover,
+.secondaryButton:focus-visible,
+.outlineButton:focus-visible,
+.viewButton:focus-visible,
+.oauthButton:focus-visible {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary-soft-hover);
+}
+
+.primaryButton:hover,
+.primaryButton:focus-visible {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.deleteButton:hover,
+.deleteButton:focus-visible {
+  background: var(--color-danger-soft);
+}
+
+.disconnectLink:hover,
+.linkButton:hover,
+.disconnectLink:focus-visible,
+.linkButton:focus-visible {
+  color: var(--color-primary-hover);
+}
+
+.repositoryEmptyState {
+  animation: emptyStateEnter 360ms ease-out both;
+}
+
+.repositoryEmptyState > section {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.repositoryEmptyState > section::before {
+  position: absolute;
+  inset: -34px;
+  z-index: 0;
+  background-image: url("../assets/auth-knowledge-bg.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: min(620px, 88vw) auto;
+  content: "";
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.repositoryEmptyState > section > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes emptyStateEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1200px) {
+  .providerTabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .connectCardHeader,
+  .repositoryHeader,
+  .repositoryTools,
+  .formGrid {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .providerTabs {
+    grid-template-columns: 1fr;
+  }
+
+  .repositorySearch {
+    width: 100%;
+  }
+
+  .refreshButton {
+    width: 100%;
+  }
+
+  .table th,
+  .table td {
+    padding: 14px 12px;
+  }
+
+  .table th:nth-child(2),
+  .table td:nth-child(2),
+  .table th:nth-child(3),
+  .table td:nth-child(3) {
+    width: 82px;
+  }
+
+  .table th:nth-child(4),
+  .table td:nth-child(4) {
+    width: 72px;
+  }
+
+  .table th:nth-child(5),
+  .table td:nth-child(5) {
+    width: 132px;
+  }
+
+  .table th:nth-child(6),
+  .table td:nth-child(6) {
+    width: 142px;
+  }
+
+  .actionCell {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
